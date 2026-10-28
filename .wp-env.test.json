@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/wp-env.json",
+	"autoPort": true,
+	"core": "https://wordpress.org/wordpress-7.1.3.zip",
+	"phpVersion": "8.2",
+	"port": 8889,
+	"testsEnvironment": false,
+	"mappings": {
+		"wp-content/plugins/burbank-lms": ".",
+		"wp-content/plugins/": "./tests/setup/plugins/"
+	},
+	"lifecycleScripts": {
+		"afterStart": "wp-env run cli --config=.wp-env.test.json wp plugin activate burbank-lms"
+	}
+}

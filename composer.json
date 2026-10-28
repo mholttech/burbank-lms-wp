@@ -1,0 +1,95 @@
+{
+    "name": "mholttech/burbank-lms-wp",
+    "description": "Burbank LMS WordPress plugin.",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Burbank LMS contributors",
+            "homepage": "https://github.com/mholttech/burbank-lms-wp"
+        }
+    ],
+    "require-dev": {
+        "composer/installers": "^2.3",
+        "phpstan/phpstan": "^2.2",
+        "phpstan/extension-installer": "^1.4",
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "php-stubs/wp-cli-stubs": "^2.12",
+        "yoast/phpunit-polyfills": "^4.0",
+        "wp-coding-standards/wpcs": "^3.4",
+        "phpunit/phpunit": "^9.6"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "classmap": [
+            "vendor-prefixed/"
+        ],
+        "psr-4": {
+            "Burbank_LMS\\": "src/"
+        }
+    },
+    "scripts": {
+        "prefix-namespaces": [
+            "sh -c 'if [ ! -f ./bin/strauss.phar ] || [ $(find ./bin/strauss.phar -mtime +1 -print 2>/dev/null) ]; then rm -f ./bin/strauss.phar && curl -f -o bin/strauss.phar -L -C - https://github.com/BrianHenryIE/strauss/releases/latest/download/strauss.phar; fi'",
+            "@php bin/strauss.phar",
+            "@composer dump-autoload"
+        ],
+        "pre-autoload-dump": [
+            "mkdir -p vendor-prefixed"
+        ],
+        "post-install-cmd": [
+            "@prefix-namespaces"
+        ],
+        "post-update-cmd": [
+            "@prefix-namespaces"
+        ],
+        "clean:vendor": [
+            "rm -rf vendor && rm -rf vendor-prefixed"
+        ],
+        "phpstan": "@php ./vendor/bin/phpstan analyse",
+        "phpstan:ci": "@php ./vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr",
+        "phpcs": "@php ./vendor/bin/phpcs --report-full",
+        "phpcs:ci": "@phpcs --report-checkstyle=./phpcs-report.xml",
+        "phpcbf": "@php ./vendor/bin/phpcbf",
+        "i18n:extract": "wp i18n make-pot . languages/burbank-lms.pot --exclude=resources,vendor,vendor-prefixed,node_modules && wp i18n update-po languages/burbank-lms.pot languages/",
+        "i18n:compile": "wp i18n make-json languages/ --no-purge && wp i18n make-mo languages/ && wp i18n make-php languages/"
+    },
+    "extra": {
+        "installer-paths": {
+            "vendor/{$vendor}/{$name}/": [
+                "type:wordpress-plugin"
+            ]
+        },
+        "strauss": {
+            "target_directory": "vendor-prefixed",
+            "namespace_prefix": "Burbank_LMS\\Dependencies\\",
+            "classmap_prefix": "Burbank_LMS_",
+            "constant_prefix": "BURBANK_LMS_",
+            "exclude_from_copy": {
+                "packages": [
+                    "phpstan/phpstan",
+                    "szepeviktor/phpstan-wordpress"
+                ]
+            },
+            "exclude_from_prefix": {
+                "packages": [
+                    "timber/timber",
+                    "twig/twig"
+                ]
+            }
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.2"
+        },
+        "allow-plugins": {
+            "phpstan/extension-installer": true,
+            "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "require": {
+        "php": ">=8.2"
+    }
+}

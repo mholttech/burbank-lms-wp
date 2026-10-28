@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "wp-plugin-bp": {
+      "source": "JUVOJustin/wordpress-plugin-boilerplate",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/wp-plugin-bp/SKILL.md",
+      "computedHash": "8fe7d5387c9f4e4dfb82faf557785292433f84548dcda57a066c16ac788cdd15"
+    }
+  }
+}
