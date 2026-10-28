@@ -1,0 +1,14 @@
+parameters:
+    level: 6
+    # Inline ignores cover diagnostics that vary with the configured PHP runtime.
+    reportUnmatchedIgnoredErrors: false
+    paths:
+        - burbank-lms.php
+        - src/
+    scanFiles:
+        - %rootDir%/../../php-stubs/wp-cli-stubs/wp-cli-stubs.php
+        - %rootDir%/../../php-stubs/wp-cli-stubs/wp-cli-commands-stubs.php
+        - %rootDir%/../../php-stubs/wp-cli-stubs/wp-cli-i18n-stubs.php
+        - %rootDir%/../../php-stubs/wp-cli-stubs/wp-cli-tools-stubs.php
+    bootstrapFiles:
+        - constants.php

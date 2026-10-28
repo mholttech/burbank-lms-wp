@@ -1,0 +1,20 @@
+{
+	"name": "burbank-lms/test-dependencies",
+	"description": "Test-only dependencies for burbank-lms. Add premium or private plugins here.",
+	"license": "GPL-3.0-or-later",
+	"require": {
+		"composer/installers": "^2.3"
+	},
+	"extra": {
+		"installer-paths": {
+			"setup/plugins/{$name}/": [
+				"type:wordpress-plugin"
+			]
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true
+		}
+	}
+}
