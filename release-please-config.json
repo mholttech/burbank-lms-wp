@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "burbank-lms",
+      "include-v-in-tag": true,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/Burbank_LMS.php"
+        },
+        {
+          "type": "generic",
+          "path": "burbank-lms.php"
+        }
+      ]
+    }
+  },
+  "pull-request-title-pattern": "chore: release ${version}",
+  "bootstrap-sha": "a26ffde955fc9e8dfa0d0a499cf7f207dbb1f7b9"
+}

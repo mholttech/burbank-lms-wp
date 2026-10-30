@@ -1,0 +1,106 @@
+name: Semantic version releases
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release:
+    name: Release Please
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    concurrency:
+      group: semantic-release
+      cancel-in-progress: false
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Create or update release PR and publish merged releases
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  package:
+    name: Package released plugin
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Verify release tag
+        env:
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^burbank-lms-v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=${RELEASE_TAG#burbank-lms-v}" >> "$GITHUB_ENV"
+
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Install production PHP dependencies
+        run: |
+          mkdir -p vendor-prefixed
+          composer install --no-dev --no-scripts --prefer-dist --no-interaction --no-progress --optimize-autoloader
+          test -f vendor/autoload.php
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Build production assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Verify tagged source version
+        env:
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+        run: python3 scripts/validate-release.py --source "$RELEASE_VERSION"
+
+      - name: Install WP-CLI distribution archive command
+        # Public package: prevent malformed inherited GitHub OAuth credentials
+        # from breaking Composer when WP-CLI installs the archive command.
+        env:
+          COMPOSER_AUTH: '{}'
+          GITHUB_TOKEN: ''
+          GH_TOKEN: ''
+        run: |
+          composer config --global --unset github-oauth.github.com || true
+          composer config --global github-protocols https
+          wp package install wp-cli/dist-archive-command:v3.1.0
+
+      - name: Build installable plugin ZIP
+        run: |
+          wp dist-archive . "./burbank-lms-$RELEASE_VERSION.zip" --plugin-dirname=burbank-lms
+          python3 scripts/validate-release.py --zip "./burbank-lms-$RELEASE_VERSION.zip" --version "$RELEASE_VERSION"
+
+      - name: Attach ZIP to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$RELEASE_TAG" "./burbank-lms-$RELEASE_VERSION.zip" --clobber

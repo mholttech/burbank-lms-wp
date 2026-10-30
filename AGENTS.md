@@ -9,7 +9,7 @@ Plugin identity: slug and text domain `burbank-lms`, PHP namespace `Burbank_LMS`
 - **Runtime:** PHP 8.2+ (`composer.json` platform and the plugin header), WordPress 7.1.3+, Composer 2, Node.js 24, and Docker for `@wordpress/env`.
 - **Bootstrap only:** `burbank-lms.php` loads the plugin. Business logic belongs in `src/`.
 - **Registration:** Register hooks, filters, shortcodes, CLI commands, and abilities through `Loader`. Do not register hooks in constructors.
-- **Versions stay in lockstep.** `Burbank_LMS::PLUGIN_VERSION` is the single version constant. `BURBANK_LMS_VERSION` in `burbank-lms.php` must mirror it. Do not introduce a second version source.
+- **Versions stay in lockstep.** `Burbank_LMS::PLUGIN_VERSION` is the single version constant. The `Version:` header in `burbank-lms.php` must match it. Do not introduce a second version source.
 - **Every release uses Semantic Versioning 2.0.0.** See [Releases](#releases).
 
 ### Layout
@@ -39,34 +39,35 @@ resources/frontend/      Front-end JS and SCSS source
 languages/               Text domain burbank-lms
 tests/php/               PHPUnit application tests
 docs/                    Implementation guides
-.github/workflows/       CI and the tag-driven release workflow
+scripts/validate-release.py
+release-please-config.json
+.release-please-manifest.json
+.github/workflows/release.yml
 ```
 
 Built assets land in `build/`. Do not edit `build/` by hand. Dependencies are prefixed into `vendor-prefixed/` by Strauss; do not vendor them into `src/`.
 
 ### Releases
 
-Releases are **Semantic Versioning** only. The version is `MAJOR.MINOR.PATCH`, with an optional pre-release suffix. The tag is that version and nothing else. `.github/workflows/deploy.yml` copies the tag string into `src/Burbank_LMS.php`, the `Version:` header in `burbank-lms.php`, and `Stable tag:` in `README.txt`.
+Releases are **Semantic Versioning** only: `MAJOR.MINOR.PATCH`. [Release Please](https://github.com/googleapis/release-please) computes the next version from Conventional Commits on `main`, opens a release pull request, and publishes `burbank-lms-vMAJOR.MINOR.PATCH` when that pull request merges. `.github/workflows/release.yml` then packages `burbank-lms-MAJOR.MINOR.PATCH.zip` and rejects any other tag shape.
 
-Allowed tags:
-
-| Change | Tag | Published as |
-| --- | --- | --- |
-| Incompatible API or stored-data change | `2.0.0` | Latest stable release |
-| Backward-compatible feature | `1.3.0` | Latest stable release |
-| Backward-compatible fix | `1.2.1` | Latest stable release |
-| Pre-release | `1.3.0-alpha.1`, `1.3.0-beta.1`, `1.3.0-rc.1` | Prerelease; not marked latest |
+| Commit | Version bump |
+| --- | --- |
+| `feat:` backward-compatible feature | MINOR (`1.1.0` → `1.2.0`) |
+| `fix:` backward-compatible fix | PATCH (`1.1.0` → `1.1.1`) |
+| `feat!:` or a `BREAKING CHANGE:` footer | MAJOR (`1.1.0` → `2.0.0`) |
+| `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `style:` | No release |
 
 Rules:
 
-- Choose the bump from compatibility: breaking changes increment MAJOR, compatible features increment MINOR, fixes increment PATCH. Reset MINOR and PATCH to `0` when MAJOR increments. Reset PATCH to `0` when MINOR increments.
-- Do not prefix the tag with `v`. The workflow uses the full tag as the WordPress version, so `v1.2.0` would be stored as the version string `v1.2.0`.
+- Write Conventional Commits. The type and the breaking-change marker are how SemVer is chosen. A vague subject such as `update courses` does not produce a correct release.
+- Reset MINOR and PATCH to `0` when MAJOR increments. Reset PATCH to `0` when MINOR increments. Release Please does this; do not calculate a custom scheme.
+- Do not hand-edit `Burbank_LMS::PLUGIN_VERSION`, the plugin header `Version:`, `.release-please-manifest.json`, or `CHANGELOG.md` to force a version. Release Please owns those, using the `x-release-please-version` comment and the `x-release-please-start-version` / `x-release-please-end` markers. Leave the markers in place.
+- Do not push `burbank-lms-v*` tags by hand. The package job accepts only `burbank-lms-vMAJOR.MINOR.PATCH` (no `v` prefix on the version itself, and no `-alpha`, `-beta`, or `-rc` suffix).
 - Do not use dates, branch names, or commit SHAs as versions.
-- A tag is a prerelease only when it contains `-alpha`, `-beta`, or `-rc`. Any other suffix is published as a stable release.
-- Stable tags are committed back to the default branch. Pre-release tags are not.
-- Do not hand-edit the released version on a tag. Put the SemVer string in the tag and let the workflow write the plugin files.
+- `scripts/validate-release.py` checks that the header version and `PLUGIN_VERSION` are the same `MAJOR.MINOR.PATCH` as the tag. A release that drifts between those files fails packaging.
 
-Trigger a release by pushing the SemVer tag. `deploy.yml` runs on every tag push.
+Current released version is tracked in `.release-please-manifest.json`.
 
 ### Asset Management
 
@@ -79,6 +80,8 @@ Trigger a release by pushing the SemVer tag. `deploy.yml` runs on every tag push
 - **PHP:** PHPStan (`phpstan.neon`), PHPCS (`phpcs.xml`)
 - **JS:** ESLint (`eslint.config.cjs`)
 - **CI:** GitHub Actions in `.github/workflows/`
+- **Security:** `.github/workflows/security.yml` runs gitleaks, Semgrep Cloud (`SEMGREP_APP_TOKEN`), and a scheduled composer/npm advisory audit. Ignore generated trees via `.semgrepignore`.
+- **Dependencies:** Self-hosted Renovate (`.github/workflows/renovate.yml`, `renovate.json`) opens Conventional Commit PRs under `renovate-gha/` using `RENOVATE_APP_ID` / `RENOVATE_APP_PRIVATE_KEY`.
 
 ### Key Primitives
 

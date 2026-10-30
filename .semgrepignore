@@ -1,0 +1,9 @@
+# Third-party and generated trees. Semgrep Cloud scans the rest of the repo.
+node_modules/
+vendor/
+vendor-prefixed/
+build/
+tests/
+docs/superpowers/
+.agents/
+.superpowers/

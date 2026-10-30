@@ -1,0 +1,93 @@
+name: Renovate dependencies
+
+on:
+  schedule:
+    - cron: '23 10 * * *'
+  workflow_dispatch:
+    inputs:
+      ignore_schedule:
+        description: Ignore all Renovate schedules and run immediately
+        type: boolean
+        default: false
+      recreate_prs:
+        description: Close existing renovate-gha PRs and recreate them on this run
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renovate-dependencies
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    name: Check for dependency updates
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create Renovate GitHub App installation token
+        id: renovate-app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ vars.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          owner: mholttech
+          repositories: burbank-lms-wp
+
+      - name: Apply one-shot Renovate overrides
+        if: github.event_name == 'workflow_dispatch' && (inputs.ignore_schedule || inputs.recreate_prs)
+        env:
+          IGNORE_SCHEDULE: ${{ inputs.ignore_schedule }}
+          RECREATE_PRS: ${{ inputs.recreate_prs }}
+          GH_TOKEN: ${{ steps.renovate-app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+
+          ignore = os.environ.get("IGNORE_SCHEDULE") == "true"
+          recreate = os.environ.get("RECREATE_PRS") == "true"
+          force = {}
+          if ignore or recreate:
+              # null schedule = at any time. Recreate also forces this so
+              # closed PRs are opened on the same run, not at 6am.
+              force["schedule"] = None
+              force["automergeSchedule"] = None
+          if recreate:
+              force["recreateWhen"] = "always"
+          if force:
+              with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+                  handle.write("RENOVATE_FORCE=" + json.dumps(force, separators=(",", ":")) + "\n")
+          PY
+
+          if [ "$RECREATE_PRS" != "true" ]; then
+            exit 0
+          fi
+
+          gh pr list --repo "$REPO" --state open --limit 200 \
+            --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("renovate-gha/")) | [.number, .headRefName] | @tsv' \
+          | while IFS=$'\t' read -r number ref; do
+              [ -n "$number" ] || continue
+              echo "Closing PR #${number} (${ref}) so Renovate can recreate it"
+              gh pr close "$number" --repo "$REPO" \
+                --comment "Closed by a manual Renovate **recreate_prs** run so a fresh PR can replace this one."
+              gh api -X DELETE "repos/${REPO}/git/refs/heads/${ref}" >/dev/null || true
+            done
+
+      - name: Run Renovate
+        uses: renovatebot/github-action@a63d9a7bc606f7336fd20b47f2f32259a35e6213 # v46.3.9
+        with:
+          token: ${{ steps.renovate-app-token.outputs.token }}
+          configurationFile: .github/renovate-global.json
+        env:
+          LOG_LEVEL: info
