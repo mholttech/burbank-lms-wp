@@ -23,8 +23,17 @@ src/                     All plugin logic (PSR-4: Burbank_LMS\)
   Activator.php          Activation
   Deactivator.php        Deactivation
   Uninstallor.php        Uninstall
+  Courses/               Course catalog schema, identity, approval, picks, admin
+  Access/                Invites, registration, learner gate, legal name, admin
+  Enrollment/            Course enrollment table, service, admin
+  Progress/              Quiz pass stamp and certificate completion
+  Learner/               Catalog queries, block context, FSE templates
+  Mail/                  Verification, welcome, enroll, completion emails
+  Branding/              Optional PressPrimer plugin_name / logo overrides
+  REST/                  Learner register / enroll / withdraw routes (burbank-lms/v1)
+  Integrations/          PressPrimer mapping + Quiz/Certificate adapters
   Abilities/             Abilities API interfaces
-  Blocks/                Gutenberg blocks (npm run create-block)
+  Blocks/                Learner Gutenberg blocks (npm run create-block)
 resources/admin/         Admin JS and SCSS source
 resources/frontend/      Front-end JS and SCSS source
 languages/               Text domain burbank-lms
@@ -86,7 +95,12 @@ Trigger a release by pushing the SemVer tag. `deploy.yml` runs on every tag push
 
 ### Feature Quick Reference
 
-- **Blocks:** Run `npm run create-block`. Registration is automatic; `tests/php/BlockRegistrationTest.php` guards that every built block is loaded (via `/wp/v2/block-types`) and its assets exist. Use the `wp-plugin-bp` skill for block guidance.
+- **Course catalog:** `src/Courses/` owns the Pods-provisioned `bfc_course` type (Pods is required), permanent BFC registry, write-path validation, approval snapshots, material revisions, archive and publication gates, Pods picks for quiz/template/`bc_requirement`, and matrix slug soft-check on publish when `bc_requirement` exists; `src/Integrations/PressPrimer.php` checks the exact supported PressPrimer Quiz 3.1.3 / Certificate 2.0.2 contracts. Every write path (Pods, REST, classic, metadata APIs) must stay guarded, and published codes and snapshots are never mutated. See `docs/course-authoring.md` and `docs/pressprimer-compatibility.md`; tests are `tests/php/Course*Test.php`.
+- **Access:** `src/Access/` owns site/course invite tables, hashed invite CRUD, site-invite registration (alternate WP register path closed), email verification (clickable mail link + `template_redirect` / `GET|POST /burbank-lms/v1/verify-email`), training access (`burbank_lms_access`), suspend/reactivate, legal-name guards, and admin UI. See `docs/learner-access.md`; tests are `Access*Test`, `LearnerRestTest`, `MailerTest`.
+- **Enrollment:** `src/Enrollment/` owns `{prefix}bfc_enrollments`, open vs restricted self-enroll (course invites), admin enroll, withdraw, and course meta-box UI. See `docs/learner-access.md`; tests are `Enrollment*Test`.
+- **Progress / PressPrimer learner adapters:** `src/Progress/Service.php` stamps `quiz_passed_at` once and completes enrollments with a credential (`burbank_lms_course_completed`). `PressPrimer_Quiz` gates mapped `pressprimer_quiz_can_start` / `before_submit` on `Learner::can_learn` + active enrollment and records passes; `PressPrimer_Certificate` supplies merge fields (legal name, never email), validates issuance, and completes on `ppcert_certificate_issued`. Unmapped quizzes stay ungated. Optional branding: `src/Branding/PressPrimer.php`. Mail: `src/Mail/Mailer.php`. See `docs/pressprimer-compatibility.md` and `docs/learner-access.md`; tests are `ProgressPipelineTest`, `PressPrimerGateTest`, `MailerTest`.
+- **Learner REST:** `src/REST/Controller.php` registers `burbank-lms/v1` routes for invite registration (`POST /register`), list/self-enroll (`GET|POST /enrollments`), withdraw (`DELETE /enrollments/{course_id}`), and admin enroll (`POST /enrollments/admin`). Maps service `WP_Error` codes to REST responses; does not proxy PressPrimer attempt APIs. Tests: `LearnerRestTest`.
+- **Blocks:** Learner blocks under `src/Blocks/` (`register`, `profile`, `catalog`, `course`, `enroll`, `my-courses`) plus `Learner/Templates` FSE archive/single. Run `npm run create-block` for new blocks. Registration is automatic; `tests/php/BlockRegistrationTest.php` guards that every built block is loaded (via `/wp/v2/block-types`) and its assets exist. Use the `wp-plugin-bp` skill for block guidance.
 - **Abilities API:** Implement interfaces in `src/Abilities/`, register via Loader. `tests/php/AbilityRegistrationTest.php` guards that every `Ability_Interface` implementation (and its category) is registered. Use the `wp-plugin-bp` skill for ability guidance.
 - **i18n:** Extract with `composer run i18n:extract`, compile with `composer run i18n:compile`. Use the `wp-plugin-bp` skill for translation work.
 - **wp-env:** Run `composer install` and `npm run build` before `npm run env:start`. The lifecycle only activates Burbank LMS. Use the `wp-plugin-bp` skill when tests are involved.

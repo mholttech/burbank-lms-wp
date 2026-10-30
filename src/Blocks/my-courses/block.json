@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "burbank-lms/my-courses",
+	"version": "1.0.0",
+	"title": "My Courses",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "Learner enrollments and status (active / passed / completed).",
+	"example": {},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"]
+	},
+	"textdomain": "burbank-lms",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}

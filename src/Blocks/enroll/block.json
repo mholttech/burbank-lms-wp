@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "burbank-lms/enroll",
+	"version": "1.0.0",
+	"title": "Enroll",
+	"category": "widgets",
+	"icon": "yes-alt",
+	"description": "Standalone enroll / course-invite redeem for a selected course.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"]
+	},
+	"attributes": {
+		"courseId": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"textdomain": "burbank-lms",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}

@@ -30,6 +30,7 @@
  */
 
 require_once dirname( __DIR__ ) . '/vendor/autoload.php';
+require_once __DIR__ . '/pressprimer-fixture.php';
 
 $tests_dir = getenv( 'WP_TESTS_DIR' );
 
@@ -46,6 +47,11 @@ require_once $tests_dir . '/includes/functions.php';
 tests_add_filter(
 	'muplugins_loaded',
 	static function (): void {
+		require WP_PLUGIN_DIR . '/pods/init.php';
+		if ( ! getenv( 'BFC_TEST_NO_PRESSPRIMER' ) ) {
+			require WP_PLUGIN_DIR . '/pressprimer-quiz/pressprimer-quiz.php';
+			require WP_PLUGIN_DIR . '/pressprimer-certificate/pressprimer-certificate.php';
+		}
 		require dirname( __DIR__ ) . '/burbank-lms.php';
 	}
 );

@@ -1,0 +1,12 @@
+.bfc-enroll {
+	&__form,
+	&__field {
+		display: grid;
+		gap: 0.35rem;
+		max-width: 28rem;
+	}
+
+	&__status.is-error {
+		color: #b32d2e;
+	}
+}

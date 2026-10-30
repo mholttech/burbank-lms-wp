@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "burbank-lms/profile",
+	"version": "1.0.0",
+	"title": "Learner Profile",
+	"category": "widgets",
+	"icon": "admin-users",
+	"description": "Learner account profile with read-only legal name.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"]
+	},
+	"textdomain": "burbank-lms",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}

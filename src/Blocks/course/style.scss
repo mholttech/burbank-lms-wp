@@ -1,0 +1,14 @@
+.bfc-course {
+	display: grid;
+	gap: 0.75rem;
+
+	&__invite-form,
+	&__field {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	&__notice.is-error {
+		color: #b32d2e;
+	}
+}

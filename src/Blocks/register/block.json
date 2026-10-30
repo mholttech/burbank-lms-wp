@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "burbank-lms/register",
+	"version": "1.0.0",
+	"title": "Learner Register",
+	"category": "widgets",
+	"icon": "id",
+	"description": "Site-invite registration form for training access.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"]
+	},
+	"textdomain": "burbank-lms",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}
