@@ -71,6 +71,7 @@ class Burbank_LMS {
 		$this->loader->add_action( 'init', $enrollment_tables, 'install', 12 );
 		$registration = new Access\Registration();
 		$this->loader->add_filter( 'registration_errors', $registration, 'block_default_registration' );
+		$this->loader->add_action( 'profile_update', $registration, 'handle_email_change', 10, 2 );
 		$profile = new Access\Profile();
 		$this->loader->add_filter( 'add_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
 		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );

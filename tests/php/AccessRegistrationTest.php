@@ -182,6 +182,53 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 		$this->assertSame( '', (string) get_user_meta( $user_id, 'burbank_lms_email_verify_token', true ) );
 	}
 
+	/** Changing email on a verified learner clears verification until re-verify. */
+	public function test_email_change_requires_reverification(): void {
+		$tokens = array();
+		add_action(
+			'burbank_lms_sent_verification_email',
+			static function ( int $uid, string $token ) use ( &$tokens ): void {
+				$tokens[ $uid ] = $token;
+			},
+			10,
+			2
+		);
+
+		$invite  = $this->site_invite();
+		$user_id = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'before-change@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'legal_name'   => 'Sam Volunteer',
+				'display_name' => 'Sam',
+			)
+		);
+		$this->assertIsInt( $user_id );
+		$this->assertSame( $user_id, $this->registration()->verify_email( $tokens[ $user_id ] ) );
+		$learner = new Learner();
+		$this->assertTrue( $learner->can_learn( $user_id ) );
+		$this->assertTrue( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap.
+
+		unset( $tokens[ $user_id ] );
+		$updated = wp_update_user(
+			array(
+				'ID'         => $user_id,
+				'user_email' => 'after-change@example.com',
+			)
+		);
+		$this->assertSame( $user_id, $updated );
+		$this->assertSame( '', (string) get_user_meta( $user_id, 'burbank_lms_email_verified_at', true ) );
+		$this->assertNotEmpty( get_user_meta( $user_id, 'burbank_lms_email_verify_token', true ) );
+		$this->assertArrayHasKey( $user_id, $tokens );
+		$this->assertFalse( $learner->can_learn( $user_id ) );
+		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap.
+
+		$this->assertSame( $user_id, $this->registration()->verify_email( $tokens[ $user_id ] ) );
+		$this->assertTrue( $learner->can_learn( $user_id ) );
+		$this->assertTrue( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap.
+	}
+
 	/** Open wp-login registration is rejected while admin create_users still works. */
 	public function test_block_default_registration_but_admin_create_users_works(): void {
 		$registration = $this->registration();

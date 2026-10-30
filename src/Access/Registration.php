@@ -145,12 +145,38 @@ class Registration {
 	}
 
 	/**
+	 * When a training-access user's email changes, clear verification and re-send.
+	 *
+	 * Hooked to `profile_update` (fires from wp_update_user after the row is saved).
+	 *
+	 * @param int      $user_id       User ID.
+	 * @param \WP_User $old_user_data User object before the update.
+	 */
+	public function handle_email_change( int $user_id, \WP_User $old_user_data ): void {
+		if ( $user_id < 1 || ! user_can( $user_id, Learner::CAP_ACCESS ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
+			return;
+		}
+		$user = get_userdata( $user_id );
+		if ( ! $user ) {
+			return;
+		}
+		$old_email = strtolower( (string) $old_user_data->user_email );
+		$new_email = strtolower( (string) $user->user_email );
+		if ( '' === $new_email || $old_email === $new_email ) {
+			return;
+		}
+		delete_user_meta( $user_id, Learner::META_EMAIL_VERIFIED_AT );
+		$this->issue_verification( $user_id, $user->user_email );
+		$this->learner()->sync_quiz_cap( $user_id );
+	}
+
+	/**
 	 * Issue a hashed verification token and send the verification email.
 	 *
 	 * @param int    $user_id User ID.
 	 * @param string $email   Destination email.
 	 */
-	private function issue_verification( int $user_id, string $email ): void {
+	public function issue_verification( int $user_id, string $email ): void {
 		$plaintext = wp_generate_password( 48, false, false );
 		update_user_meta( $user_id, self::META_VERIFY_TOKEN, $this->hash_token( $plaintext ) );
 		update_user_meta( $user_id, self::META_VERIFY_SENT_AT, gmdate( 'c' ) );
