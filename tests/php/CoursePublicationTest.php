@@ -337,6 +337,33 @@ class CoursePublicationTest extends WP_UnitTestCase {
 		$this->assertSame( '1', ( new Registry() )->get( $id )['published'] );
 	}
 
+	/** Stored approval requires an approver who is currently authorized. */
+	public function test_unauthorized_stored_approver_cannot_publish(): void {
+		$id     = $this->course( bfc_test_mapping(), 'BFC-260', false );
+		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->assertFalse( user_can( $editor, 'approve_bfc_courses' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered by Courses\Capabilities.
+		Validator::internal_write(
+			static function () use ( $id, $editor ): void {
+				update_post_meta( $id, 'approved_by', $editor );
+				update_post_meta( $id, 'approved_at', gmdate( 'Y-m-d H:i:s' ) );
+			}
+		);
+		$request = new WP_REST_Request( 'POST', rest_get_route_for_post( $id ) );
+		$request->set_param( 'status', 'publish' );
+		$response = rest_do_request( $request );
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertContains( 'burbank_course_approval', $response->as_error()->get_error_codes() );
+		$this->assertSame( 'draft', get_post_status( $id ) );
+		$this->assertContains( 'burbank_course_approval', ( new Publication() )->validate( $id, ( new Validator() )->fields( $id ) )->get_error_codes() );
+		wp_publish_post( $id );
+		$this->assertSame( 'draft', get_post_status( $id ) );
+		// The fixture records the current administrator, whose capability permits publication.
+		bfc_test_approve( $id );
+		$response = rest_do_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+	}
+
 	/** A REST edit with no status cannot leave an already published course invalid. */
 	public function test_rest_meta_edit_of_published_course_is_rejected_when_invalid(): void {
 		$mapping = bfc_test_mapping();
@@ -396,11 +423,14 @@ class CoursePublicationTest extends WP_UnitTestCase {
 			array(
 				'ID'          => $id,
 				'post_status' => 'publish',
+				'meta_input'  => array( 'course_revision' => '2' ),
 			)
 		);
+		$this->assertSame( '2', get_post_meta( $id, 'course_revision', true ) );
 		$location = apply_filters( 'redirect_post_location', admin_url( 'post.php?post=' . $id . '&action=edit&message=6' ), $id );
 		$this->assertStringContainsString( 'message=10', $location );
 		$this->assertStringNotContainsString( 'message=6', $location );
+		$this->assertContains( 'Obtain course approval before publishing.', get_transient( 'burbank_course_notice_' . get_current_user_id() ) );
 		ob_start();
 		do_action( 'admin_notices' );
 		$html = ob_get_clean();

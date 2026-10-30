@@ -22,7 +22,8 @@ class Publication {
 		if ( ! $course_id || 'bfc_course' !== get_post_type( $course_id ) ) {
 			$error->add( 'burbank_course_save_draft', __( 'Save this course as a draft before approval and publication.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
-		if ( ! get_post_meta( $course_id, 'approved_by', true ) || ! get_post_meta( $course_id, 'approved_at', true ) ) {
+		$approver = (int) get_post_meta( $course_id, 'approved_by', true );
+		if ( ! $approver || ! get_post_meta( $course_id, 'approved_at', true ) || ! user_can( $approver, 'approve_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered by Courses\Capabilities.
 			$error->add( 'burbank_course_approval', __( 'Obtain course approval before publishing.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
 		$mapping = ( new PressPrimer() )->validate_mapping( (int) ( $fields['pressprimer_quiz_id'] ?? 0 ), (int) ( $fields['certificate_template_id'] ?? 0 ) );

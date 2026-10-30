@@ -80,6 +80,12 @@ class Validator {
 	 */
 	private ?\WP_Error $error = null;
 
+	/** Publication failure retained through later metadata writes until the save redirect.
+	 *
+	 * @var \WP_Error|null
+	 */
+	private ?\WP_Error $publication_error = null;
+
 	/**
 	 * Validate a complete course contract without mutating storage.
 	 *
@@ -367,8 +373,9 @@ class Validator {
 		$publish = in_array( $status, self::PUBLICATION_STATUSES, true );
 		if ( ! $id && $publish ) {
 			// Approval and publication require a previously saved, stable course ID.
-			$data['post_status'] = 'draft';
-			$this->error         = new \WP_Error( 'burbank_course_save_draft', __( 'Save this course as a draft before requesting approval and publication.', 'burbank-lms' ), array( 'status' => 400 ) );
+			$data['post_status']     = 'draft';
+			$this->error             = new \WP_Error( 'burbank_course_save_draft', __( 'Save this course as a draft before requesting approval and publication.', 'burbank-lms' ), array( 'status' => 400 ) );
+			$this->publication_error = $this->error;
 			return $data;
 		}
 		$fields      = array_replace( $this->batches[ $id ] ?? $this->fields( $id ), (array) ( $postarr['meta_input'] ?? array() ) );
@@ -377,7 +384,8 @@ class Validator {
 			$this->batches[ $id ] = $fields;
 		}
 		if ( $this->error->has_errors() && $publish ) {
-			$data['post_status'] = 'draft';
+			$this->publication_error = $this->error;
+			$data['post_status']     = 'draft';
 		}
 		// A scheduled course is sealed by its later publish transition, never at scheduling time.
 		if ( ! $this->error->has_errors() && 'publish' === $status ) {
@@ -442,6 +450,9 @@ class Validator {
 		clean_post_cache( $post_id );
 		if ( ! $saved && ( ! $this->error || ! $this->error->has_errors() ) ) {
 			$this->error = new \WP_Error( 'burbank_course_seal', __( 'The permanent course identity could not be reserved. Save the course again to retry publication.', 'burbank-lms' ), array( 'status' => 409 ) );
+		}
+		if ( ! $saved ) {
+			$this->publication_error = $this->error;
 		}
 		return $saved;
 	}
@@ -514,6 +525,7 @@ class Validator {
 				return;
 			}
 		}
+		$this->publication_error = $this->error;
 		global $wpdb;
 		$wpdb->update( $wpdb->posts, array( 'post_status' => 'draft' ), array( 'ID' => $post->ID ) ); // phpcs:ignore WordPress.DB -- Core wp_publish_post has no pre-write filter.
 		$post->post_status = 'draft';
@@ -529,8 +541,16 @@ class Validator {
 	 * @param int    $post_id Saved post ID.
 	 */
 	public function redirect_notice( string $location, int $post_id = 0 ): string {
-		if ( $this->error && $this->error->has_errors() && get_current_user_id() && ( ! $post_id || 'bfc_course' === get_post_type( $post_id ) ) ) {
-			set_transient( 'burbank_course_notice_' . get_current_user_id(), $this->error->get_error_messages(), 60 );
+		$error = new \WP_Error();
+		if ( $this->publication_error ) {
+			$error->merge_from( $this->publication_error );
+		}
+		if ( $this->error && $this->error !== $this->publication_error ) {
+			$error->merge_from( $this->error );
+		}
+		if ( $error->has_errors() && get_current_user_id() && ( ! $post_id || 'bfc_course' === get_post_type( $post_id ) ) ) {
+			set_transient( 'burbank_course_notice_' . get_current_user_id(), array_unique( $error->get_error_messages() ), 60 );
+			$this->publication_error = null;
 			if ( $post_id && 'publish' !== get_post_status( $post_id ) ) {
 				$location = add_query_arg( 'message', 10, $location );
 			}
