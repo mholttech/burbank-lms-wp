@@ -7,6 +7,8 @@
 
 namespace Burbank_LMS\Courses;
 
+use Burbank_LMS\Enrollment\Repository;
+
 /** Server-rendered controls require no new editor assets. */
 class Admin {
 	/**
@@ -121,6 +123,9 @@ class Admin {
 				'course_revision' => __( 'Revision', 'burbank-lms' ),
 				'catalog_state'   => __( 'Catalog state', 'burbank-lms' ),
 				'bfc_approval'    => __( 'Approval', 'burbank-lms' ),
+				'bfc_enrolled'    => __( 'Enrolled', 'burbank-lms' ),
+				'bfc_passed'      => __( 'Passed', 'burbank-lms' ),
+				'bfc_completed'   => __( 'Completed', 'burbank-lms' ),
 			)
 		);
 	}
@@ -135,6 +140,14 @@ class Admin {
 		if ( 'bfc_approval' === $column ) {
 			$approved = ( new Editorial() )->matches_approval( $course_id, ( new Validator() )->fields( $course_id ) ) && user_can( (int) get_post_meta( $course_id, 'approved_by', true ), 'approve_bfc_courses' ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered course capability.
 			echo esc_html( $approved ? __( 'Approved', 'burbank-lms' ) : __( 'Approval required', 'burbank-lms' ) );
+		} elseif ( in_array( $column, array( 'bfc_enrolled', 'bfc_passed', 'bfc_completed' ), true ) ) {
+			$counts = ( new Repository() )->counts_for_course( $course_id );
+			$key    = match ( $column ) {
+				'bfc_enrolled' => 'enrolled',
+				'bfc_passed' => 'passed',
+				'bfc_completed' => 'completed',
+			};
+			echo esc_html( (string) $counts[ $key ] );
 		} elseif ( in_array( $column, array( 'bfc_code', 'course_revision', 'catalog_state' ), true ) ) {
 			$value = get_post_meta( $course_id, $column, true );
 			echo esc_html( $value ?: '—' );

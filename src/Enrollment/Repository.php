@@ -214,6 +214,64 @@ class Repository {
 	}
 
 	/**
+	 * List enrollment rows for a course, newest first.
+	 *
+	 * @param int $course_id Course post ID.
+	 * @return list<object>
+	 */
+	public function list_for_course( int $course_id ): array {
+		if ( $course_id < 1 ) {
+			return array();
+		}
+		$db    = $this->db();
+		$table = $this->table();
+		// phpcs:ignore WordPress.DB -- Prepared custom-table read.
+		$rows = $db->get_results(
+			$db->prepare(
+				"SELECT * FROM {$table} WHERE course_id = %d ORDER BY id DESC",
+				$course_id
+			)
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Return enrolled / passed / completed counts for a course list column.
+	 *
+	 * @param int $course_id Course post ID.
+	 * @return array{enrolled:int,passed:int,completed:int}
+	 */
+	public function counts_for_course( int $course_id ): array {
+		$counts = array(
+			'enrolled'  => 0,
+			'passed'    => 0,
+			'completed' => 0,
+		);
+		if ( $course_id < 1 ) {
+			return $counts;
+		}
+		$db    = $this->db();
+		$table = $this->table();
+		// phpcs:ignore WordPress.DB -- Prepared custom-table aggregate.
+		$row = $db->get_row(
+			$db->prepare(
+				"SELECT
+					SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS enrolled,
+					SUM(CASE WHEN quiz_passed_at IS NOT NULL THEN 1 ELSE 0 END) AS passed,
+					SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
+				FROM {$table} WHERE course_id = %d",
+				$course_id
+			)
+		);
+		if ( $row ) {
+			$counts['enrolled']  = (int) $row->enrolled;
+			$counts['passed']    = (int) $row->passed;
+			$counts['completed'] = (int) $row->completed;
+		}
+		return $counts;
+	}
+
+	/**
 	 * Delete an enrollment row (compensation after a failed invite redeem).
 	 *
 	 * @param int $id Enrollment row ID.

@@ -215,6 +215,43 @@ class Invites {
 	}
 
 	/**
+	 * List invite rows for a scope, newest first.
+	 *
+	 * @param string   $scope     `site` or `course`.
+	 * @param int|null $course_id Required when scope is course.
+	 * @return list<object>
+	 */
+	public function list( string $scope, ?int $course_id = null ): array {
+		if ( ! in_array( $scope, self::SCOPES, true ) ) {
+			return array();
+		}
+		if ( 'course' === $scope && ( null === $course_id || $course_id < 1 ) ) {
+			return array();
+		}
+		$db    = $this->db();
+		$table = $db->prefix . 'bfc_invite_codes';
+		if ( 'course' === $scope ) {
+			// phpcs:ignore WordPress.DB -- Prepared custom-table read.
+			$rows = $db->get_results(
+				$db->prepare(
+					"SELECT id, scope, course_id, label, kind, max_uses, use_count, expires_at, revoked_at, bound_email, created_by, created_at FROM {$table} WHERE scope = %s AND course_id = %d ORDER BY id DESC",
+					$scope,
+					$course_id
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB -- Prepared custom-table read.
+			$rows = $db->get_results(
+				$db->prepare(
+					"SELECT id, scope, course_id, label, kind, max_uses, use_count, expires_at, revoked_at, bound_email, created_by, created_at FROM {$table} WHERE scope = %s AND course_id IS NULL ORDER BY id DESC",
+					$scope
+				)
+			);
+		}
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Whether a course currently has at least one active course-scoped invite.
 	 *
 	 * @param int $course_id Course post ID.

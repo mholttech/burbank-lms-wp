@@ -129,6 +129,19 @@ class Burbank_LMS {
 		$this->loader->add_action( 'admin_notices', $course_admin, 'notice' );
 		$this->loader->add_filter( 'manage_bfc_course_posts_columns', $course_admin, 'columns' );
 		$this->loader->add_action( 'manage_bfc_course_posts_custom_column', $course_admin, 'column', 10, 2 );
+		$access_admin = new Access\Admin();
+		$this->loader->add_action( 'admin_menu', $access_admin, 'register_menu' );
+		$this->loader->add_action( 'admin_post_bfc_invite_create', $access_admin, 'handle_create_invite' );
+		$this->loader->add_action( 'admin_post_bfc_invite_revoke', $access_admin, 'handle_revoke_invite' );
+		$this->loader->add_action( 'admin_post_bfc_learner_profile', $access_admin, 'handle_profile' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $access_admin, 'register_meta_box' );
+		$this->loader->add_action( 'show_user_profile', $access_admin, 'render_profile' );
+		$this->loader->add_action( 'edit_user_profile', $access_admin, 'render_profile' );
+		$this->loader->add_action( 'admin_notices', $access_admin, 'notice' );
+		$enrollment_admin = new Enrollment\Admin();
+		$this->loader->add_action( 'admin_post_bfc_enrollment_admin_enroll', $enrollment_admin, 'handle_enroll' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $enrollment_admin, 'register_meta_box' );
+		$this->loader->add_action( 'admin_notices', $enrollment_admin, 'notice' );
 	}
 
 	/**
