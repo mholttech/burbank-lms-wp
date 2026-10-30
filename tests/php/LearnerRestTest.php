@@ -258,6 +258,24 @@ class LearnerRestTest extends WP_UnitTestCase {
 		$this->assertSame( 'burbank_enrollment_course_invalid', $data['code'] );
 	}
 
+	/** Authenticated learner can list their enrollments. */
+	public function test_list_enrollments_for_current_user(): void {
+		$user_id   = $this->verified_learner( 'list-enroll@example.com' );
+		$course_id = $this->published_course();
+		$this->assertTrue( ( new EnrollmentService() )->self_enroll( $user_id, $course_id ) );
+		wp_set_current_user( $user_id );
+
+		$response = $this->dispatch( 'GET', '/enrollments' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertIsArray( $data );
+		$this->assertArrayHasKey( 'enrollments', $data );
+		$this->assertCount( 1, $data['enrollments'] );
+		$this->assertSame( $course_id, (int) $data['enrollments'][0]['course_id'] );
+		$this->assertSame( 'active', $data['enrollments'][0]['status'] );
+	}
+
 	/** Learner may withdraw their own enrollment. */
 	public function test_withdraw_happy_path(): void {
 		$user_id   = $this->verified_learner( 'withdraw-ok@example.com' );

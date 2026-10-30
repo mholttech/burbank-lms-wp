@@ -214,6 +214,28 @@ class Repository {
 	}
 
 	/**
+	 * List enrollment rows for a learner, newest first.
+	 *
+	 * @param int $user_id User ID.
+	 * @return list<object>
+	 */
+	public function list_for_user( int $user_id ): array {
+		if ( $user_id < 1 ) {
+			return array();
+		}
+		$db    = $this->db();
+		$table = $this->table();
+		// phpcs:ignore WordPress.DB -- Prepared custom-table read.
+		$rows = $db->get_results(
+			$db->prepare(
+				"SELECT * FROM {$table} WHERE user_id = %d ORDER BY id DESC",
+				$user_id
+			)
+		);
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * List enrollment rows for a course, newest first.
 	 *
 	 * @param int $course_id Course post ID.

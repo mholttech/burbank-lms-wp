@@ -111,6 +111,16 @@ class Service {
 	}
 
 	/**
+	 * List all enrollment rows for a learner.
+	 *
+	 * @param int $user_id User ID.
+	 * @return list<object>
+	 */
+	public function list_for_user( int $user_id ): array {
+		return $this->repository()->list_for_user( $user_id );
+	}
+
+	/**
 	 * Ensure the course is a published, non-archived bfc_course.
 	 *
 	 * @param int $course_id Course post ID.

@@ -78,19 +78,26 @@ class Controller {
 			self::NAMESPACE,
 			'/enrollments',
 			array(
-				'methods'             => \WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'enroll' ),
-				'permission_callback' => array( $this, 'permission_enroll' ),
-				'args'                => array(
-					'course_id'     => array(
-						'type'              => 'integer',
-						'required'          => false,
-						'sanitize_callback' => 'absint',
-					),
-					'course_invite' => array(
-						'type'              => 'string',
-						'required'          => false,
-						'sanitize_callback' => 'sanitize_text_field',
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'list_enrollments' ),
+					'permission_callback' => array( $this, 'permission_list_enrollments' ),
+				),
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'enroll' ),
+					'permission_callback' => array( $this, 'permission_enroll' ),
+					'args'                => array(
+						'course_id'     => array(
+							'type'              => 'integer',
+							'required'          => false,
+							'sanitize_callback' => 'absint',
+						),
+						'course_invite' => array(
+							'type'              => 'string',
+							'required'          => false,
+							'sanitize_callback' => 'sanitize_text_field',
+						),
 					),
 				),
 			)
@@ -175,6 +182,34 @@ class Controller {
 	}
 
 	/**
+	 * List the current learner's enrollments for My Courses.
+	 *
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function list_enrollments() {
+		$user_id = get_current_user_id();
+		$rows    = $this->enrollment()->list_for_user( $user_id );
+		$items   = array();
+		foreach ( $rows as $row ) {
+			$course_id = (int) $row->course_id;
+			$post      = get_post( $course_id );
+			$status    = (string) $row->status;
+			if ( 'active' === $status && ! empty( $row->quiz_passed_at ) ) {
+				$status = 'passed';
+			}
+			$items[] = array(
+				'course_id'    => $course_id,
+				'title'        => $post instanceof \WP_Post ? get_the_title( $post ) : '',
+				'permalink'    => $post instanceof \WP_Post ? get_permalink( $post ) : '',
+				'status'       => $status,
+				'enrolled_at'  => (string) $row->enrolled_at,
+				'completed_at' => $row->completed_at ? (string) $row->completed_at : null,
+			);
+		}
+		return new \WP_REST_Response( array( 'enrollments' => $items ), 200 );
+	}
+
+	/**
 	 * Self-enroll the current learner.
 	 *
 	 * @param \WP_REST_Request $request Request.
@@ -255,6 +290,18 @@ class Controller {
 			),
 			201
 		);
+	}
+
+	/**
+	 * Listing enrollments requires a logged-in user.
+	 *
+	 * @return true|\WP_Error
+	 */
+	public function permission_list_enrollments() {
+		if ( ! is_user_logged_in() ) {
+			return $this->unauthorized();
+		}
+		return true;
 	}
 
 	/**

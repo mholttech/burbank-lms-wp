@@ -57,6 +57,7 @@ class Burbank_LMS {
 		$this->define_public_hooks();
 
 		$this->loader->add_action( 'init', $this, 'register_blocks' );
+		$this->loader->add_action( 'init', new Learner\Templates(), 'register' );
 
 		$course_picks = new Courses\Picks();
 		$this->loader->add_action( 'pods_form_ui_field_pick_related_objects_custom', $course_picks, 'register' );
