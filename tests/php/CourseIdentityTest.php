@@ -29,10 +29,7 @@ class CourseIdentityTest extends WP_UnitTestCase {
 	/** Explicit cleanup is required because registry transactions commit real fixtures. */
 	public function tear_down(): void {
 		global $wpdb;
-		$ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'bfc_course'" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
-		foreach ( $ids as $id ) {
-			wp_delete_post( (int) $id, true );
-		}
+		bfc_test_purge_courses();
 		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_course_registry" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
 		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB -- Transaction integration fixture.
 		parent::tear_down();

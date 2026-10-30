@@ -56,6 +56,12 @@ class Validator {
 	 */
 	private static bool $writing_code = false;
 
+	/** Courses core is permanently deleting; their metadata may be removed, never edited.
+	 *
+	 * @var array<int,bool>
+	 */
+	private static array $deleting = array();
+
 	/** Validated batch candidates permit coherent subject/code changes.
 	 *
 	 * @var array<int,array<string,mixed>>
@@ -182,6 +188,35 @@ class Validator {
 	}
 
 	/**
+	 * Track core deletion from before its metadata loop, which runs outside any deletion action.
+	 *
+	 * @param int $post_id Post being permanently deleted.
+	 */
+	public function begin_delete( int $post_id ): void {
+		if ( 'bfc_course' === get_post_type( $post_id ) ) {
+			self::$deleting[ $post_id ] = true;
+		}
+	}
+
+	/**
+	 * Stop treating the post as dying once core removed it.
+	 *
+	 * @param int $post_id Deleted post ID.
+	 */
+	public function end_delete( int $post_id ): void {
+		unset( self::$deleting[ $post_id ] );
+	}
+
+	/**
+	 * Whether core is permanently deleting this course.
+	 *
+	 * @param int $post_id Course post ID.
+	 */
+	public static function deleting( int $post_id ): bool {
+		return isset( self::$deleting[ $post_id ] );
+	}
+
+	/**
 	 * Block invalid or unauthorized core metadata additions and updates.
 	 *
 	 * @param mixed  $check Existing short-circuit result.
@@ -251,8 +286,8 @@ class Validator {
 		if ( ! array_key_exists( $key, Schema::FIELDS ) || ( $post_id && 'bfc_course' !== get_post_type( $post_id ) ) ) {
 			return $check;
 		}
-		// Core post deletion supplies a real post ID; it may remove meta but never the registry.
-		if ( doing_action( 'before_delete_post' ) || doing_action( 'delete_post' ) ) {
+		// Core post deletion may remove this course's meta but never the registry.
+		if ( $post_id && self::deleting( $post_id ) ) {
 			return $check;
 		}
 		if ( ! $post_id || 'bfc_code' === $key || ( in_array( $key, self::AUDIT_FIELDS, true ) && ! self::$internal_depth ) || ( get_current_user_id() && ! current_user_can( 'edit_post', $post_id ) && ! self::$internal_depth ) ) {

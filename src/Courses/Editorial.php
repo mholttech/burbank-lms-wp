@@ -34,14 +34,19 @@ class Editorial {
 		if ( $error->has_errors() ) {
 			return $error;
 		}
-		$history = $this->snapshots( $course_id );
-		$last    = end( $history );
-		if ( $last && (string) $last['course_revision'] === (string) $fields['course_revision'] ) {
+		foreach ( $this->snapshots( $course_id ) as $snapshot ) {
+			// A revision label names one assessed configuration, identity included, for this course.
+			if ( (string) $snapshot['course_revision'] !== (string) $fields['course_revision'] ) {
+				continue;
+			}
 			foreach ( Validator::PUBLISHED_GATES as $key ) {
-				if ( (string) $last[ $key ] !== (string) $fields[ $key ] ) {
+				if ( (string) $snapshot[ $key ] !== (string) $fields[ $key ] ) {
 					return new \WP_Error( 'burbank_course_revision_required', __( 'Start a new material revision before approving changed assessed configuration.', 'burbank-lms' ), array( 'status' => 400 ) );
 				}
 			}
+		}
+		if ( $this->matches_approval( $course_id, $fields ) && user_can( (int) get_post_meta( $course_id, 'approved_by', true ), 'approve_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered course capability.
+			return true;
 		}
 
 		$snapshot = array(
@@ -113,8 +118,9 @@ class Editorial {
 			return new \WP_Error( 'burbank_course_edit_forbidden', __( 'You must be able to edit a saved course to start a revision.', 'burbank-lms' ), array( 'status' => 403 ) );
 		}
 		$revision = trim( $revision );
-		if ( '' === $revision || mb_strlen( $revision ) > Validator::LIMITS['course_revision'] || sanitize_text_field( $revision ) !== $revision || get_post_meta( $course_id, 'course_revision', true ) === $revision ) {
-			return new \WP_Error( 'burbank_course_revision', __( 'Enter a different, nonempty revision of at most 32 characters.', 'burbank-lms' ), array( 'status' => 400 ) );
+		$used     = array_map( static fn( array $snapshot ): string => (string) $snapshot['course_revision'], $this->snapshots( $course_id ) );
+		if ( '' === $revision || mb_strlen( $revision ) > Validator::LIMITS['course_revision'] || sanitize_text_field( $revision ) !== $revision || get_post_meta( $course_id, 'course_revision', true ) === $revision || in_array( $revision, $used, true ) ) {
+			return new \WP_Error( 'burbank_course_revision', __( 'Enter a new, nonempty revision of at most 32 characters that this course has never been approved under.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
 		// Draft first: publication gates must not treat a material revision as an approved live edit.
 		$this->invalidate( $course_id );
@@ -175,7 +181,7 @@ class Editorial {
 	 * @param string $key Changed field.
 	 */
 	public function metadata_changed( $meta_id, int $course_id, string $key ): void {
-		if ( 'bfc_course' === get_post_type( $course_id ) && in_array( $key, Validator::PUBLISHED_GATES, true ) && get_post_meta( $course_id, 'approved_by', true ) && ! $this->matches_approval( $course_id, ( new Validator() )->fields( $course_id ) ) ) {
+		if ( 'bfc_course' === get_post_type( $course_id ) && ! Validator::deleting( $course_id ) && in_array( $key, Validator::PUBLISHED_GATES, true ) && get_post_meta( $course_id, 'approved_by', true ) && ! $this->matches_approval( $course_id, ( new Validator() )->fields( $course_id ) ) ) {
 			$this->invalidate( $course_id );
 		}
 	}
@@ -200,6 +206,17 @@ class Editorial {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Retire approved courses by archiving; permanent deletion would orphan their history.
+	 *
+	 * @param mixed    $check Existing short circuit.
+	 * @param \WP_Post $post Post core is about to delete.
+	 * @return mixed Unchanged result, or false to keep the course.
+	 */
+	public function guard_deletion( $check, \WP_Post $post ) {
+		return 'bfc_course' === $post->post_type && $this->snapshots( $post->ID ) ? false : $check;
 	}
 
 	/**

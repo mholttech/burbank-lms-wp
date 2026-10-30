@@ -30,10 +30,7 @@ class CourseEditorialTest extends WP_UnitTestCase {
 	/** Clean fixtures committed by registry transactions. */
 	public function tear_down(): void {
 		global $wpdb;
-		$ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'bfc_course'" ); // phpcs:ignore WordPress.DB -- Isolated fixture.
-		foreach ( $ids as $id ) {
-			wp_delete_post( (int) $id, true );
-		}
+		bfc_test_purge_courses();
 		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_course_registry" ); // phpcs:ignore WordPress.DB -- Isolated fixture.
 		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB -- Registry transactions commit.
 		parent::tear_down();
@@ -273,6 +270,37 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		$this->assertSame( $history, ( new Editorial() )->snapshots( $id ) );
 	}
 
+	/** A live Pods batch withdraws publication once, keeping every valid field it saved. */
+	public function test_live_pods_assessed_batch_retires_publication(): void {
+		$id = $this->course();
+		$this->assertTrue( ( new Editorial() )->approve( $id ) );
+		wp_publish_post( $id );
+		$history             = ( new Editorial() )->snapshots( $id );
+		$api                 = clone pods_api();
+		$api->display_errors = 'wp_error';
+		$this->assertSame(
+			$id,
+			$api->save_pod_item(
+				array(
+					'pod'  => 'bfc_course',
+					'id'   => $id,
+					'data' => array(
+						'course_revision' => '2',
+						'source_revision' => 'Rewritten module',
+					),
+				)
+			)
+		);
+		$this->assertSame( 'draft', get_post_status( $id ) );
+		$this->assertSame( '2', get_post_meta( $id, 'course_revision', true ) );
+		$this->assertSame( 'Rewritten module', get_post_meta( $id, 'source_revision', true ) );
+		$this->assertSame( '', get_post_meta( $id, 'approved_by', true ) );
+		$this->assertSame( $history, ( new Editorial() )->snapshots( $id ) );
+		$this->assertTrue( ( new Editorial() )->approve( $id ) );
+		wp_publish_post( $id );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+	}
+
 	/** An assessed configuration change requires a new revision, as well as new approval. */
 	public function test_changed_configuration_cannot_be_reapproved_under_old_revision(): void {
 		$id        = $this->course();
@@ -284,6 +312,125 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		$this->assertSame( 'burbank_course_revision_required', $result->get_error_code() );
 		$this->assertTrue( $editorial->start_revision( $id, '2' ) );
 		$this->assertTrue( $editorial->approve( $id ) );
+	}
+
+	/** A code and revision label identify one assessed configuration across all history. */
+	public function test_revision_labels_identify_one_configuration_across_history(): void {
+		$id        = $this->course();
+		$editorial = new Editorial();
+		$this->assertTrue( $editorial->approve( $id ) );
+		$this->assertTrue( $editorial->start_revision( $id, '2' ) );
+		$this->assertTrue( $editorial->approve( $id ) );
+		$this->assertTrue( $editorial->start_revision( $id, '3' ) );
+		foreach ( array( '1', '2', '3' ) as $used ) {
+			$this->assertWPError( $editorial->start_revision( $id, $used ), $used );
+		}
+		$this->assertSame( '3', get_post_meta( $id, 'course_revision', true ) );
+		$original = array(
+			'pressprimer_quiz_id'     => get_post_meta( $id, 'pressprimer_quiz_id', true ),
+			'certificate_template_id' => get_post_meta( $id, 'certificate_template_id', true ),
+		);
+		foreach ( array_replace( bfc_test_mapping(), array( 'course_revision' => '1' ) ) as $key => $value ) {
+			$this->assertNotFalse( update_post_meta( $id, $key, $value ), $key );
+		}
+		$result = $editorial->approve( $id );
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_course_revision_required', $result->get_error_code() );
+		$this->assertCount( 2, $editorial->snapshots( $id ) );
+		foreach ( $original as $key => $value ) {
+			$this->assertNotFalse( update_post_meta( $id, $key, $value ), $key );
+		}
+		$this->assertTrue( $editorial->approve( $id ) );
+		$this->assertCount( 3, $editorial->snapshots( $id ) );
+	}
+
+	/** Repeated approval of the current configuration records no duplicate history. */
+	public function test_reapproval_is_idempotent_until_approver_loses_authority(): void {
+		$id        = $this->course();
+		$editorial = new Editorial();
+		$this->assertTrue( $editorial->approve( $id ) );
+		$this->assertTrue( $editorial->approve( $id ) );
+		$this->assertCount( 1, $editorial->snapshots( $id ) );
+		$former = get_current_user_id();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		( new WP_User( $former ) )->set_role( 'editor' );
+		$this->assertTrue( $editorial->approve( $id ) );
+		$this->assertCount( 2, $editorial->snapshots( $id ) );
+		$this->assertSame( get_current_user_id(), (int) get_post_meta( $id, 'approved_by', true ) );
+	}
+
+	/** Archive, not permanent deletion, retires a course with approval history. */
+	public function test_approved_courses_cannot_be_permanently_deleted(): void {
+		$id = $this->course();
+		$this->assertTrue( ( new Editorial() )->approve( $id ) );
+		wp_publish_post( $id );
+		$history  = ( new Editorial() )->snapshots( $id );
+		$approved = get_post_meta( $id, 'approved_by', true );
+		$this->assertFalse( wp_delete_post( $id, true ) );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+		$this->assertSame( $approved, get_post_meta( $id, 'approved_by', true ) );
+		$this->assertSame( 'BFC-210', get_post_meta( $id, 'bfc_code', true ) );
+		$this->assertSame( $history, ( new Editorial() )->snapshots( $id ) );
+		wp_trash_post( $id );
+		$this->assertFalse( wp_delete_post( $id, true ) );
+		$this->assertSame( 'trash', get_post_status( $id ) );
+		$this->assertSame( $history, ( new Editorial() )->snapshots( $id ) );
+	}
+
+	/** Courses without history delete completely, without status writes to the dying post. */
+	public function test_courses_without_history_delete_without_orphans_or_invalidation(): void {
+		global $wpdb;
+		$id = $this->course();
+		Validator::internal_write(
+			static function () use ( $id ): void {
+				update_post_meta( $id, 'approved_by', get_current_user_id() );
+				update_post_meta( $id, 'approved_at', '2026-10-30 00:00:00' );
+			}
+		);
+		// Stray live evidence without history is the only way invalidation could reach wp_update_post().
+		$wpdb->update( $wpdb->posts, array( 'post_status' => 'publish' ), array( 'ID' => $id ) ); // phpcs:ignore WordPress.DB -- Fixture bypasses publication gates.
+		clean_post_cache( $id );
+		$updates = 0;
+		$count   = static function () use ( &$updates ): void {
+			++$updates;
+		};
+		add_action( 'post_updated', $count );
+		try {
+			$this->assertInstanceOf( WP_Post::class, wp_delete_post( $id, true ) );
+		} finally {
+			remove_action( 'post_updated', $count );
+		}
+		$this->assertSame( 0, $updates );
+		$this->assertNull( get_post( $id ) );
+		$this->assertSame( array(), $wpdb->get_col( $wpdb->prepare( "SELECT meta_key FROM {$wpdb->postmeta} WHERE post_id = %d", $id ) ) ); // phpcs:ignore WordPress.DB -- Authoritative orphan check.
+	}
+
+	/** Implicit submission from the revision field must start a revision, never approve. */
+	public function test_enter_in_revision_field_submits_revision(): void {
+		$id              = $this->course();
+		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Admin footer reads the edited post.
+		ob_start();
+		( new Admin() )->controls( get_post( $id ) );
+		( new Admin() )->action_form();
+		$html = ob_get_clean();
+		unset( $GLOBALS['post'] );
+		$dom      = new DOMDocument();
+		$internal = libxml_use_internal_errors( true );
+		$dom->loadHTML( '<!DOCTYPE html><html><body>' . $html . '</body></html>' );
+		libxml_use_internal_errors( $internal );
+		$xpath = new DOMXPath( $dom );
+		$form  = $xpath->query( '//input[@name="bfc_revision"]' )->item( 0 )->getAttribute( 'form' );
+		$owned = sprintf( '//*[@form="%1$s"] | //form[@id="%1$s"]//*[not(@form)]', $form );
+		$this->assertSame( 1, $xpath->query( sprintf( '//form[@id="%s"]', $form ) )->length );
+		$default = $xpath->query( sprintf( '(%s)[self::button][not(@type) or @type="submit"]', $owned ) )->item( 0 );
+		$this->assertSame( 'revision', $default->getAttribute( 'value' ) );
+		$fields = array();
+		foreach ( $xpath->query( sprintf( '(%s)[@name]', $owned ) ) as $node ) {
+			$fields[ $node->getAttribute( 'name' ) ] = $node->getAttribute( 'value' );
+		}
+		$this->assertSame( 'bfc_course_editorial', $fields['action'] );
+		$this->assertSame( (string) $id, $fields['bfc_course_id'] );
+		$this->assertNotFalse( wp_verify_nonce( $fields['bfc_nonce_revision'], 'bfc_course_revision_' . $id ) );
 	}
 
 	/** Failed audit persistence must not leave a successful-looking historical approval. */
@@ -410,6 +557,9 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		ob_start();
 		do_action( 'manage_bfc_course_posts_custom_column', 'bfc_code', $id );
 		$this->assertStringContainsString( 'BFC-210', ob_get_clean() );
+		ob_start();
+		do_action( 'manage_bfc_course_posts_custom_column', 'catalog_state', $id );
+		$this->assertSame( '—', ob_get_clean() );
 		ob_start();
 		( new Admin() )->controls( get_post( $id ) );
 		$html = ob_get_clean();

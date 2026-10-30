@@ -78,6 +78,8 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'wp_insert_post_data', $course_validator, 'guard_post', 10, 2 );
 		$this->loader->add_action( 'wp_after_insert_post', $course_validator, 'seal_published', 10, 2 );
 		$this->loader->add_action( 'transition_post_status', $course_validator, 'guard_transition', PHP_INT_MIN, 3 );
+		$this->loader->add_action( 'before_delete_post', $course_validator, 'begin_delete', PHP_INT_MIN );
+		$this->loader->add_action( 'deleted_post', $course_validator, 'end_delete', PHP_INT_MAX );
 		$this->loader->add_action( 'admin_notices', $course_validator, 'notice' );
 		$this->loader->add_filter( 'redirect_post_location', $course_validator, 'redirect_notice', 10, 2 );
 		$course_editorial = new Courses\Editorial();
@@ -89,6 +91,7 @@ class Burbank_LMS {
 		}
 		$this->loader->add_filter( 'update_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 4 );
 		$this->loader->add_filter( 'delete_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 2 );
+		$this->loader->add_filter( 'pre_delete_post', $course_editorial, 'guard_deletion', PHP_INT_MAX, 2 );
 		$course_admin = new Courses\Admin();
 		$this->loader->add_action( 'admin_post_bfc_course_editorial', $course_admin, 'handle' );
 		$this->loader->add_action( 'add_meta_boxes_bfc_course', $course_admin, 'meta_box' );

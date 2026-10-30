@@ -50,3 +50,16 @@ function bfc_test_mapping(): array {
 function bfc_test_approve( int $id ): void {
 	( new Burbank_LMS\Courses\Editorial() )->approve( $id );
 }
+
+/** Remove committed course fixtures, including courses whose approval history blocks deletion. */
+function bfc_test_purge_courses(): void {
+	global $wpdb;
+	$ids = $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'bfc_course'" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
+	foreach ( $ids as $id ) {
+		if ( ! wp_delete_post( (int) $id, true ) ) {
+			$wpdb->delete( $wpdb->postmeta, array( 'post_id' => (int) $id ) ); // phpcs:ignore WordPress.DB -- Retained by policy; tests purge the committed rows.
+			$wpdb->delete( $wpdb->posts, array( 'ID' => (int) $id ) ); // phpcs:ignore WordPress.DB -- Retained by policy; tests purge the committed rows.
+			clean_post_cache( (int) $id );
+		}
+	}
+}

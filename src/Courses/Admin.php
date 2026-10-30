@@ -72,8 +72,13 @@ class Admin {
 			echo '<p>' . esc_html__( 'Save a draft before requesting approval.', 'burbank-lms' ) . '</p>';
 			return;
 		}
-		foreach ( array( 'approve', 'revision', 'archive' ) as $operation ) {
-			echo '<input form="bfc-course-actions" type="hidden" name="bfc_nonce_' . esc_attr( $operation ) . '" value="' . esc_attr( wp_create_nonce( 'bfc_course_' . $operation . '_' . $post->ID ) ) . '">';
+		// Enter in the revision field submits its own form, whose only button starts a revision.
+		foreach ( array(
+			'approve'  => 'bfc-course-actions',
+			'revision' => 'bfc-course-revision',
+			'archive'  => 'bfc-course-actions',
+		) as $operation => $form ) {
+			echo '<input form="' . esc_attr( $form ) . '" type="hidden" name="bfc_nonce_' . esc_attr( $operation ) . '" value="' . esc_attr( wp_create_nonce( 'bfc_course_' . $operation . '_' . $post->ID ) ) . '">';
 		}
 		echo '<p>';
 		$this->column( 'bfc_approval', $post->ID );
@@ -81,8 +86,8 @@ class Admin {
 		if ( current_user_can( 'approve_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered course capability.
 			echo '<p><button form="bfc-course-actions" class="button button-primary" name="bfc_operation" value="approve">' . esc_html__( 'Approve saved course', 'burbank-lms' ) . '</button></p>';
 		}
-		echo '<p><label for="bfc-revision">' . esc_html__( 'New revision', 'burbank-lms' ) . '</label><input form="bfc-course-actions" id="bfc-revision" name="bfc_revision" type="text" maxlength="32"></p>';
-		echo '<p><button form="bfc-course-actions" class="button" name="bfc_operation" value="revision">' . esc_html__( 'Start material revision', 'burbank-lms' ) . '</button></p>';
+		echo '<p><label for="bfc-revision">' . esc_html__( 'New revision', 'burbank-lms' ) . '</label><input form="bfc-course-revision" id="bfc-revision" name="bfc_revision" type="text" maxlength="32"></p>';
+		echo '<p><button form="bfc-course-revision" class="button" name="bfc_operation" value="revision">' . esc_html__( 'Start material revision', 'burbank-lms' ) . '</button></p>';
 		echo '<p><button form="bfc-course-actions" class="button" name="bfc_operation" value="archive">' . esc_html__( 'Archive', 'burbank-lms' ) . '</button></p>';
 		echo '<details><summary>' . esc_html__( 'Approval history', 'burbank-lms' ) . '</summary><ul>';
 		foreach ( ( new Editorial() )->snapshots( $post->ID ) as $snapshot ) {
@@ -91,13 +96,15 @@ class Admin {
 		echo '</ul></details>';
 	}
 
-	/** Emit a separate form to avoid nesting inside WordPress' post editing form. */
+	/** Emit separate forms to avoid nesting inside WordPress' post editing form. */
 	public function action_form(): void {
 		global $post;
 		if ( ! $post instanceof \WP_Post || 'bfc_course' !== $post->post_type || ! current_user_can( 'edit_post', $post->ID ) ) {
 			return;
 		}
-		echo '<form id="bfc-course-actions" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bfc_course_editorial"><input type="hidden" name="bfc_course_id" value="' . esc_attr( (string) $post->ID ) . '"></form>';
+		foreach ( array( 'bfc-course-actions', 'bfc-course-revision' ) as $form ) {
+			echo '<form id="' . esc_attr( $form ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bfc_course_editorial"><input type="hidden" name="bfc_course_id" value="' . esc_attr( (string) $post->ID ) . '"></form>';
+		}
 	}
 
 	/**
@@ -130,7 +137,7 @@ class Admin {
 			echo esc_html( $approved ? __( 'Approved', 'burbank-lms' ) : __( 'Approval required', 'burbank-lms' ) );
 		} elseif ( in_array( $column, array( 'bfc_code', 'course_revision', 'catalog_state' ), true ) ) {
 			$value = get_post_meta( $course_id, $column, true );
-			echo esc_html( $value ?: ( 'catalog_state' === $column ? get_post_status( $course_id ) : '—' ) );
+			echo esc_html( $value ?: '—' );
 		}
 	}
 
