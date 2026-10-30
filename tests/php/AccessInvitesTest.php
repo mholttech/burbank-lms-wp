@@ -34,6 +34,41 @@ class AccessInvitesTest extends WP_UnitTestCase {
 		return new Invites();
 	}
 
+	/**
+	 * Start a separate PHP process that calls Invites::redeem for the given row.
+	 *
+	 * @param int $id Invite row ID.
+	 * @return array{0:resource|false,1:array<int,resource>,2:string}
+	 */
+	private function spawn_redeem_process( int $id ): array {
+		global $wpdb;
+		$plugin_root = dirname( __DIR__, 2 );
+		$script      = tempnam( sys_get_temp_dir(), 'bfc-redeem-' );
+		$this->assertNotFalse( $script );
+		// phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_var_export -- Build isolated redeem subprocess source.
+		$contents = sprintf(
+			'<?php
+define( "WP_USE_THEMES", false );
+require %1$s;
+require %2$s;
+$GLOBALS["wpdb"]->set_prefix( %3$s );
+echo ( new \\Burbank_LMS\\Access\\Invites() )->redeem( %4$d ) ? "1" : "0";
+',
+			var_export( ABSPATH . 'wp-load.php', true ),
+			var_export( $plugin_root . '/vendor/autoload.php', true ),
+			var_export( $wpdb->prefix, true ),
+			$id
+		);
+		// phpcs:enable WordPress.PHP.DevelopmentFunctions.error_log_var_export
+		file_put_contents( $script, $contents ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Ephemeral parallel redeem fixture.
+		$descriptors = array(
+			1 => array( 'pipe', 'w' ),
+			2 => array( 'pipe', 'w' ),
+		);
+		$process     = proc_open( array( 'php', $script ), $descriptors, $pipes, ABSPATH ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open -- Parallel redeem sessions.
+		return array( $process, $pipes, $script );
+	}
+
 	/** Site-scoped multi-use codes persist hashed and stay discoverable until limits hit. */
 	public function test_create_site_multi_invite(): void {
 		$created = $this->invites()->create(
@@ -51,7 +86,10 @@ class AccessInvitesTest extends WP_UnitTestCase {
 		$this->assertNotNull( $row );
 		$this->assertSame( (int) $created['id'], (int) $row->id );
 		$this->assertSame( 'site', $row->scope );
-		$this->assertTrue( wp_check_password( $created['plaintext'], $row->code_hash ) );
+		$this->assertSame(
+			hash_hmac( 'sha256', $created['plaintext'], wp_salt( 'auth' ) ),
+			$row->code_hash
+		);
 	}
 
 	/** Site-scoped one-time codes are active until the first redeem. */
@@ -188,7 +226,6 @@ class AccessInvitesTest extends WP_UnitTestCase {
 
 	/** Overlapping connections cannot both burn the same one-time code. */
 	public function test_concurrent_redeem_of_once_code_allows_only_one_success(): void {
-		global $wpdb;
 		$created = $this->invites()->create(
 			'site',
 			array(
@@ -197,37 +234,23 @@ class AccessInvitesTest extends WP_UnitTestCase {
 			)
 		);
 		$id      = (int) $created['id'];
-		$table   = $wpdb->prefix . 'bfc_invite_codes';
+		global $wpdb;
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB -- Subprocess redeems need a committed invite row.
 
-		$peer         = new wpdb( DB_USER, DB_PASSWORD, DB_NAME, DB_HOST );
-		$peer_invites = new Invites( $peer );
+		list( $proc_a, $pipes_a, $script_a ) = $this->spawn_redeem_process( $id );
+		list( $proc_b, $pipes_b, $script_b ) = $this->spawn_redeem_process( $id );
+		$this->assertIsResource( $proc_a );
+		$this->assertIsResource( $proc_b );
 
-		// phpcs:disable WordPress.DB, WordPress.WP.AlternativeFunctions -- Real independent overlapping database sessions.
-		try {
-			$wpdb->query( 'START TRANSACTION' );
-			$this->assertNotEmpty( $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d FOR UPDATE", $id ) ) );
+		$out_a = stream_get_contents( $pipes_a[1] );
+		$out_b = stream_get_contents( $pipes_b[1] );
+		proc_close( $proc_a );
+		proc_close( $proc_b );
+		unlink( $script_a ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Ephemeral parallel redeem fixture.
+		unlink( $script_b ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Ephemeral parallel redeem fixture.
 
-			$peer_sql = $peer->prepare(
-				"UPDATE {$table} SET use_count = use_count + 1 WHERE id = %d AND kind = 'once' AND use_count = 0 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())",
-				$id
-			);
-			$this->assertTrue( mysqli_query( $peer->dbh, $peer_sql, MYSQLI_ASYNC ) );
-
-			$main_sql = $wpdb->prepare(
-				"UPDATE {$table} SET use_count = use_count + 1 WHERE id = %d AND kind = 'once' AND use_count = 0 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())",
-				$id
-			);
-			$this->assertSame( 1, $wpdb->query( $main_sql ) );
-			$wpdb->query( 'COMMIT' );
-
-			$this->assertNotFalse( mysqli_reap_async_query( $peer->dbh ) );
-			$this->assertSame( 0, (int) mysqli_affected_rows( $peer->dbh ) );
-		} finally {
-			$peer->close();
-		}
-
-		$this->assertFalse( $peer_invites->redeem( $id ) );
+		$wins = ( '1' === trim( (string) $out_a ) ? 1 : 0 ) + ( '1' === trim( (string) $out_b ) ? 1 : 0 );
+		$this->assertSame( 1, $wins );
 		$this->assertFalse( $this->invites()->redeem( $id ) );
-		// phpcs:enable
 	}
 }

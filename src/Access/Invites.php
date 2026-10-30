@@ -43,7 +43,7 @@ class Invites {
 		} else {
 			$course_id = 0;
 		}
-		$label    = isset( $args['label'] ) ? (string) $args['label'] : '';
+		$label    = isset( $args['label'] ) ? sanitize_text_field( (string) $args['label'] ) : '';
 		$max_uses = 'multi' === $kind && isset( $args['max_uses'] ) ? (int) $args['max_uses'] : null;
 		if ( 'once' === $kind ) {
 			$max_uses = null;
@@ -63,7 +63,7 @@ class Invites {
 		}
 
 		$plaintext = wp_generate_password( 32, false, false );
-		$hash      = wp_hash_password( $plaintext );
+		$hash      = $this->hash_code( $plaintext );
 		$db        = $this->db();
 		$table     = $db->prefix . 'bfc_invite_codes';
 		$now       = gmdate( 'Y-m-d H:i:s' );
@@ -144,25 +144,16 @@ class Invites {
 		}
 		$db    = $this->db();
 		$table = $db->prefix . 'bfc_invite_codes';
+		$hash  = $this->hash_code( $plaintext );
+		$sql   = "SELECT * FROM {$table} WHERE code_hash = %s AND scope = %s AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP()) AND ((kind = 'once' AND use_count = 0) OR (kind = 'multi' AND (max_uses IS NULL OR use_count < max_uses)))";
 		if ( 'course' === $scope ) {
-			// phpcs:ignore WordPress.DB -- Prepared custom-table read; password check follows.
-			$rows = $db->get_results( $db->prepare( "SELECT * FROM {$table} WHERE scope = %s AND course_id = %d", $scope, $course_id ) );
+			// phpcs:ignore WordPress.DB -- Prepared indexed custom-table read.
+			$row = $db->get_row( $db->prepare( $sql . ' AND course_id = %d LIMIT 1', $hash, $scope, $course_id ) );
 		} else {
-			// phpcs:ignore WordPress.DB -- Prepared custom-table read; password check follows.
-			$rows = $db->get_results( $db->prepare( "SELECT * FROM {$table} WHERE scope = %s AND course_id IS NULL", $scope ) );
+			// phpcs:ignore WordPress.DB -- Prepared indexed custom-table read.
+			$row = $db->get_row( $db->prepare( $sql . ' AND course_id IS NULL LIMIT 1', $hash, $scope ) );
 		}
-		if ( ! is_array( $rows ) ) {
-			return null;
-		}
-		foreach ( $rows as $row ) {
-			if ( ! $this->row_is_active( $row ) ) {
-				continue;
-			}
-			if ( wp_check_password( $plaintext, $row->code_hash ) ) {
-				return $row;
-			}
-		}
-		return null;
+		return $row instanceof \stdClass ? $row : null;
 	}
 
 	/**
@@ -268,6 +259,15 @@ class Invites {
 			return true;
 		}
 		return $use_count < (int) $row->max_uses;
+	}
+
+	/**
+	 * Derive the indexed lookup digest for a plaintext invite code.
+	 *
+	 * @param string $plaintext Raw invite code.
+	 */
+	private function hash_code( string $plaintext ): string {
+		return hash_hmac( 'sha256', $plaintext, wp_salt( 'auth' ) );
 	}
 
 	/**
