@@ -121,9 +121,12 @@ class CoursePublicationTest extends WP_UnitTestCase {
 						),
 					)
 				);
-				$this->assertContains( 'burbank_course_competing_trigger', $adapter->validate_mapping( $quiz_id, $mapping['certificate_template_id'] )->get_error_codes(), $ref );
-				wp_publish_post( $id );
-				$this->assertSame( 'draft', get_post_status( $id ), $ref );
+				foreach ( array( 'published', 'draft', 'archived' ) as $status ) {
+					PressPrimer_Certificate_Template::update( $other, array( 'status' => $status ) );
+					$this->assertContains( 'burbank_course_competing_trigger', $adapter->validate_mapping( $quiz_id, $mapping['certificate_template_id'] )->get_error_codes(), "$ref $status" );
+					wp_publish_post( $id );
+					$this->assertSame( 'draft', get_post_status( $id ), "$ref $status" );
+				}
 			}
 			PressPrimer_Certificate_Trigger::replace_for_template(
 				$other,
@@ -136,6 +139,46 @@ class CoursePublicationTest extends WP_UnitTestCase {
 				)
 			);
 			$this->assertFalse( $adapter->validate_mapping( $quiz_id, $mapping['certificate_template_id'] )->has_errors() );
+			wp_publish_post( $id );
+			$this->assertSame( 'publish', get_post_status( $id ) );
+		} finally {
+			PressPrimer_Certificate_Trigger::delete_for_template( $other );
+		}
+	}
+
+	/** Active triggers left on a trashed template cannot issue, so they do not block mapping or publication. */
+	public function test_trashed_template_triggers_do_not_compete(): void {
+		$mapping = bfc_test_mapping();
+		$adapter = new Burbank_LMS\Integrations\PressPrimer();
+		$quiz_id = $mapping['pressprimer_quiz_id'];
+		$id      = $this->course( $mapping, 'BFC-262' );
+		$other   = PressPrimer_Certificate_Template::create(
+			array(
+				'title'  => 'Trashed competitor',
+				'status' => 'published',
+				'layout' => array( 'page' => array( 'size' => 'a4' ) ),
+			)
+		);
+		try {
+			PressPrimer_Certificate_Trigger::replace_for_template(
+				$other,
+				array(
+					array(
+						'trigger_type' => 'ppq_quiz',
+						'source_ref'   => (string) $quiz_id,
+						'is_active'    => 1,
+					),
+					array(
+						'trigger_type' => 'ppq_quiz',
+						'source_ref'   => 'any',
+						'is_active'    => 1,
+					),
+				)
+			);
+			$this->assertTrue( PressPrimer_Certificate_Template::trash( $other ) );
+			$this->assertNull( PressPrimer_Certificate_Template::get( $other ) );
+			$this->assertNotEmpty( PressPrimer_Certificate_Trigger::get_for_template( $other ) );
+			$this->assertSame( array(), $adapter->validate_mapping( $quiz_id, $mapping['certificate_template_id'] )->get_error_codes() );
 			wp_publish_post( $id );
 			$this->assertSame( 'publish', get_post_status( $id ) );
 		} finally {

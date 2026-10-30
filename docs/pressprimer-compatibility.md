@@ -34,7 +34,7 @@ A course's `pressprimer_quiz_id` and `certificate_template_id` pass only when al
    - at least one has `source_ref` equal to the course quiz ID;
    - none has `source_ref` of `any`, `NULL` or empty, because a broad trigger would issue this course's certificate for any quiz;
    - none points at a different quiz ID, because the template would also issue for that quiz.
-4. No **other** template has an active `ppq_quiz` trigger for the course quiz or for `any`, because passing the quiz would also issue that template's certificate. The adapter checks this with `find_active( 'ppq_quiz', $quiz_id )`.
+4. No **other** template has an active `ppq_quiz` trigger for the course quiz or for `any`, because passing the quiz would also issue that template's certificate. The adapter checks this with `find_active( 'ppq_quiz', $quiz_id )`. Triggers on trashed templates are excluded: Certificate soft-deletes a template without deactivating its triggers, but `Template::get()` returns `null` for it and it cannot issue. Draft and archived templates still count, so their triggers must be deactivated too.
 5. No other course (draft, published, archived or trashed; auto-drafts excluded) uses the same quiz ID. `Publication` enforces this rule. The adapter does not.
 
 ## Errors
@@ -49,7 +49,7 @@ Each failure has its own code and an actionable message. REST returns them with 
 | `burbank_course_any_quiz` | An active `ppq_quiz` trigger with `any`, `NULL`, or empty `source_ref` scope. |
 | `burbank_course_trigger_mismatch` | An active `ppq_quiz` trigger for a different quiz. |
 | `burbank_course_trigger` | No active `ppq_quiz` trigger for the selected quiz. |
-| `burbank_course_competing_trigger` | Another template has an active `ppq_quiz` trigger for this quiz or for `any`. The message lists the template IDs to deactivate. |
+| `burbank_course_competing_trigger` | Another non-trashed template (published, draft or archived) has an active `ppq_quiz` trigger for this quiz or for `any`. The message lists the template IDs to deactivate. |
 | `burbank_course_duplicate_quiz` | Another course already uses the quiz. |
 
 Missing or unsupported PressPrimer blocks **approval and publication**. It also blocks valid assessed edits to an already published course, because those edits are checked against the mapping. Drafts can still be edited, and published courses can still be archived. Burbank LMS never publishes on the assumption that dependencies are fine.

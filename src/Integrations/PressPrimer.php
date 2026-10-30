@@ -86,11 +86,12 @@ class PressPrimer {
 		if ( ! $matched ) {
 			$error->add( 'burbank_course_trigger', __( 'Configure an active PressPrimer quiz-passed certificate trigger for the selected quiz and template.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
-		// Issuance fires every active trigger find_active() returns, on any template.
+		// Issuance fires every active trigger find_active() returns, on any template that get() still returns.
 		$competing = array();
 		foreach ( \PressPrimer_Certificate_Trigger::find_active( self::TRIGGER_TYPE, (string) $quiz_id ) as $trigger ) {
-			if ( (int) ( $trigger->template_id ?? 0 ) !== $template_id ) {
-				$competing[] = (int) ( $trigger->template_id ?? 0 );
+			$other = (int) ( $trigger->template_id ?? 0 );
+			if ( $other !== $template_id && null !== \PressPrimer_Certificate_Template::get( $other ) ) {
+				$competing[] = $other;
 			}
 		}
 		if ( $competing ) {
