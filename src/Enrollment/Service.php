@@ -162,6 +162,7 @@ class Service {
 		}
 		$previous  = $wpdb->suppress_errors();
 		$committed = false;
+		$invite_id = null;
 		try {
 			$invite = $this->invites()->find_active( $course_invite, 'course', $course_id );
 			if ( ! $invite ) {
@@ -186,6 +187,7 @@ class Service {
 			$wpdb->suppress_errors( $previous );
 		}
 		// phpcs:enable WordPress.DB
+		$this->fire_enrolled( $user_id, $course_id, 'invite', $invite_id );
 		return true;
 	}
 
@@ -202,7 +204,31 @@ class Service {
 		if ( $existing && 'active' === $existing->status ) {
 			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
 		}
-		return $this->write_enrollment_row( $user_id, $course_id, $source, $invite_id, $existing );
+		$written = $this->write_enrollment_row( $user_id, $course_id, $source, $invite_id, $existing );
+		if ( true === $written ) {
+			$this->fire_enrolled( $user_id, $course_id, $source, $invite_id );
+		}
+		return $written;
+	}
+
+	/**
+	 * Notify listeners after a successful enrollment write.
+	 *
+	 * @param int      $user_id   User ID.
+	 * @param int      $course_id Course post ID.
+	 * @param string   $source    Enrollment source.
+	 * @param int|null $invite_id Course invite row ID when restricted.
+	 */
+	private function fire_enrolled( int $user_id, int $course_id, string $source, ?int $invite_id ): void {
+		/**
+		 * Fires after a learner is enrolled (self, admin, or course-invite redemption).
+		 *
+		 * @param int      $user_id   User ID.
+		 * @param int      $course_id Course post ID.
+		 * @param string   $source    Enrollment source (`self`, `admin`, or `invite`).
+		 * @param int|null $invite_id Course invite row ID when restricted.
+		 */
+		do_action( 'burbank_lms_enrolled', $user_id, $course_id, $source, $invite_id );
 	}
 
 	/**

@@ -35,12 +35,22 @@ class Learner {
 		if ( ! $user->exists() ) {
 			return;
 		}
+		$had_access = user_can( $user_id, self::CAP_ACCESS ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
 		$user->add_cap( self::CAP_ACCESS );
 		update_user_meta( $user_id, self::META_TRAINING_ACCESS, '1' );
 		if ( null !== $site_invite_id && $site_invite_id > 0 ) {
 			update_user_meta( $user_id, self::META_SITE_INVITE_ID, $site_invite_id );
 		}
 		$this->sync_quiz_cap( $user_id );
+		if ( ! $had_access ) {
+			/**
+			 * Fires after training access is newly granted.
+			 *
+			 * @param int      $user_id        User ID.
+			 * @param int|null $site_invite_id Site invite row ID when granted via redeem.
+			 */
+			do_action( 'burbank_lms_access_granted', $user_id, $site_invite_id );
+		}
 	}
 
 	/**

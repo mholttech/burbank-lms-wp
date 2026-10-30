@@ -85,6 +85,16 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'delete_user_metadata_by_mid', $profile, 'guard_legal_name_delete_id', 10, 2 );
 		$learner = new Access\Learner();
 		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
+		$mailer = new Mail\Mailer();
+		$this->loader->add_action( 'burbank_lms_access_granted', $mailer, 'on_access_granted', 10, 2 );
+		$this->loader->add_action( 'burbank_lms_enrolled', $mailer, 'on_enrolled', 10, 4 );
+		$this->loader->add_action( 'burbank_lms_course_completed', $mailer, 'on_course_completed', 10, 3 );
+		$branding = new Branding\PressPrimer();
+		$this->loader->add_filter( 'pressprimer_quiz_plugin_name', $branding, 'filter_plugin_name' );
+		$this->loader->add_filter( 'pressprimer_quiz_dashboard_logo', $branding, 'filter_logo' );
+		$this->loader->add_filter( 'pressprimer_quiz_shell_branding', $branding, 'filter_shell_branding' );
+		$this->loader->add_filter( 'ppcert_plugin_name', $branding, 'filter_plugin_name' );
+		$this->loader->add_filter( 'ppcert_dashboard_logo', $branding, 'filter_logo' );
 		$progress                = new Progress\Service();
 		$enrollment_service      = new Enrollment\Service();
 		$pressprimer_quiz        = new Integrations\PressPrimer_Quiz( $progress, $enrollment_service, $learner );
