@@ -35,6 +35,7 @@ Provisioning is versioned and idempotent:
 | `burbank_lms_course_schema_version` | Data schema version (currently `1`). Provisioning reruns only when the code version is higher or the pod is missing. |
 | `burbank_lms_course_editorial_ui_version` | UI-only field settings (length limits, number formats, help text, hidden audit fields). Changing these does not bump the data schema version. |
 | `burbank_lms_course_registry_version` | Registry table installed and existing codes backfilled. |
+| `burbank_lms_course_capabilities_version` | Default role capabilities granted. See [Capabilities](#capabilities). |
 
 Repeated provisioning never deletes course posts or metadata.
 
@@ -50,7 +51,7 @@ Registry installation runs on activation and on `init`. It requires InnoDB. If i
 
 ## Capabilities
 
-`Capabilities::install()` runs on every `init` and only adds capabilities that are missing. It does not create or replace roles.
+`Capabilities::install()` runs on `init` but grants capabilities only when the code's capability version is higher than the stored `burbank_lms_course_capabilities_version` option, then records that version. It only adds missing capabilities and never creates or replaces roles. Once granted, later role edits stick. If you revoke a course capability with a role editor (for example PublishPress Capabilities), it is not granted again on the next request. A future release re-grants only by raising the capability version.
 
 | Role | Capabilities |
 | --- | --- |
@@ -90,11 +91,11 @@ Value rules:
 
 **Assessed fields** are `Validator::PUBLISHED_GATES`: code, revision, subject, outcome, quiz and certificate template. Changing any of them invalidates approval. All other fields, plus the title, body, excerpt and image, are editorial and keep the current approval.
 
-**Audit fields** (`approved_by`, `approved_at`, `approval_notes`) are hidden in the Pods UI and blocked for REST, Pods, `meta_input` and direct metadata writes. Only the approval workflow writes them.
+**Audit fields** (`approved_by`, `approved_at`, `approval_notes`) are hidden in the Pods UI and blocked for Pods, `meta_input` and direct metadata writes. Over REST they are read-only: values submitted in `meta` are ignored rather than rejected, so clients can echo the course they fetched. Only the approval workflow writes them. `approval_notes` is reserved: nothing in Phase 1 writes or displays it.
 
 ### Write paths covered
 
-The same validation runs for Pods saves (`pods_api_field_validation`), REST (`rest_pre_insert_bfc_course`), classic and programmatic saves (`wp_insert_post_empty_content`, `wp_insert_post_data`), direct metadata APIs (`add/update/delete_post_metadata`) and metadata-by-ID APIs. An invalid Pods or REST batch is rejected as a whole. Metadata-by-ID updates of owned fields are always refused. Use the normal single-field APIs. `bfc_code` can never be deleted, and bulk deletion of owned keys is refused.
+The same validation runs for Pods saves (`pods_api_field_validation`), REST (`rest_pre_insert_bfc_course`), classic and programmatic saves (`wp_insert_post_empty_content`, `wp_insert_post_data`), direct metadata APIs (`add/update/delete_post_metadata`) and metadata-by-ID APIs. An invalid Pods or REST batch is rejected as a whole. REST `meta` writes are limited to the keys in `Schema::FIELDS`. Unregistered or protected keys such as `_wp_page_template` are dropped. Metadata-by-ID updates of owned fields are always refused. Use the normal single-field APIs. `bfc_code` can never be deleted, and bulk deletion of owned keys is refused.
 
 ## Lifecycle
 

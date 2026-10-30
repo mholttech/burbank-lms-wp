@@ -141,14 +141,63 @@ class CourseEditorialTest extends WP_UnitTestCase {
 					)
 				)
 			);
+			// REST treats audit metadata as read-only: submitted values are ignored, never stored.
 			$request = new WP_REST_Request( 'POST', rest_get_route_for_post( $id ) );
 			$request->set_param( 'meta', array( $key => $value ) );
-			$this->assertSame( 403, rest_do_request( $request )->get_status() );
+			$this->assertSame( 200, rest_do_request( $request )->get_status() );
+			$this->assertFalse( metadata_exists( 'post', $id, $key ), $key );
 		}
 		$this->assertTrue( ( new Editorial() )->approve( $id ) );
 		$this->assertFalse( delete_post_meta( $id, 'approved_at' ) );
 		$mid = add_post_meta( $id, 'unrelated', 'value' );
 		$this->assertFalse( update_metadata_by_mid( 'post', $mid, 'forged', 'approved_at' ) );
+	}
+
+	/** REST meta writes are limited to course fields and tolerate clients echoing stored audit values. */
+	public function test_rest_meta_is_limited_to_course_fields(): void {
+		$id      = $this->course();
+		$request = new WP_REST_Request( 'POST', rest_get_route_for_post( $id ) );
+		$request->set_param(
+			'meta',
+			array(
+				'matrix_requirement_slug' => 'scene-safety',
+				'evil_key'                => 'injected',
+				'_wp_page_template'       => 'evil.php',
+			)
+		);
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( 'scene-safety', get_post_meta( $id, 'matrix_requirement_slug', true ) );
+		$this->assertFalse( metadata_exists( 'post', $id, 'evil_key' ) );
+		$this->assertFalse( metadata_exists( 'post', $id, '_wp_page_template' ) );
+
+		// REST responses report unset audit fields as empty defaults; echoing them back is harmless.
+		$request->set_param(
+			'meta',
+			array(
+				'matrix_requirement_slug' => 'scene-safety-2',
+				'approved_by'             => 0,
+				'approved_at'             => '',
+				'approval_notes'          => '',
+			)
+		);
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( 'scene-safety-2', get_post_meta( $id, 'matrix_requirement_slug', true ) );
+
+		$this->assertTrue( ( new Editorial() )->approve( $id ) );
+		$approver = get_post_meta( $id, 'approved_by', true );
+		$approved = get_post_meta( $id, 'approved_at', true );
+		$request->set_param(
+			'meta',
+			array(
+				'matrix_requirement_slug' => 'scene-safety-3',
+				'approved_by'             => (int) $approver,
+				'approved_at'             => $approved,
+			)
+		);
+		$this->assertSame( 200, rest_do_request( $request )->get_status() );
+		$this->assertSame( 'scene-safety-3', get_post_meta( $id, 'matrix_requirement_slug', true ) );
+		$this->assertSame( $approver, get_post_meta( $id, 'approved_by', true ) );
+		$this->assertSame( $approved, get_post_meta( $id, 'approved_at', true ) );
 	}
 
 	/** Each assessed field invalidates even when removed; snapshots survive. */

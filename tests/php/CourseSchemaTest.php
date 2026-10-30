@@ -117,4 +117,21 @@ class CourseSchemaTest extends WP_UnitTestCase {
 		$this->assertTrue( user_can( $editor, 'edit_post', $course ) );
 		$this->assertFalse( user_can( $learner, 'edit_post', $course ) );
 	}
+
+	/** Site role edits survive later requests; only a capability version bump grants again. */
+	public function test_capability_revocations_persist_until_version_bump(): void {
+		$capabilities = new Capabilities();
+		$capabilities->install();
+		get_role( 'editor' )->remove_cap( 'publish_bfc_courses' );
+		get_role( 'administrator' )->remove_cap( 'approve_bfc_courses' );
+		$capabilities->install();
+		$this->assertFalse( get_role( 'editor' )->has_cap( 'publish_bfc_courses' ) );
+		$this->assertFalse( get_role( 'administrator' )->has_cap( 'approve_bfc_courses' ) );
+		update_option( Capabilities::VERSION_OPTION, 0, false );
+		$capabilities->install();
+		$this->assertTrue( get_role( 'editor' )->has_cap( 'publish_bfc_courses' ) );
+		$this->assertTrue( get_role( 'administrator' )->has_cap( 'approve_bfc_courses' ) );
+		$this->assertFalse( get_role( 'editor' )->has_cap( 'approve_bfc_courses' ) );
+		$this->assertGreaterThan( 0, (int) get_option( Capabilities::VERSION_OPTION ) );
+	}
 }

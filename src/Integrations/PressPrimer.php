@@ -18,8 +18,9 @@ namespace Burbank_LMS\Integrations;
  * - PressPrimer Certificate 2.0.2: `PressPrimer_Certificate_Template::get( $id )` returns a non-soft-deleted row
  *   (`status` is `draft|published|archived`) or null. `PressPrimer_Certificate_Trigger::get_for_template( $id )`
  *   returns rows with `trigger_type`, `source_ref` and `is_active`. Its quiz adapter issues for the trigger type
- *   `ppq_quiz` using `Trigger::find_active( 'ppq_quiz', $quiz_id )`, which matches `source_ref` equal to the quiz ID
- *   or to the sentinel `any`; value-only types store NULL.
+ *   `ppq_quiz` using `Trigger::find_active( 'ppq_quiz', $quiz_id )`, which returns active rows (with `template_id`) on
+ *   every template whose `source_ref` equals the quiz ID or the sentinel `any`, and issues for each; value-only types
+ *   store NULL.
  */
 class PressPrimer {
 	/** Supported released Quiz plugin version. */
@@ -85,6 +86,24 @@ class PressPrimer {
 		if ( ! $matched ) {
 			$error->add( 'burbank_course_trigger', __( 'Configure an active PressPrimer quiz-passed certificate trigger for the selected quiz and template.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
+		// Issuance fires every active trigger find_active() returns, on any template.
+		$competing = array();
+		foreach ( \PressPrimer_Certificate_Trigger::find_active( self::TRIGGER_TYPE, (string) $quiz_id ) as $trigger ) {
+			if ( (int) ( $trigger->template_id ?? 0 ) !== $template_id ) {
+				$competing[] = (int) ( $trigger->template_id ?? 0 );
+			}
+		}
+		if ( $competing ) {
+			$error->add(
+				'burbank_course_competing_trigger',
+				sprintf(
+					/* translators: %s: comma-separated certificate template IDs. */
+					__( 'Deactivate the quiz-passed triggers on certificate templates %s; they would also issue a certificate for this course quiz, either for this quiz or for any quiz.', 'burbank-lms' ),
+					implode( ', ', array_unique( $competing ) )
+				),
+				array( 'status' => 400 )
+			);
+		}
 		return $error;
 	}
 
@@ -94,13 +113,18 @@ class PressPrimer {
 		if ( self::QUIZ_VERSION !== ( $versions['quiz'] ?? null ) || self::CERTIFICATE_VERSION !== ( $versions['certificate'] ?? null ) ) {
 			return false;
 		}
-		foreach ( $this->contract_methods() as $class => $method ) {
-			if ( ! class_exists( $class ) || ! method_exists( $class, $method ) ) {
+		foreach ( $this->contract_methods() as $class => $methods ) {
+			if ( ! class_exists( $class ) ) {
 				return false;
 			}
-			$contract = new \ReflectionMethod( $class, $method );
-			if ( ! $contract->isPublic() || ! $contract->isStatic() || 1 !== $contract->getNumberOfParameters() ) {
-				return false;
+			foreach ( $methods as $method => $parameters ) {
+				if ( ! method_exists( $class, $method ) ) {
+					return false;
+				}
+				$contract = new \ReflectionMethod( $class, $method );
+				if ( ! $contract->isPublic() || ! $contract->isStatic() || $parameters !== $contract->getNumberOfParameters() ) {
+					return false;
+				}
 			}
 		}
 		return true;
@@ -119,15 +143,18 @@ class PressPrimer {
 	}
 
 	/**
-	 * Public static one-argument methods this adapter calls, keyed by class.
+	 * Public static methods this adapter calls and their released parameter counts, keyed by class.
 	 *
-	 * @return array<string,string>
+	 * @return array<string,array<string,int>>
 	 */
 	protected function contract_methods(): array {
 		return array(
-			'PressPrimer_Quiz_Quiz'            => 'get',
-			'PressPrimer_Certificate_Template' => 'get',
-			'PressPrimer_Certificate_Trigger'  => 'get_for_template',
+			'PressPrimer_Quiz_Quiz'            => array( 'get' => 1 ),
+			'PressPrimer_Certificate_Template' => array( 'get' => 1 ),
+			'PressPrimer_Certificate_Trigger'  => array(
+				'get_for_template' => 1,
+				'find_active'      => 2,
+			),
 		);
 	}
 }

@@ -315,13 +315,16 @@ class Validator {
 		if ( is_wp_error( $prepared ) ) {
 			return $prepared;
 		}
-		$id   = (int) $request->get_param( 'id' );
-		$meta = (array) $request->get_param( 'meta' );
-		foreach ( self::AUDIT_FIELDS as $key ) {
-			if ( array_key_exists( $key, $meta ) ) {
-				return new \WP_Error( 'burbank_course_audit', __( 'Approval audit fields are managed by the course approval workflow.', 'burbank-lms' ), array( 'status' => 403 ) );
-			}
+		$id    = (int) $request->get_param( 'id' );
+		$meta  = (array) $request->get_param( 'meta' );
+		$audit = array_flip( self::AUDIT_FIELDS );
+		// Audit metadata is read-only over REST, like core's readonly properties; clients may echo it back.
+		if ( array_intersect_key( $meta, $audit ) ) {
+			$meta = array_diff_key( $meta, $audit );
+			// Core's meta handler applies the same parameter after this filter.
+			$request->set_param( 'meta', $meta );
 		}
+		$meta   = array_intersect_key( $meta, Schema::FIELDS );
 		$fields = array_replace( $this->fields( $id ), $meta );
 		// A status-less update of a published course still leaves it published, so it needs the same gate.
 		$status = isset( $prepared->post_status ) ? $prepared->post_status : ( $id ? get_post_status( $id ) : 'draft' );

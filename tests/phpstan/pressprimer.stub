@@ -13,4 +13,6 @@ class PressPrimer_Certificate_Template {
 class PressPrimer_Certificate_Trigger {
 	/** @return object[] */
 	public static function get_for_template( $template_id ) {}
+	/** @return object[] */
+	public static function find_active( $trigger_type, $source_ref ) {}
 }

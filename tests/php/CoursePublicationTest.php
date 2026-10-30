@@ -67,27 +67,79 @@ class CoursePublicationTest extends WP_UnitTestCase {
 		$mapping = bfc_test_mapping();
 		$adapter = new Burbank_LMS\Integrations\PressPrimer();
 		$this->assertFalse( $adapter->validate_mapping( $mapping['pressprimer_quiz_id'], $mapping['certificate_template_id'] )->has_errors() );
-		foreach ( array(
-			array( 'source_ref' => 'any' ),
-			array( 'source_ref' => '99999' ),
-			array(
-				'source_ref' => (string) $mapping['pressprimer_quiz_id'],
-				'is_active'  => 0,
-			),
-		) as $trigger ) {
-			PressPrimer_Certificate_Trigger::replace_for_template(
-				$mapping['certificate_template_id'],
+		try {
+			foreach ( array(
+				array( 'source_ref' => 'any' ),
+				array( 'source_ref' => '99999' ),
 				array(
-					array_replace(
+					'source_ref' => (string) $mapping['pressprimer_quiz_id'],
+					'is_active'  => 0,
+				),
+			) as $trigger ) {
+				PressPrimer_Certificate_Trigger::replace_for_template(
+					$mapping['certificate_template_id'],
+					array(
+						array_replace(
+							array(
+								'trigger_type' => 'ppq_quiz',
+								'is_active'    => 1,
+							),
+							$trigger
+						),
+					)
+				);
+				$this->assertTrue( $adapter->validate_mapping( $mapping['pressprimer_quiz_id'], $mapping['certificate_template_id'] )->has_errors() );
+			}
+		} finally {
+			// Released trigger rows commit; a lingering site-wide trigger would affect every later mapping.
+			PressPrimer_Certificate_Trigger::delete_for_template( $mapping['certificate_template_id'] );
+		}
+	}
+
+	/** Another template that would also issue on the course quiz blocks mapping and publication. */
+	public function test_competing_template_triggers_block_mapping_and_publication(): void {
+		$mapping = bfc_test_mapping();
+		$adapter = new Burbank_LMS\Integrations\PressPrimer();
+		$quiz_id = $mapping['pressprimer_quiz_id'];
+		$id      = $this->course( $mapping, 'BFC-261' );
+		$other   = PressPrimer_Certificate_Template::create(
+			array(
+				'title'  => 'Competing',
+				'status' => 'published',
+				'layout' => array( 'page' => array( 'size' => 'a4' ) ),
+			)
+		);
+		try {
+			foreach ( array( (string) $quiz_id, 'any' ) as $ref ) {
+				PressPrimer_Certificate_Trigger::replace_for_template(
+					$other,
+					array(
 						array(
 							'trigger_type' => 'ppq_quiz',
+							'source_ref'   => $ref,
 							'is_active'    => 1,
 						),
-						$trigger
+					)
+				);
+				$this->assertContains( 'burbank_course_competing_trigger', $adapter->validate_mapping( $quiz_id, $mapping['certificate_template_id'] )->get_error_codes(), $ref );
+				wp_publish_post( $id );
+				$this->assertSame( 'draft', get_post_status( $id ), $ref );
+			}
+			PressPrimer_Certificate_Trigger::replace_for_template(
+				$other,
+				array(
+					array(
+						'trigger_type' => 'ppq_quiz',
+						'source_ref'   => 'any',
+						'is_active'    => 0,
 					),
 				)
 			);
-			$this->assertTrue( $adapter->validate_mapping( $mapping['pressprimer_quiz_id'], $mapping['certificate_template_id'] )->has_errors() );
+			$this->assertFalse( $adapter->validate_mapping( $quiz_id, $mapping['certificate_template_id'] )->has_errors() );
+			wp_publish_post( $id );
+			$this->assertSame( 'publish', get_post_status( $id ) );
+		} finally {
+			PressPrimer_Certificate_Trigger::delete_for_template( $other );
 		}
 	}
 
@@ -171,7 +223,12 @@ class CoursePublicationTest extends WP_UnitTestCase {
 			'changed contract'    => array(
 				'3.1.3',
 				'2.0.2',
-				array( 'PressPrimer_Quiz_Quiz' => 'no_such_released_method' ),
+				array( 'PressPrimer_Quiz_Quiz' => array( 'no_such_released_method' => 1 ) ),
+			),
+			'changed arity'       => array(
+				'3.1.3',
+				'2.0.2',
+				array( 'PressPrimer_Certificate_Trigger' => array( 'find_active' => 1 ) ),
 			),
 		);
 		foreach ( $cases as $label => $case ) {
@@ -183,14 +240,14 @@ class CoursePublicationTest extends WP_UnitTestCase {
 				private array $simulated;
 				/** Simulated contract methods.
 				 *
-				 * @var array<string,string>|null
+				 * @var array<string,array<string,int>>|null
 				 */
 				private ?array $contracts;
 				/** Capture simulated state.
 				 *
-				 * @param string|null               $quiz Quiz version.
-				 * @param string|null               $certificate Certificate version.
-				 * @param array<string,string>|null $contracts Contract overrides.
+				 * @param string|null                          $quiz Quiz version.
+				 * @param string|null                          $certificate Certificate version.
+				 * @param array<string,array<string,int>>|null $contracts Contract overrides.
 				 */
 				public function __construct( ?string $quiz, ?string $certificate, ?array $contracts ) {
 					$this->simulated = array(

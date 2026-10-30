@@ -9,8 +9,14 @@ namespace Burbank_LMS\Courses;
 
 /** Installs capabilities without replacing site roles. */
 class Capabilities {
-	/** Idempotently grant capabilities to the existing editorial roles. */
+	public const VERSION_OPTION = 'burbank_lms_course_capabilities_version';
+	private const VERSION       = 1;
+
+	/** Grant capabilities to the existing editorial roles once per capability version, so later role edits persist. */
 	public function install(): void {
+		if ( self::VERSION <= (int) get_option( self::VERSION_OPTION ) ) {
+			return;
+		}
 		$caps = array(
 			'edit_bfc_courses',
 			'edit_others_bfc_courses',
@@ -37,5 +43,6 @@ class Capabilities {
 				$role->add_cap( 'approve_bfc_courses' );
 			}
 		}
+		update_option( self::VERSION_OPTION, self::VERSION, false );
 	}
 }
