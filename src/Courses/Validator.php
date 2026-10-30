@@ -556,7 +556,8 @@ class Validator {
 		if ( 'bfc_course' !== $post->post_type || 'publish' !== $new_status || $new_status === $old_status ) {
 			return;
 		}
-		$this->error = ( new Publication() )->validate( $post->ID, $this->fields( $post->ID ) );
+		// Core already stored publish before this hook; force the matrix soft-check for the transition.
+		$this->error = ( new Publication() )->validate( $post->ID, $this->fields( $post->ID ), true );
 		if ( ! $this->error->has_errors() ) {
 			$row = ( new Registry() )->get( $post->ID );
 			if ( ( $row && $row['published'] ) || $this->seal( $post->ID, false ) ) {

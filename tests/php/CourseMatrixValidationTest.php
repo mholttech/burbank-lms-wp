@@ -178,4 +178,71 @@ class CourseMatrixValidationTest extends WP_UnitTestCase {
 		$this->assertNotContains( 'burbank_course_matrix_requirement', $error->get_error_codes() );
 		$this->assertFalse( $error->has_errors() );
 	}
+
+	/** Already-published courses keep publish status on ordinary editorial saves even with a bad matrix slug. */
+	public function test_published_course_editorial_save_ignores_bad_matrix_slug(): void {
+		register_post_type(
+			'bc_requirement',
+			array(
+				'public' => true,
+				'label'  => 'Requirements',
+			)
+		);
+		self::factory()->post->create(
+			array(
+				'post_type'   => 'bc_requirement',
+				'post_status' => 'publish',
+				'post_name'   => 'scene-safety',
+				'post_title'  => 'Scene Safety',
+			)
+		);
+
+		$id = $this->course( 'scene-safety', 'BFC-275' );
+		wp_publish_post( $id );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+
+		update_post_meta( $id, 'matrix_requirement_slug', 'missing-requirement' );
+		$result = wp_update_post(
+			array(
+				'ID'           => $id,
+				'post_title'   => 'Editorial title change',
+				'post_excerpt' => 'Editorial excerpt',
+				'post_status'  => 'publish',
+			),
+			true
+		);
+		$this->assertNotWPError( $result );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+		$this->assertSame( 'Editorial title change', get_post( $id )->post_title );
+		$this->assertSame( 'Editorial excerpt', get_post( $id )->post_excerpt );
+		$this->assertSame( 'missing-requirement', get_post_meta( $id, 'matrix_requirement_slug', true ) );
+
+		$draft = $this->course( 'missing-requirement', 'BFC-276' );
+		wp_publish_post( $draft );
+		$this->assertSame( 'draft', get_post_status( $draft ) );
+		$this->assertContains(
+			'burbank_course_matrix_requirement',
+			( new Publication() )->validate( $draft, ( new Validator() )->fields( $draft ) )->get_error_codes()
+		);
+	}
+
+	/** Approval candidate checks do not require a resolvable matrix slug. */
+	public function test_validate_candidate_skips_matrix_slug(): void {
+		register_post_type(
+			'bc_requirement',
+			array(
+				'public' => true,
+				'label'  => 'Requirements',
+			)
+		);
+		$id = $this->course( 'missing-requirement', 'BFC-277' );
+		$this->assertNotContains(
+			'burbank_course_matrix_requirement',
+			( new Publication() )->validate_candidate( $id, ( new Validator() )->fields( $id ) )->get_error_codes()
+		);
+		$this->assertContains(
+			'burbank_course_matrix_requirement',
+			( new Publication() )->validate( $id, ( new Validator() )->fields( $id ) )->get_error_codes()
+		);
+	}
 }

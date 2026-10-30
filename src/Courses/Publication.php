@@ -14,20 +14,33 @@ class Publication {
 	/**
 	 * Validate publication using trusted stored approval evidence.
 	 *
+	 * Matrix soft-check runs only when publishing into `publish`, not when
+	 * re-validating an already-published course during ordinary editorial saves.
+	 *
 	 * @param int                 $course_id Saved course ID.
 	 * @param array<string,mixed> $fields Candidate course metadata.
+	 * @param bool|null           $check_matrix Force or skip the matrix soft-check; null auto-detects from current post status.
 	 */
-	public function validate( int $course_id, array $fields ): \WP_Error {
+	public function validate( int $course_id, array $fields, ?bool $check_matrix = null ): \WP_Error {
 		$error    = $this->validate_candidate( $course_id, $fields );
 		$approver = (int) get_post_meta( $course_id, 'approved_by', true );
 		if ( ! $approver || ! get_post_meta( $course_id, 'approved_at', true ) || ! user_can( $approver, 'approve_bfc_courses' ) || ! ( new Editorial() )->matches_approval( $course_id, $fields ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered by Courses\Capabilities.
 			$error->add( 'burbank_course_approval', __( 'Obtain course approval before publishing.', 'burbank-lms' ), array( 'status' => 400 ) );
+		}
+		if ( null === $check_matrix ) {
+			// Already-published courses keep publish on title/excerpt saves even if the matrix later diverges.
+			$check_matrix = ! $course_id || 'publish' !== get_post_status( $course_id );
+		}
+		if ( $check_matrix ) {
+			$error->merge_from( $this->validate_matrix_slug( (string) ( $fields['matrix_requirement_slug'] ?? '' ) ) );
 		}
 		return $error;
 	}
 
 	/**
 	 * Validate the saved candidate without requiring the approval being requested.
+	 *
+	 * Does not soft-check matrix_requirement_slug; that gate belongs to publish transitions only.
 	 *
 	 * @param int                 $course_id Saved course ID.
 	 * @param array<string,mixed> $fields Candidate metadata.
@@ -44,7 +57,6 @@ class Publication {
 		if ( $duplicate || $wpdb->last_error ) {
 			$error->add( 'burbank_course_duplicate_quiz', __( 'Assign a quiz used by no other course, including archived or trashed courses.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
-		$error->merge_from( $this->validate_matrix_slug( (string) ( $fields['matrix_requirement_slug'] ?? '' ) ) );
 		return $error;
 	}
 
