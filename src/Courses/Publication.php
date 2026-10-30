@@ -44,6 +44,39 @@ class Publication {
 		if ( $duplicate || $wpdb->last_error ) {
 			$error->add( 'burbank_course_duplicate_quiz', __( 'Assign a quiz used by no other course, including archived or trashed courses.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
+		$error->merge_from( $this->validate_matrix_slug( (string) ( $fields['matrix_requirement_slug'] ?? '' ) ) );
+		return $error;
+	}
+
+	/**
+	 * Soft-check an optional matrix slug only when bc_requirement exists.
+	 *
+	 * @param string $slug Candidate matrix_requirement_slug value.
+	 */
+	private function validate_matrix_slug( string $slug ): \WP_Error {
+		$error = new \WP_Error();
+		if ( '' === $slug || ! post_type_exists( 'bc_requirement' ) ) {
+			return $error;
+		}
+		$matched = get_posts(
+			array(
+				'name'                   => $slug,
+				'post_type'              => 'bc_requirement',
+				'post_status'            => 'publish',
+				'posts_per_page'         => 1,
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		if ( ! $matched ) {
+			$error->add(
+				'burbank_course_matrix_requirement',
+				__( 'Choose a published matrix requirement slug, or clear the field before publishing.', 'burbank-lms' ),
+				array( 'status' => 400 )
+			);
+		}
 		return $error;
 	}
 }

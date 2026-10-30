@@ -58,6 +58,9 @@ class Burbank_LMS {
 
 		$this->loader->add_action( 'init', $this, 'register_blocks' );
 
+		$course_picks = new Courses\Picks();
+		$this->loader->add_action( 'pods_form_ui_field_pick_related_objects_custom', $course_picks, 'register' );
+		$this->loader->add_action( 'init', $course_picks, 'register', 11 );
 		$course_schema = new Courses\Schema();
 		$this->loader->add_action( 'init', $course_schema, 'register', 12 );
 		$this->loader->add_action( 'admin_notices', $course_schema, 'notice' );

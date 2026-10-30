@@ -12,6 +12,10 @@ class Schema {
 	public const VERSION_OPTION = 'burbank_lms_course_schema_version';
 	private const VERSION       = 1;
 
+	/** UI-only Pods field presentation (pick sources, limits, help text). */
+	public const EDITORIAL_UI_OPTION   = 'burbank_lms_course_editorial_ui_version';
+	private const EDITORIAL_UI_VERSION = 2;
+
 	/** Course fields and their Pods storage types. */
 	public const FIELDS = array(
 		'bfc_code'                => 'text',
@@ -122,7 +126,7 @@ class Schema {
 		}
 
 		// UI-only migration: no new storage fields, so the data schema version remains unchanged.
-		if ( $provisioned || 1 > (int) get_option( 'burbank_lms_course_editorial_ui_version' ) ) {
+		if ( $provisioned || self::EDITORIAL_UI_VERSION > (int) get_option( self::EDITORIAL_UI_OPTION ) ) {
 			foreach ( self::FIELDS as $name => $field_type ) {
 				$field   = $api->load_field(
 					array(
@@ -145,11 +149,14 @@ class Schema {
 					$options['number_min']      = 1;
 				}
 				$descriptions = array(
-					'bfc_code'         => __( 'Use BFC-100 through BFC-999. The first published code is permanent.', 'burbank-lms' ),
-					'course_revision'  => __( 'Use a new revision for material assessed changes. Approval must be renewed.', 'burbank-lms' ),
-					'subject_category' => __( 'Choose the subject matching the first digit of the BFC code:', 'burbank-lms' ) . ' ' . implode( ', ', Validator::SUBJECTS ),
-					'course_outcome'   => __( 'Use independent_study for a knowledge course.', 'burbank-lms' ),
-					'catalog_state'    => __( 'Use draft, published, or archived. Archive retains identity and approval history; WordPress post status controls publication.', 'burbank-lms' ),
+					'bfc_code'                => __( 'Use BFC-100 through BFC-999. The first published code is permanent.', 'burbank-lms' ),
+					'course_revision'         => __( 'Use a new revision for material assessed changes. Approval must be renewed.', 'burbank-lms' ),
+					'subject_category'        => __( 'Choose the subject matching the first digit of the BFC code:', 'burbank-lms' ) . ' ' . implode( ', ', Validator::SUBJECTS ),
+					'course_outcome'          => __( 'Use independent_study for a knowledge course.', 'burbank-lms' ),
+					'catalog_state'           => __( 'Use draft, published, or archived. Archive retains identity and approval history; WordPress post status controls publication.', 'burbank-lms' ),
+					'pressprimer_quiz_id'     => __( 'Select a published PressPrimer quiz.', 'burbank-lms' ),
+					'certificate_template_id' => __( 'Select a published certificate template with an active quiz trigger for this course.', 'burbank-lms' ),
+					'matrix_requirement_slug' => __( 'Optional published matrix requirement slug when bc_requirement exists.', 'burbank-lms' ),
 				);
 				if ( isset( $descriptions[ $name ] ) ) {
 					$options['description'] = $descriptions[ $name ];
@@ -162,7 +169,18 @@ class Schema {
 					return;
 				}
 			}
-			update_option( 'burbank_lms_course_editorial_ui_version', 1, false );
+			$picks = new Picks();
+			$picks->register();
+			if ( ! $picks->configure_fields( $api ) ) {
+				$this->error = new \WP_Error( 'burbank_course_schema_failed', __( 'Burbank LMS could not configure its Pods course schema. Review Pods configuration and retry.', 'burbank-lms' ) );
+				return;
+			}
+			update_option( self::EDITORIAL_UI_OPTION, self::EDITORIAL_UI_VERSION, false );
+		} elseif ( post_type_exists( 'bc_requirement' ) ) {
+			// Theme may register bc_requirement after the UI version is current; keep the slug pick in sync.
+			$picks = new Picks();
+			$picks->register();
+			$picks->configure_fields( $api );
 		}
 
 		foreach ( self::FIELDS as $name => $field_type ) {

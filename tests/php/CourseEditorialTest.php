@@ -585,15 +585,37 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		$this->assertFalse( ( new Registry() )->available( 0, 'BFC-210' ) );
 	}
 
-	/** Mapping references must render as integer IDs, without locale grouping separators. */
+	/** Mapping reference picks store raw integer ID keys, never locale-grouped number strings. */
 	public function test_pods_mapping_ui_preserves_integer_reference_ids(): void {
-		$field = pods_api()->load_field(
+		$quiz     = pods_api()->load_field(
 			array(
 				'pod'  => 'bfc_course',
 				'name' => 'pressprimer_quiz_id',
 			)
 		);
-		$this->assertSame( '1234', PodsForm::field_method( 'number', 'format', 1234, 'pressprimer_quiz_id', $field ) );
+		$template = pods_api()->load_field(
+			array(
+				'pod'  => 'bfc_course',
+				'name' => 'certificate_template_id',
+			)
+		);
+		$this->assertSame( 'pick', $quiz['type'] );
+		$this->assertSame( \Burbank_LMS\Courses\Picks::QUIZ_OBJECT, $quiz['pick_object'] );
+		$this->assertSame( 'pick', $template['type'] );
+		$this->assertSame( \Burbank_LMS\Courses\Picks::TEMPLATE_OBJECT, $template['pick_object'] );
+
+		PressPrimer_Quiz_Activator::activate();
+		$id   = PressPrimer_Quiz_Quiz::create(
+			array(
+				'title'  => 'Format check',
+				'status' => 'published',
+			)
+		);
+		$data = \Burbank_LMS\Courses\Picks::quiz_data();
+		$this->assertArrayHasKey( (string) $id, $data );
+		foreach ( array_keys( $data ) as $key ) {
+			$this->assertMatchesRegularExpression( '/\A[1-9][0-9]*\z/', (string) $key );
+		}
 	}
 
 	/** Admin columns and controls expose status and CSRF-protected actions. */

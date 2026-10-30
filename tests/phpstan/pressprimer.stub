@@ -5,10 +5,20 @@
 class PressPrimer_Quiz_Quiz {
 	/** @return object|null */
 	public static function get( $id ) {}
+	/**
+	 * @param array<string,mixed> $args
+	 * @return object[]
+	 */
+	public static function find( array $args = [] ) {}
 }
 class PressPrimer_Certificate_Template {
 	/** @return object|null */
 	public static function get( $id ) {}
+	/**
+	 * @param array<string,mixed> $args
+	 * @return array{items: object[], total: int}
+	 */
+	public static function query( array $args = [] ) {}
 }
 class PressPrimer_Certificate_Trigger {
 	/** @return object[] */
