@@ -79,6 +79,17 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'delete_user_metadata_by_mid', $profile, 'guard_legal_name_delete_id', 10, 2 );
 		$learner = new Access\Learner();
 		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
+		$progress                = new Progress\Service();
+		$enrollment_service      = new Enrollment\Service();
+		$pressprimer_quiz        = new Integrations\PressPrimer_Quiz( $progress, $enrollment_service, $learner );
+		$pressprimer_certificate = new Integrations\PressPrimer_Certificate( $progress, $enrollment_service, $profile );
+		$this->loader->add_filter( 'pressprimer_quiz_can_start', $pressprimer_quiz, 'can_start', 10, 2 );
+		$this->loader->add_filter( 'pressprimer_quiz_before_submit', $pressprimer_quiz, 'before_submit', 10, 2 );
+		$this->loader->add_action( 'pressprimer_quiz_quiz_passed', $pressprimer_quiz, 'quiz_passed', 10, 2 );
+		$this->loader->add_filter( 'ppcert_register_merge_fields', $pressprimer_certificate, 'register_merge_fields', 10, 2 );
+		$this->loader->add_filter( 'ppcert_merge_data', $pressprimer_certificate, 'merge_data', 10, 2 );
+		$this->loader->add_filter( 'ppcert_issue_validation', $pressprimer_certificate, 'issue_validation', 10, 2 );
+		$this->loader->add_action( 'ppcert_certificate_issued', $pressprimer_certificate, 'certificate_issued', 10, 2 );
 		$course_validator = new Courses\Validator();
 		$this->loader->add_filter( 'add_post_metadata', $course_validator, 'guard_meta', 10, 4 );
 		$this->loader->add_filter( 'update_post_metadata', $course_validator, 'guard_meta', 10, 4 );

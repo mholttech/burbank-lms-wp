@@ -54,6 +54,18 @@ Each failure has its own code and an actionable message. REST returns them with 
 
 Missing or unsupported PressPrimer blocks **approval and publication**. It also blocks valid assessed edits to an already published course, because those edits are checked against the mapping. Drafts can still be edited, and published courses can still be archived. Burbank LMS never publishes on the assumption that dependencies are fine.
 
+## Learner quiz and certificate adapters
+
+Thin adapters in `Integrations\PressPrimer_Quiz` and `Integrations\PressPrimer_Certificate` translate PressPrimer hooks into enrollment and progress rules. Mapping validation in `Integrations\PressPrimer` is unchanged.
+
+| Hook | Behavior |
+| --- | --- |
+| `pressprimer_quiz_can_start` / `pressprimer_quiz_before_submit` | For a published `bfc_course` mapped by `pressprimer_quiz_id`: require `Learner::can_learn` and an active enrollment. Unmapped quizzes are not gated. |
+| `pressprimer_quiz_quiz_passed` | Stamp `quiz_passed_at` on the active enrollment once (priority 10, before Certificate's `ppq_quiz` issuer at 20). |
+| `ppcert_issue_validation` | For `ppq_quiz` issuances mapped to a course: require active enrollment and `quiz_passed_at`. |
+| `ppcert_certificate_issued` | Store the certificate row ID, set `status=completed`, fire `burbank_lms_course_completed`. |
+| `ppcert_register_merge_fields` / `ppcert_merge_data` | Expose legal name, `bfc_code`, title, revision, outcome, subject, and matrix slug. Never email. |
+
 ## What Burbank LMS does not do
 
 - It does not grade quizzes, record attempts or decide who passed. PressPrimer Quiz does.
@@ -61,7 +73,7 @@ Missing or unsupported PressPrimer blocks **approval and publication**. It also 
 - It does not create or edit quizzes, templates or triggers. Configure them in PressPrimer, then reference their IDs on the course.
 - It does not query PressPrimer database tables directly or rely on undocumented internals beyond the contracts above.
 
-The only checks Burbank LMS runs are that the configuration a course points at exists, is published, and is scoped to that course's quiz alone.
+Publication still checks that the configuration a course points at exists, is published, and is scoped to that course's quiz alone. Learner adapters additionally gate mapped quiz start/submit and certificate completion against enrollment.
 
 ## Test environment
 

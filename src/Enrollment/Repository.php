@@ -161,6 +161,59 @@ class Repository {
 	}
 
 	/**
+	 * Stamp quiz_passed_at when still null on an active enrollment.
+	 *
+	 * @param int    $id             Enrollment row ID.
+	 * @param string $quiz_passed_at UTC MySQL datetime.
+	 */
+	public function mark_quiz_passed( int $id, string $quiz_passed_at ): bool {
+		if ( $id < 1 ) {
+			return false;
+		}
+		$db     = $this->db();
+		$table  = $this->table();
+		$result = $db->query( // phpcs:ignore WordPress.DB -- Prepared custom-table write.
+			$db->prepare(
+				"UPDATE {$table} SET quiz_passed_at = %s WHERE id = %d AND status = %s AND quiz_passed_at IS NULL",
+				$quiz_passed_at,
+				$id,
+				'active'
+			)
+		);
+		return false !== $result && (int) $result > 0;
+	}
+
+	/**
+	 * Mark an active enrollment completed with a certificate credential.
+	 *
+	 * @param int    $id             Enrollment row ID.
+	 * @param int    $credential_id  PressPrimer certificate row ID.
+	 * @param string $completed_at   UTC MySQL datetime.
+	 */
+	public function complete( int $id, int $credential_id, string $completed_at ): bool {
+		if ( $id < 1 || $credential_id < 1 ) {
+			return false;
+		}
+		$db     = $this->db();
+		$table  = $this->table();
+		$result = $db->update( // phpcs:ignore WordPress.DB -- Prepared custom-table write.
+			$table,
+			array(
+				'status'        => 'completed',
+				'credential_id' => $credential_id,
+				'completed_at'  => $completed_at,
+			),
+			array(
+				'id'     => $id,
+				'status' => 'active',
+			),
+			array( '%s', '%d', '%s' ),
+			array( '%d', '%s' )
+		);
+		return false !== $result && (int) $result > 0;
+	}
+
+	/**
 	 * Delete an enrollment row (compensation after a failed invite redeem).
 	 *
 	 * @param int $id Enrollment row ID.
