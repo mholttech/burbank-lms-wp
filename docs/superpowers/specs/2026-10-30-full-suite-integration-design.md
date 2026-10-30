@@ -27,6 +27,7 @@ Phase 1 remains authoritative for BFC identity, approval snapshots, publication 
 - cert.vip API, SSO, or sync.
 - Curricula / multi-course programs as first-class objects (levels remain theme matrix; courses remain single-assessment units).
 - Replacing PressPrimer grading, attempt storage, PDF rendering, or verification pages.
+- **VentraConnect** (and similar social/passwordless login plugins) for this pass — optional later as login-only polish; Burbank owns registration, invites, and profile policy with core WordPress auth.
 
 ## Architecture
 
