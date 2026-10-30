@@ -69,6 +69,13 @@ class Burbank_LMS {
 		$this->loader->add_action( 'init', $access_tables, 'install', 12 );
 		$enrollment_tables = new Enrollment\Tables();
 		$this->loader->add_action( 'init', $enrollment_tables, 'install', 12 );
+		$registration = new Access\Registration();
+		$this->loader->add_filter( 'registration_errors', $registration, 'block_default_registration' );
+		$profile = new Access\Profile();
+		$this->loader->add_filter( 'add_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
+		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
+		$learner = new Access\Learner();
+		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
 		$course_validator = new Courses\Validator();
 		$this->loader->add_filter( 'add_post_metadata', $course_validator, 'guard_meta', 10, 4 );
 		$this->loader->add_filter( 'update_post_metadata', $course_validator, 'guard_meta', 10, 4 );
