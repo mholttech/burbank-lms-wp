@@ -63,7 +63,7 @@
 
 **Schema (exact):**
 
-`{prefix}bfc_invite_codes`: `id` PK, `scope` enum/varchar (`site`|`course`), `course_id` nullable bigint, `code_hash` varchar(255), `label` varchar(191), `kind` (`multi`|`once`), `max_uses` int unsigned null, `use_count` int unsigned default 0, `expires_at` datetime null, `revoked_at` datetime null, `created_by` bigint, `created_at` datetime, indexes on `(scope, course_id)`, `code_hash`.
+`{prefix}bfc_invite_codes`: `id` PK, `scope` enum/varchar (`site`|`course`), `course_id` nullable bigint, `code_hash` varchar(255), `label` varchar(191), `kind` (`multi`|`once`), `max_uses` int unsigned null, `use_count` int unsigned default 0, `expires_at` datetime null, `revoked_at` datetime null, `bound_email` varchar(191) null (optional site-invite email lock), `created_by` bigint, `created_at` datetime, indexes on `(scope, course_id)`, `code_hash`.
 
 `{prefix}bfc_enrollments`: columns per spec (`id`, `course_id`, `user_id`, `status`, `source`, `invite_code_id`, `enrolled_at`, `completed_at`, `quiz_passed_at`, `credential_id`, `course_revision_snapshot`); UNIQUE `(course_id, user_id)`.
 
@@ -121,7 +121,7 @@ class Invites {
 }
 ```
 
-`$args` keys: `course_id` (required if course), `label`, `kind`, `max_uses`, `expires_at`, `bound_email` (optional meta or column — if adding column, bump table version in Task 1 follow-up migration `VERSION=2`). Prefer optional `bound_email` varchar null on invite table from Task 1 to avoid a second migration.
+`$args` keys: `course_id` (required if course), `label`, `kind`, `max_uses`, `expires_at`, `bound_email` (optional; column from Task 1).
 
 - [ ] **Step 1: Write failing tests** covering: create site multi/once; create course requires `course_id`; revoke; expiry; max_uses; once burns; site code fails `find_active` for course scope and vice versa; `course_has_active_invites`; concurrent redeem of once-code allows only one success (transaction).
 
