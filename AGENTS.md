@@ -71,6 +71,8 @@ Current released version is tracked in `.release-please-manifest.json`.
 - **PHP:** PHPStan (`phpstan.neon`), PHPCS (`phpcs.xml`)
 - **JS:** ESLint (`eslint.config.cjs`)
 - **CI:** GitHub Actions in `.github/workflows/`
+- **Security:** `.github/workflows/security.yml` runs gitleaks, Semgrep Cloud (`SEMGREP_APP_TOKEN`), and a scheduled composer/npm advisory audit. Ignore generated trees via `.semgrepignore`.
+- **Dependencies:** Self-hosted Renovate (`.github/workflows/renovate.yml`, `renovate.json`) opens Conventional Commit PRs under `renovate-gha/` using `RENOVATE_APP_ID` / `RENOVATE_APP_PRIVATE_KEY`.
 
 ### Key Primitives
 

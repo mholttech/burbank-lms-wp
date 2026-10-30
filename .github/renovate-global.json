@@ -1,0 +1,9 @@
+{
+  "platform": "github",
+  "repositories": [
+    "mholttech/burbank-lms-wp"
+  ],
+  "onboarding": false,
+  "requireConfig": "required",
+  "branchPrefix": "renovate-gha/"
+}

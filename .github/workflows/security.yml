@@ -1,0 +1,97 @@
+name: Security scans
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Secret scan
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: '8.30.1'
+          GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tgz" | sha256sum -c -
+          sudo tar -xzf /tmp/gitleaks.tgz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: Scan repository history
+        run: gitleaks detect --source . --verbose --redact
+
+  # PR/push Test/Analyse already covers day-to-day quality. This job exists so
+  # newly disclosed CVEs still fail without a code change. Do not add it as a
+  # required PR check; a skipped required job can block merges.
+  dependency-audit:
+    name: Composer and npm audit
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Composer advisory audit
+        run: composer audit --locked --abandoned=report
+      - name: Production npm advisory audit
+        run: npm audit --omit=dev --audit-level=high
+
+  # Semgrep Cloud replaces CodeQL (private repos need GHAS for CodeQL).
+  # Findings go to the Semgrep AppSec Platform; the job fails when the
+  # org policy marks a finding blocking. No GitHub SARIF upload.
+  sast:
+    name: Semgrep
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    container:
+      # Official image includes the Cloud/Pro engine. Pin the tag; bump
+      # it with the Semgrep custom manager in renovate.json.
+      image: semgrep/semgrep:1.182.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # semgrep ci git-fetches the PR baseline from origin. Leaving
+          # persist-credentials false made that fetch unauthenticated on this
+          # private repo (fatal: could not read Username for https://github.com).
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Run Semgrep Cloud
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: |
+          if [ -z "$SEMGREP_APP_TOKEN" ]; then
+            echo "::error::Set Actions secret SEMGREP_APP_TOKEN (Semgrep Cloud → Settings → Tokens)."
+            exit 1
+          fi
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$(pwd)"
+          semgrep ci --no-suppress-errors

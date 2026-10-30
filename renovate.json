@@ -1,0 +1,121 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "enabledManagers": [
+    "composer",
+    "npm",
+    "github-actions",
+    "custom.regex"
+  ],
+  "dependencyDashboard": true,
+  "automerge": false,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "labels": [
+    "dependencies"
+  ],
+  "semanticCommits": "enabled",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "dependencies",
+      "security"
+    ]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track WordPress core archive version in wp-env configs",
+      "managerFilePatterns": [
+        "/^\\.wp-env(\\.test)?\\.json$/"
+      ],
+      "matchStrings": [
+        "\"core\":\\s*\"https://wordpress\\.org/wordpress-(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)\\.zip\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "WordPress/WordPress"
+    },
+    {
+      "customType": "regex",
+      "description": "Pin the Semgrep Cloud CI image used by Security scans",
+      "managerFilePatterns": [
+        "/^\\.github\\/workflows\\/security\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "image:\\s*semgrep/semgrep:(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "semgrep/semgrep",
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions",
+      "semanticCommitType": "ci"
+    },
+    {
+      "matchManagers": [
+        "composer",
+        "npm"
+      ],
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Automerge patch and pin updates after CI",
+      "matchUpdateTypes": [
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": false
+    },
+    {
+      "description": "Dev-only tooling (PHPStan, PHPCS, wp-scripts, etc.): auto-merge patch/minor once CI passes. Nothing here ships in the plugin zip.",
+      "matchManagers": [
+        "composer",
+        "npm"
+      ],
+      "matchDepTypes": [
+        "require-dev",
+        "devDependencies"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ],
+      "automerge": true
+    },
+    {
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "groupName": "WordPress Core (wp-env)",
+      "semanticCommitType": "build"
+    },
+    {
+      "matchPackageNames": [
+        "simple-git"
+      ],
+      "allowedVersions": "<4.0.0",
+      "description": "@wordpress/env requires simple-git 3.x CommonJS default export"
+    }
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/vendor-prefixed/**"
+  ],
+  "schedule": [
+    "before 6am"
+  ],
+  "timezone": "America/Los_Angeles"
+}
