@@ -143,7 +143,7 @@ What each surface does with an assessed change to a **published** course:
 Use **Start material revision** with a new revision label to change assessed content. `start_revision()`:
 
 - requires `edit_post` (editors can start revisions, but only approvers can approve them);
-- rejects a label that is empty, longer than 32 characters, changed by `sanitize_text_field`, equal to the current revision, or used by **any** earlier approval snapshot of this course;
+- trims surrounding whitespace, then rejects a label that is empty, longer than 32 characters, altered by `sanitize_text_field` (beyond that trim), equal to the current revision, or used by **any** earlier approval snapshot of this course;
 - removes current approval, returns a live course to draft, and then stores the new `course_revision`.
 
 Then edit the assessed fields, save, have a Training Administrator approve, and publish again. Every earlier snapshot is kept.
@@ -177,7 +177,7 @@ Archiving is the supported way to retire a course. **Archive** in the meta box, 
 ### Deletion
 
 - A course with any approval snapshot **cannot be permanently deleted**. `pre_delete_post` refuses it, and `wp_delete_post()` returns `false`.
-- Such a course can still be moved to the trash. Trash cannot be emptied for it: **Delete Permanently** has no effect, and the daily `wp_scheduled_delete` cron retries it and fails harmlessly each time. Restore it from the trash and archive it instead.
+- Such a course can still be moved to the trash. Permanent deletion fails with WordPress’s generic *Error in deleting the item.* screen and stops an **Empty Trash** batch at that course (later trash items in the same request are not purged). The daily `wp_scheduled_delete` cron retries the blocked delete and fails harmlessly each time. Restore the course from the trash and archive it instead.
 - A course with no snapshots deletes completely, including its post meta, and does not trigger approval invalidation. Its BFC reservation stays as a tombstone.
 
 ## Publication gates

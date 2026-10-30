@@ -44,7 +44,7 @@ Each failure has its own code and an actionable message. REST returns them with 
 | `burbank_course_dependencies` | Quiz or Certificate missing, inactive, a different version, or a changed contract. *Activate the supported PressPrimer Quiz 3.1.3 and PressPrimer Certificate 2.0.2 releases before publishing.* No further checks run. |
 | `burbank_course_quiz` | Quiz missing or not published. |
 | `burbank_course_certificate` | Template missing or not published. |
-| `burbank_course_any_quiz` | An active `ppq_quiz` trigger with `any` or `NULL` scope. |
+| `burbank_course_any_quiz` | An active `ppq_quiz` trigger with `any`, `NULL`, or empty `source_ref` scope. |
 | `burbank_course_trigger_mismatch` | An active `ppq_quiz` trigger for a different quiz. |
 | `burbank_course_trigger` | No active `ppq_quiz` trigger for the selected quiz. |
 | `burbank_course_duplicate_quiz` | Another course already uses the quiz. |
