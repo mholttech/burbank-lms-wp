@@ -31,6 +31,7 @@ def check_zip(filename, expected):
             "burbank-lms/burbank-lms.php",
             "burbank-lms/src/Burbank_LMS.php",
             "burbank-lms/vendor/autoload.php",
+            "burbank-lms/vendor-prefixed/autoload.php",
             "burbank-lms/README.txt",
         }
         missing = required - names

@@ -63,8 +63,12 @@ jobs:
       - name: Install production PHP dependencies
         run: |
           mkdir -p vendor-prefixed
+          # --no-scripts avoids unrelated Composer hooks; Strauss must still run so
+          # vendor-prefixed/autoload.php exists (bootstrap refuses to load without it).
           composer install --no-dev --no-scripts --prefer-dist --no-interaction --no-progress --optimize-autoloader
+          composer run prefix-namespaces
           test -f vendor/autoload.php
+          test -f vendor-prefixed/autoload.php
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
