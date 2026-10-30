@@ -23,6 +23,8 @@ src/                     All plugin logic (PSR-4: Burbank_LMS\)
   Activator.php          Activation
   Deactivator.php        Deactivation
   Uninstallor.php        Uninstall
+  Courses/               Course catalog schema, identity, approval, admin
+  Integrations/          Dependency adapters (PressPrimer)
   Abilities/             Abilities API interfaces
   Blocks/                Gutenberg blocks (npm run create-block)
 resources/admin/         Admin JS and SCSS source
@@ -86,6 +88,7 @@ Trigger a release by pushing the SemVer tag. `deploy.yml` runs on every tag push
 
 ### Feature Quick Reference
 
+- **Course catalog:** `src/Courses/` owns the Pods-provisioned `bfc_course` type (Pods is required), permanent BFC registry, write-path validation, approval snapshots, material revisions, archive and publication gates; `src/Integrations/PressPrimer.php` checks the exact supported PressPrimer Quiz 3.1.3 / Certificate 2.0.2 contracts. Every write path (Pods, REST, classic, metadata APIs) must stay guarded, and published codes and snapshots are never mutated. See `docs/course-authoring.md` and `docs/pressprimer-compatibility.md`; tests are `tests/php/Course*Test.php`.
 - **Blocks:** Run `npm run create-block`. Registration is automatic; `tests/php/BlockRegistrationTest.php` guards that every built block is loaded (via `/wp/v2/block-types`) and its assets exist. Use the `wp-plugin-bp` skill for block guidance.
 - **Abilities API:** Implement interfaces in `src/Abilities/`, register via Loader. `tests/php/AbilityRegistrationTest.php` guards that every `Ability_Interface` implementation (and its category) is registered. Use the `wp-plugin-bp` skill for ability guidance.
 - **i18n:** Extract with `composer run i18n:extract`, compile with `composer run i18n:compile`. Use the `wp-plugin-bp` skill for translation work.
