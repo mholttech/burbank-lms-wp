@@ -20,10 +20,10 @@ jobs:
     needs: setup
     
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Restore Node dependencies cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             node_modules
@@ -45,10 +45,10 @@ jobs:
     needs: setup
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Restore PHP dependencies cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             vendor
@@ -56,7 +56,7 @@ jobs:
           key: ${{ needs.setup.outputs.php-cache-key }}
           fail-on-cache-miss: true
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.2'
           tools: cs2pr
@@ -78,10 +78,10 @@ jobs:
     needs: [setup, test-php, test-js]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Restore PHP dependencies cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             vendor
@@ -90,7 +90,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore Node dependencies cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             node_modules
