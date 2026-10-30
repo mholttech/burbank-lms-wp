@@ -235,8 +235,8 @@ class Admin {
 		if ( ! current_user_can( 'enroll_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- enroll_bfc_courses from Capabilities VERSION 2.
 			return;
 		}
-		$learner   = new Learner();
-		$profile   = new Profile();
+		$learner    = new Learner();
+		$profile    = new Profile();
 		$has_access = user_can( $user->ID, Learner::CAP_ACCESS ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
 		$suspended  = $learner->is_suspended( (int) $user->ID );
 		$invite_id  = (int) get_user_meta( $user->ID, Learner::META_SITE_INVITE_ID, true );
@@ -257,8 +257,7 @@ class Admin {
 		echo '</td></tr>';
 		echo '</tbody></table>';
 
-		$action = esc_url( admin_url( 'admin-post.php' ) );
-		echo '<form method="post" action="' . $action . '">';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="bfc_learner_profile">';
 		echo '<input type="hidden" name="bfc_user_id" value="' . esc_attr( (string) $user->ID ) . '">';
 		echo '<input type="hidden" name="bfc_profile_nonce" value="' . esc_attr( $nonce ) . '">';
@@ -316,9 +315,9 @@ class Admin {
 	/**
 	 * Render an invite list with revoke actions.
 	 *
-	 * @param list<object> $rows      Invite rows.
-	 * @param string       $scope     Invite scope.
-	 * @param int          $course_id Course ID when scope is course.
+	 * @param array<int, object> $rows      Invite rows.
+	 * @param string             $scope     Invite scope.
+	 * @param int                $course_id Course ID when scope is course.
 	 */
 	private function render_invite_table( array $rows, string $scope, int $course_id ): void {
 		if ( array() === $rows ) {

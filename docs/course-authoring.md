@@ -58,7 +58,7 @@ Registry installation runs on activation and on `init`. It requires InnoDB. If i
 | Editor (Training Editor) | `edit_bfc_courses`, `edit_others_bfc_courses`, `edit_private_bfc_courses`, `edit_published_bfc_courses`, `publish_bfc_courses`, `read_private_bfc_courses`, `delete_bfc_courses`, `delete_others_bfc_courses`, `delete_private_bfc_courses`, `delete_published_bfc_courses` |
 | Administrator (Training Administrator) | All of the above plus `approve_bfc_courses` |
 
-Editors can draft, edit and publish courses, but publication still requires a stored approval from a user who currently holds `approve_bfc_courses` (see [Publication gates](#publication-gates)). Learner capabilities are not part of this phase. Phase 2 owns learner access.
+Editors can draft, edit and publish courses, but publication still requires a stored approval from a user who currently holds `approve_bfc_courses` (see [Publication gates](#publication-gates)). Learner training access and `enroll_bfc_courses` are documented in [learner-access.md](learner-access.md).
 
 To make another user an approver, grant `approve_bfc_courses` to that user or role. If you remove the capability from a past approver, their approvals no longer satisfy the publication gate. Courses they approved that are already published stay published. Any later save that keeps such a course published fails (REST) or is held as a draft (classic), and an unpublished course cannot be published, until a current approver re-approves it.
 
@@ -86,8 +86,8 @@ Value rules:
 - `bfc_code`: `BFC-100` through `BFC-999`, three digits, no revision suffix.
 - `subject_category`: must match the first digit of the code (`Validator::SUBJECTS`): 1 `program_administration_membership`, 2 `safety_field_awareness`, 3 `communications`, 4 `field_operations_documentation`, 5 `rehabilitation_logistics`, 6 `incident_management_coordination`, 7 `leadership_program_operations`, 8 `community_engagement_public_education`, 9 `reserved`.
 - `course_outcome`: only `independent_study`.
-- `catalog_state`: `draft`, `published` or `archived`. WordPress post status controls publication. This field controls catalog visibility.
-- `matrix_requirement_slug`: a stable slug of an existing membership requirement. It is stored as text and not checked against the matrix, so a missing matrix record never breaks a course.
+- `catalog_state`: `draft`, `published` or `archived`. WordPress post status controls publication. This field controls catalog visibility (learner catalog and enroll CTAs honor it; see [learner-access.md](learner-access.md)).
+- `matrix_requirement_slug`: optional slug of a theme-owned `bc_requirement` post. When the `bc_requirement` post type exists and the slug is non-empty, **publication** soft-checks that a published requirement with that `post_name` exists (`Publication::validate` → `burbank_course_matrix_requirement`). When the type is absent, or the slug is empty, the check is skipped so a missing matrix never blocks drafts, enroll, quiz, or certificate paths. Pods exposes a pick of published requirements when the type exists, otherwise a plain text field. The slug is stored as text (never a post ID).
 
 **Assessed fields** are `Validator::PUBLISHED_GATES`: code, revision, subject, outcome, quiz and certificate template. Changing any of them invalidates approval. All other fields, plus the title, body, excerpt and image, are editorial and keep the current approval.
 
@@ -171,7 +171,7 @@ Snapshot rows cannot be updated, deleted or renamed through any metadata API, in
 
 ## Archive and retirement
 
-Archiving is the supported way to retire a course. **Archive** in the meta box, or setting `catalog_state` to `archived`, keeps the post status, BFC reservation, approval evidence and snapshots, and it works even when a PressPrimer dependency is unhealthy. Archived courses still count for quiz-assignment and code uniqueness. Learner discovery that honors `catalog_state` arrives in Phase 3. Until then, archiving only records state.
+Archiving is the supported way to retire a course. **Archive** in the meta box, or setting `catalog_state` to `archived`, keeps the post status, BFC reservation, approval evidence and snapshots, and it works even when a PressPrimer dependency is unhealthy. Archived courses still count for quiz-assignment and code uniqueness. Learner catalog and new enrollments honor `catalog_state` (see [learner-access.md](learner-access.md)); existing active enrollments may finish unless withdrawn.
 
 `catalog_state` is not assessed, so an editor can un-archive a course by setting it back to `published` or `draft` through the Pods field or REST. Doing so does not require re-approval.
 
@@ -190,6 +190,7 @@ Archiving is the supported way to retire a course. **Archive** in the meta box, 
 3. The supported PressPrimer releases, a published quiz, a published certificate template, and exactly one active matching quiz trigger. See [pressprimer-compatibility.md](pressprimer-compatibility.md).
 4. No other non-auto-draft course (including drafts, trash and archived courses) assigned the same quiz.
 5. Stored `approved_by`/`approved_at` written by a user who currently holds `approve_bfc_courses`, matching the latest snapshot's assessed configuration.
+6. **Matrix soft-check (publish only):** if `bc_requirement` exists and `matrix_requirement_slug` is non-empty, a published requirement with that slug must exist. Empty slug or absent type → no failure. Already-published courses keep publish on ordinary editorial saves even if the matrix later diverges (`$check_matrix` defaults off when the post is already `publish`).
 
 How each surface reports a failure:
 

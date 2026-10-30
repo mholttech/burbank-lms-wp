@@ -102,7 +102,7 @@ class Admin {
 		echo '<th>' . esc_html__( 'Completed', 'burbank-lms' ) . '</th>';
 		echo '</tr></thead><tbody>';
 		foreach ( $rows as $row ) {
-			$user = get_userdata( (int) $row->user_id );
+			$user  = get_userdata( (int) $row->user_id );
 			$label = $user ? sprintf( '%s (#%d)', $user->display_name, $user->ID ) : '#' . (int) $row->user_id;
 			echo '<tr>';
 			echo '<td>' . esc_html( $label ) . '</td>';

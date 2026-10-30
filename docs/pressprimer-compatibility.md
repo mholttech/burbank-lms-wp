@@ -54,17 +54,38 @@ Each failure has its own code and an actionable message. REST returns them with 
 
 Missing or unsupported PressPrimer blocks **approval and publication**. It also blocks valid assessed edits to an already published course, because those edits are checked against the mapping. Drafts can still be edited, and published courses can still be archived. Burbank LMS never publishes on the assumption that dependencies are fine.
 
-## Learner quiz and certificate adapters
+## Hooks consumed (learner suite)
 
-Thin adapters in `Integrations\PressPrimer_Quiz` and `Integrations\PressPrimer_Certificate` translate PressPrimer hooks into enrollment and progress rules. Mapping validation in `Integrations\PressPrimer` is unchanged.
+Thin adapters in `Integrations\PressPrimer_Quiz`, `Integrations\PressPrimer_Certificate`, and optional `Branding\PressPrimer` translate PressPrimer hooks into enrollment, progress, merge, and chrome rules. Mapping validation in `Integrations\PressPrimer` is unchanged. Full inventories stay under `docs/superpowers/research/`.
 
-| Hook | Behavior |
-| --- | --- |
-| `pressprimer_quiz_can_start` / `pressprimer_quiz_before_submit` | For a published `bfc_course` mapped by `pressprimer_quiz_id`: require `Learner::can_learn` and an active enrollment. Unmapped quizzes are not gated. |
-| `pressprimer_quiz_quiz_passed` | Stamp `quiz_passed_at` on the active enrollment once (priority 10, before Certificate's `ppq_quiz` issuer at 20). |
-| `ppcert_issue_validation` | For `ppq_quiz` issuances mapped to a course: require active enrollment and `quiz_passed_at`. |
-| `ppcert_certificate_issued` | Store the certificate row ID, set `status=completed`, fire `burbank_lms_course_completed`. |
-| `ppcert_register_merge_fields` / `ppcert_merge_data` | Expose legal name, `bfc_code`, title, revision, outcome, subject, and matrix slug. Never email. |
+### Quiz
+
+| Hook | Kind | Behavior |
+| --- | --- | --- |
+| `pressprimer_quiz_can_start` | filter | For a published `bfc_course` mapped by `pressprimer_quiz_id`: require `Learner::can_learn` and an active enrollment. Unmapped quizzes pass through ungated. |
+| `pressprimer_quiz_before_submit` | filter | Same checks again at submit. |
+| `pressprimer_quiz_quiz_passed` | action | Stamp `quiz_passed_at` on the active enrollment once (priority 10, before Certificate's `ppq_quiz` issuer at 20). |
+
+### Certificate
+
+| Hook | Kind | Behavior |
+| --- | --- | --- |
+| `ppcert_register_merge_fields` | filter | Register Burbank tokens (`bfc.*`), including learner legal name — never email. |
+| `ppcert_merge_data` | filter | Fill legal name, `bfc_code`, title, revision, outcome, subject, and matrix slug at issue/render. |
+| `ppcert_issue_validation` | filter | For `ppq_quiz` issuances mapped to a course: require active enrollment and `quiz_passed_at`. |
+| `ppcert_certificate_issued` | action | Store credential id, set enrollment `completed`, fire `burbank_lms_course_completed`. |
+
+### Optional branding (when option `burbank_lms_brand_pressprimer` is truthy)
+
+| Hook | Kind | Behavior |
+| --- | --- | --- |
+| `pressprimer_quiz_plugin_name` | filter | Replace display name with Burbank label. |
+| `pressprimer_quiz_dashboard_logo` | filter | Prefer site icon / filtered logo URL. |
+| `pressprimer_quiz_shell_branding` | filter | Product name / logo bag for learner shell when exposed. |
+| `ppcert_plugin_name` | filter | Same name override for Certificate chrome. |
+| `ppcert_dashboard_logo` | filter | Same logo override for Certificate chrome. |
+
+Not consumed in this suite: `ppcert_before_issue` (validation runs on `ppcert_issue_validation` only), quiz fail/completed/attempt audit hooks, Certificate upsell/mascot filters, PP certificate email content filters, and PressPrimer AI prompt context filters.
 
 ## What Burbank LMS does not do
 
@@ -72,6 +93,7 @@ Thin adapters in `Integrations\PressPrimer_Quiz` and `Integrations\PressPrimer_C
 - It does not issue, render or verify certificates. PressPrimer Certificate does, through its own trigger.
 - It does not create or edit quizzes, templates or triggers. Configure them in PressPrimer, then reference their IDs on the course.
 - It does not query PressPrimer database tables directly or rely on undocumented internals beyond the contracts above.
+- It does not build a parallel AI stack or Certificate upsell/mascot UI.
 
 Publication still checks that the configuration a course points at exists, is published, and is scoped to that course's quiz alone. Learner adapters additionally gate mapped quiz start/submit and certificate completion against enrollment.
 
