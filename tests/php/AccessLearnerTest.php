@@ -111,8 +111,6 @@ class AccessLearnerTest extends WP_UnitTestCase {
 	public function test_learner_cannot_update_legal_name_admin_correction_audits(): void {
 		$user_id = $this->verified_learner( 'profile@example.com' );
 		$profile = new Profile();
-		add_filter( 'update_user_metadata', array( $profile, 'guard_legal_name_meta' ), 10, 4 );
-		add_filter( 'add_user_metadata', array( $profile, 'guard_legal_name_meta' ), 10, 4 );
 
 		wp_set_current_user( $user_id );
 		$denied = $profile->set_legal_name( $user_id, 'Hacker Name' );
@@ -124,7 +122,9 @@ class AccessLearnerTest extends WP_UnitTestCase {
 		$this->assertSame( 'Jamie Learner', $profile->get_legal_name( $user_id ) );
 
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		( new \Burbank_LMS\Courses\Capabilities() )->install();
 		wp_set_current_user( $admin_id );
+		$this->assertTrue( current_user_can( 'enroll_bfc_courses' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Training admin cap.
 		$result = $profile->set_legal_name( $user_id, 'Jamie Corrected', true );
 		$this->assertTrue( $result );
 		$this->assertSame( 'Jamie Corrected', $profile->get_legal_name( $user_id ) );
@@ -138,5 +138,50 @@ class AccessLearnerTest extends WP_UnitTestCase {
 		$this->assertSame( 'Jamie Learner', $last['from'] );
 		$this->assertSame( 'Jamie Corrected', $last['to'] );
 		$this->assertSame( $admin_id, (int) $last['by'] );
+	}
+
+	/** Learners cannot delete legal name usermeta to clear-then-rewrite. */
+	public function test_learner_cannot_delete_legal_name_meta(): void {
+		$user_id = $this->verified_learner( 'delete-name@example.com' );
+		$profile = new Profile();
+		wp_set_current_user( $user_id );
+
+		$deleted = delete_user_meta( $user_id, 'burbank_lms_legal_name' );
+		$this->assertFalse( $deleted );
+		$this->assertSame( 'Jamie Learner', $profile->get_legal_name( $user_id ) );
+
+		global $wpdb;
+		$mid = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB -- Locate usermeta mid for by-mid delete guard.
+			$wpdb->prepare(
+				"SELECT umeta_id FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1",
+				$user_id,
+				'burbank_lms_legal_name'
+			)
+		);
+		$this->assertGreaterThan( 0, $mid );
+		$this->assertFalse( delete_metadata_by_mid( 'user', $mid ) );
+		$this->assertSame( 'Jamie Learner', $profile->get_legal_name( $user_id ) );
+	}
+
+	/** Quiz-cap filter denies role-granted take-quiz until can_learn; allows after. */
+	public function test_filter_quiz_cap_overrides_subscriber_role_grant(): void {
+		$role = get_role( 'subscriber' );
+		$this->assertNotNull( $role );
+		$role->add_cap( 'pressprimer_quiz_take_quiz' );
+
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$learner = new Learner();
+		$learner->grant_access( $user_id );
+		$this->assertFalse( $learner->can_learn( $user_id ) );
+		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Filter overrides role grant.
+
+		update_user_meta( $user_id, Learner::META_EMAIL_VERIFIED_AT, gmdate( 'c' ) );
+		$learner->sync_quiz_cap( $user_id );
+		$this->assertTrue( $learner->can_learn( $user_id ) );
+		$this->assertTrue( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- can_learn allows take quiz.
+
+		$learner->suspend( $user_id );
+		$this->assertFalse( $learner->can_learn( $user_id ) );
+		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Suspended still denied.
 	}
 }

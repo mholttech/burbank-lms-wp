@@ -45,13 +45,11 @@ class Profile {
 				__( 'Legal name can only be corrected by a training administrator.', 'burbank-lms' )
 			);
 		}
-		if ( $admin_correction ) {
-			if ( ! current_user_can( 'enroll_bfc_courses' ) && ! current_user_can( 'edit_users' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- enroll_bfc_courses from Capabilities VERSION 2.
-				return new \WP_Error(
-					'burbank_profile_legal_name_forbidden',
-					__( 'You are not allowed to correct legal names.', 'burbank-lms' )
-				);
-			}
+		if ( $admin_correction && ! current_user_can( 'enroll_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- enroll_bfc_courses from Capabilities VERSION 2.
+			return new \WP_Error(
+				'burbank_profile_legal_name_forbidden',
+				__( 'You are not allowed to correct legal names.', 'burbank-lms' )
+			);
 		}
 
 		self::$allow_legal_name_write = true;
@@ -78,9 +76,9 @@ class Profile {
 	/**
 	 * Block direct usermeta writes to legal name unless Profile allows them.
 	 *
-	 * @param null|bool $check    Short-circuit value.
-	 * @param int       $user_id  User ID.
-	 * @param string    $meta_key Meta key.
+	 * @param null|bool $check      Short-circuit value.
+	 * @param int       $user_id    User ID.
+	 * @param string    $meta_key   Meta key.
 	 * @param mixed     $meta_value Meta value.
 	 * @return null|bool
 	 */
@@ -89,6 +87,36 @@ class Profile {
 			return $check;
 		}
 		if ( self::$allow_legal_name_write ) {
+			return $check;
+		}
+		return false;
+	}
+
+	/**
+	 * Block usermeta deletes of legal name (prevents delete-then-rewrite bypass).
+	 *
+	 * @param null|bool $check    Short-circuit value.
+	 * @param int       $user_id  User ID.
+	 * @param string    $meta_key Meta key.
+	 * @return null|bool
+	 */
+	public function guard_legal_name_delete( $check, int $user_id, string $meta_key ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- WordPress filter signature.
+		if ( self::META_LEGAL_NAME !== $meta_key ) {
+			return $check;
+		}
+		return false;
+	}
+
+	/**
+	 * Block legal-name deletes routed through metadata mid APIs.
+	 *
+	 * @param null|bool $check   Short-circuit value.
+	 * @param int       $meta_id Meta row ID.
+	 * @return null|bool
+	 */
+	public function guard_legal_name_delete_id( $check, int $meta_id ) {
+		$meta = get_metadata_by_mid( 'user', $meta_id );
+		if ( ! $meta || self::META_LEGAL_NAME !== $meta->meta_key ) {
 			return $check;
 		}
 		return false;

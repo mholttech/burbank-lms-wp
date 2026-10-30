@@ -75,6 +75,8 @@ class Burbank_LMS {
 		$profile = new Access\Profile();
 		$this->loader->add_filter( 'add_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
 		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
+		$this->loader->add_filter( 'delete_user_metadata', $profile, 'guard_legal_name_delete', 10, 3 );
+		$this->loader->add_filter( 'delete_user_metadata_by_mid', $profile, 'guard_legal_name_delete_id', 10, 2 );
 		$learner = new Access\Learner();
 		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
 		$course_validator = new Courses\Validator();
