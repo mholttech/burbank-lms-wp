@@ -21,6 +21,12 @@ constants.php
 README.md
 CLAUDE.md
 AGENTS.md
+CHANGELOG.md
+
+# Release tooling
+/scripts/
+release-please-config.json
+.release-please-manifest.json
 
 # Composer credentials
 auth.json
