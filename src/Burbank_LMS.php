@@ -62,6 +62,21 @@ class Burbank_LMS {
 		$this->loader->add_action( 'init', $course_schema, 'register', 12 );
 		$this->loader->add_action( 'admin_notices', $course_schema, 'notice' );
 		$this->loader->add_action( 'init', new Courses\Capabilities(), 'install', 12 );
+		$course_registry = new Courses\Registry();
+		$this->loader->add_action( 'init', $course_registry, 'install', 12 );
+		$this->loader->add_action( 'admin_notices', $course_registry, 'notice' );
+		$course_validator = new Courses\Validator();
+		$this->loader->add_filter( 'add_post_metadata', $course_validator, 'guard_meta', 10, 4 );
+		$this->loader->add_filter( 'update_post_metadata', $course_validator, 'guard_meta', 10, 4 );
+		$this->loader->add_filter( 'delete_post_metadata', $course_validator, 'guard_delete', 10, 3 );
+		$this->loader->add_filter( 'update_post_metadata_by_mid', $course_validator, 'guard_meta_id', 10, 4 );
+		$this->loader->add_filter( 'delete_post_metadata_by_mid', $course_validator, 'guard_delete_id', 10, 2 );
+		$this->loader->add_filter( 'pods_api_post_save_pod_item_bfc_course', $course_validator, 'pods_finished', 10, 3 );
+		$this->loader->add_filter( 'rest_pre_insert_bfc_course', $course_validator, 'rest_preflight', 10, 2 );
+		$this->loader->add_filter( 'pods_api_field_validation', $course_validator, 'pods_preflight', 10, 7 );
+		$this->loader->add_filter( 'wp_insert_post_empty_content', $course_validator, 'reject_invalid_batch', 10, 2 );
+		$this->loader->add_filter( 'wp_insert_post_data', $course_validator, 'guard_post', 10, 2 );
+		$this->loader->add_action( 'wp_after_insert_post', $course_validator, 'seal_published', 10, 2 );
 	}
 
 	/**

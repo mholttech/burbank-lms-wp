@@ -13,6 +13,9 @@ class CourseSchemaTest extends WP_UnitTestCase {
 	/** WordPress clears schema posts between classes; flush Pods' process cache too. */
 	public function set_up(): void {
 		parent::set_up();
+		global $wpdb;
+		// Registry transactions persist across WordPress PHPUnit rollback boundaries.
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_course_registry" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
 		pods_api()->cache_flush_pods();
 		delete_option( Schema::VERSION_OPTION );
 	}

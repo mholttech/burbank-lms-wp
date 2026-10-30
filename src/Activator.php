@@ -23,6 +23,7 @@ class Activator {
 	 * @return void
 	 */
 	public static function activate(): void {
+		( new Courses\Registry() )->install();
 	}
 
 	/**
