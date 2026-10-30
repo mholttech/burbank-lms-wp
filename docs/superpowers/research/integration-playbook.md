@@ -81,12 +81,14 @@ That spec’s **Out of scope** list replaces this playbook’s old “defer” l
 
 ## Recommended build order (inside the suite plan)
 
-1. Enrollment + invite tables/services
-2. Pods picks (quiz, template, optional `bc_requirement` slug)
-3. Quiz `can_start` / `before_submit` + progress on pass
-4. Certificate merge fields + issue validation + completion
-5. Learner blocks + FSE templates
-6. Mail, branding filters, admin enrollment/invite UI, optional AI context
+1. Invite table (`scope=site|course`) + training-access flag + site registration gate
+2. Enrollment table/services (open vs restricted course rules)
+3. Pods picks (quiz, template, optional `bc_requirement` slug)
+4. Quiz `can_start` / `before_submit` + progress on pass
+5. Certificate merge fields + issue validation + completion
+6. Learner blocks (register, catalog, course, enroll, my-courses) + FSE templates
+7. Mail, branding filters, admin site/course invite UI, optional AI context
+
 
 
 ## Source inventories

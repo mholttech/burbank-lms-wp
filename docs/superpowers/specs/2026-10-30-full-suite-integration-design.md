@@ -9,13 +9,14 @@ Build the complete Burbank-owned learner and authoring suite on top of Phase 1 c
 | Stack scope | Burbank-owned Pods + PressPrimer Quiz + Certificate. No LearnDash / LearnPress / Lifter / Tutor bridges. No Certificate upsell/mascot plugs. |
 | Architecture | Domain modules + thin adapters (Approach 1). Business rules live in Burbank services; `Integrations/PressPrimer*` only translate hooks and model calls. |
 | Delivery | One monolithic design and implementation plan/PR covering the full suite. |
-| Enrollment | Stored course↔user rows. Open self-enroll by default. If the course has any **active** invite code, self-enroll requires a valid code. Admins may always enroll. |
-| Invite codes | Both shared multi-use and one-time codes; optional max uses and expiry; revocable. |
+| Site access | **Site invite required** to register a WordPress account and receive training access. No open self-registration into the training audience. Admins may create users and grant training access without a code. |
+| Enrollment | Stored course↔user rows. Only users with **training access** may enroll or take mapped quizzes. Courses are **open** (any training-access user may self-enroll) unless they have active **course** invite codes — then self-enroll requires a valid code for **that course**. Site invites never enroll someone into a restricted course. Admins may always enroll. |
+| Invite codes | Two scopes: **site** (signup / training access) and **course** (per-course gate). Both support multi-use and one-time codes; optional max uses and expiry; revocable. |
 | Completion | Track quiz passed and certificate issued. Course is **completed** when the certificate has been issued; quiz pass is the prerequisite milestone. |
 | Learner UI | Gutenberg blocks primary (FSE). Block theme templates for `bfc_course` archive/single. Shortcodes only if something outside the site editor needs them later. |
 | Program matrix | Path **A**: theme keeps `bc_level` / `bc_requirement`. LMS optionally picks/validates `matrix_requirement_slug` when those types exist. No local membership advancement. cert.vip remains the official volunteer record. |
 
-Phase 1 remains authoritative for BFC identity, approval snapshots, publication gates, archive, and PressPrimer mapping validation. This suite adds enrollment, access, progress, merge fields, learner blocks, admin polish on Burbank surfaces, and branded/email/AI hooks that touch courses — without forking Quiz or Certificate.
+Phase 1 remains authoritative for BFC identity, approval snapshots, publication gates, archive, and PressPrimer mapping validation. This suite adds site-invite registration / training access, course enrollment (open vs restricted), progress, merge fields, learner blocks, admin polish on Burbank surfaces, and branded/email/AI hooks that touch courses — without forking Quiz or Certificate.
 
 ## Out of scope
 
@@ -35,8 +36,8 @@ Phase 1 remains authoritative for BFC identity, approval snapshots, publication 
                             │
 ┌───────────────────────────▼─────────────────────────────┐
 │  Domain                                                 │
-│  Courses/* (Phase 1) · Enrollment/* · Progress/*        │
-│  Learner/* (queries) · Mail/* · Branding/*              │
+│  Courses/* · Access/* (site invites + training flag)    │
+│  Enrollment/* · Progress/* · Learner/* · Mail/*         │
 └─────────────┬───────────────────────────┬───────────────┘
               │                           │
 ┌─────────────▼──────────┐   ┌────────────▼───────────────┐
@@ -54,23 +55,33 @@ Hook registration continues through `Loader` in `src/Burbank_LMS.php`. Version p
 | Module | Responsibility |
 | --- | --- |
 | `Courses/*` | Phase 1 schema, registry, validation, editorial, publication, admin list; extend picks and matrix soft-check |
-| `Enrollment/Service` | Enroll, withdraw, invite redeem, admin assign |
-| `Enrollment/Invites` | Create/revoke codes; hash storage; use counts |
-| `Enrollment/Repository` | Table access for enrollments and invites |
+| `Access/Registration` | Site-invite registration gate; grant/revoke training access |
+| `Access/Invites` | Shared invite CRUD/hash/use-count for `scope=site` and `scope=course` |
+| `Enrollment/Service` | Course enroll, withdraw, course-invite redeem, admin assign |
+| `Enrollment/Repository` | Table access for enrollments |
 | `Progress/Service` | `quiz_passed_at`, completion on certificate issued |
 | `Integrations/PressPrimer` | Version pin, mapping validation (existing) |
 | `Integrations/PressPrimer_Quiz` | `can_start`, `before_submit`, pass/fail/attempt hooks, embed chrome filters |
 | `Integrations/PressPrimer_Certificate` | Merge fields, before_issue/validation, issued/revoked, branding filters that touch Burbank copy |
-| `Learner/Catalog` | Queries for catalog/course blocks (published, not archived, visibility rules) |
-| `Blocks/*` | Catalog, course, enroll, my-courses blocks + FSE templates |
-| `Mail/*` | Enrollment and completion emails via `wp_mail` / PP email filters where appropriate |
+| `Learner/Catalog` | Queries for catalog/course blocks (published, not archived; gated by training access) |
+| `Blocks/*` | Register, catalog, course, enroll, my-courses blocks + FSE templates |
+| `Mail/*` | Site-invite welcome, enrollment, and completion emails |
 | `Branding/*` | Optional filters for PP plugin_name/logo only when Burbank should own learner-facing strings |
 
 ## Data model
 
+### Training access (user)
+
+After a successful **site** invite redemption at registration (or admin grant), the user has training access, stored as user meta `burbank_lms_training_access` = `1` (and optional `burbank_lms_site_invite_id` for audit). Users without this flag cannot self-enroll, see learner catalog actions, or start mapped quizzes — even if logged in.
+
 ### Course (`bfc_course`)
 
-Keep Phase 1 assessed and editorial fields. Invite policy is **implicit**: any active invite code on the course turns on the invite gate for self-enroll; otherwise self-enroll is open. No new mode enum.
+Keep Phase 1 assessed and editorial fields. Course invite policy is **implicit**:
+
+- **Open course** — no active **course-scoped** invite codes → any user with training access may self-enroll.
+- **Restricted course** — one or more active course-scoped invite codes → self-enroll requires redeeming a valid code for **that** `course_id`. Site invites do not satisfy this gate.
+
+No mode enum on the course.
 
 ### `{prefix}bfc_enrollments`
 
@@ -80,7 +91,7 @@ Keep Phase 1 assessed and editorial fields. Invite policy is **implicit**: any a
 | `course_id`, `user_id` | Unique pair |
 | `status` | `active` \| `withdrawn` \| `completed` |
 | `source` | `self` \| `admin` \| `invite` |
-| `invite_code_id` | Nullable |
+| `invite_code_id` | Nullable (course invite used, if any) |
 | `enrolled_at`, `completed_at` | |
 | `quiz_passed_at` | First successful pass while enrolled |
 | `credential_id` | PressPrimer certificate credential id from issuance |
@@ -88,9 +99,13 @@ Keep Phase 1 assessed and editorial fields. Invite policy is **implicit**: any a
 
 ### `{prefix}bfc_invite_codes`
 
+One table, two scopes:
+
 | Column | Notes |
 | --- | --- |
-| `id`, `course_id` | |
+| `id` | PK |
+| `scope` | `site` \| `course` |
+| `course_id` | Required when `scope=course`; **NULL** when `scope=site` |
 | `code_hash` | Store hash; plaintext shown once at create |
 | `label` | Admin note |
 | `kind` | `multi` \| `once` |
@@ -101,22 +116,49 @@ Keep Phase 1 assessed and editorial fields. Invite policy is **implicit**: any a
 
 **Active code** = not revoked, not expired, and (`once` with `use_count = 0`) or (`multi` under `max_uses` if set).
 
+Site codes and course codes are never interchangeable: redeeming a site code cannot enroll into a course; redeeming a course code cannot grant site registration / training access.
+
 Install tables with versioned options (same pattern as the BFC registry). Uninstall retains enrollment and invite tables (Phase 1 `Uninstallor` is a no-op today); training history must not vanish on accidental delete.
 
-## Enrollment and access
+## Access ladder
+
+```
+Site invite (or admin grant)
+        │
+        ▼
+WordPress user + training access
+        │
+        ├── Open course ──────────► self-enroll (no course code)
+        │
+        └── Restricted course ────► course invite (or admin enroll)
+                │
+                ▼
+        Active enrollment → quiz → pass → certificate → completed
+```
+
+## Registration (site invites)
+
+- Default WordPress open registration for the training audience is **off** for this product path: registration UI requires a site invite code (custom register block/form and/or hooked `registration_errors` / user creation).
+- Redeeming a valid **site** invite during signup creates the user, increments the code, and sets training access.
+- Admins with `enroll_bfc_courses` (or `create_users` + LMS grant UI) may create users and grant/revoke training access without a site code.
+- Existing staff accounts (editors/admins) are unaffected; training access is a learner gate, not a replacement for `edit_bfc_courses`.
+
+## Enrollment and course access
 
 | Action | Who | Rules |
 | --- | --- | --- |
-| Self-enroll | Logged-in user | Course published and `catalog_state ≠ archived`. If any active invite → require valid redeem; else open. |
-| Admin enroll | `enroll_bfc_courses` | Same publication/archive checks; bypasses codes; `source=admin`. |
+| Self-enroll (open course) | User with training access | Course published and `catalog_state ≠ archived`; no active course-scoped invites on that course. `source=self`. |
+| Self-enroll (restricted) | User with training access | Same publication/archive checks + redeem valid **course** invite for that `course_id`. `source=invite`. |
+| Admin enroll | `enroll_bfc_courses` | Publication/archive checks; bypasses course codes; may enroll users who lack training access only if admin also grants training access in the same flow (or user already has it). `source=admin`. |
 | Withdraw | Learner (own) or admin | `withdrawn`; blocks quiz until re-enrolled. |
-| Redeem | During self-enroll | Transaction: validate code + insert enrollment + increment use count. |
+| Redeem site invite | During registration | Transaction: validate site code + create/mark user + set training access + increment use count. |
+| Redeem course invite | During self-enroll on restricted course | Transaction: validate course code + insert enrollment + increment use count. |
 
 ### Quiz gates
 
 | Hook | Behavior |
 | --- | --- |
-| `pressprimer_quiz_can_start` | Mapped published `bfc_course` for this quiz + active enrollment + not blocking archive/withdraw. |
+| `pressprimer_quiz_can_start` | User has training access + mapped published `bfc_course` + active enrollment + not blocking archive/withdraw. |
 | `pressprimer_quiz_before_submit` | Same checks again. |
 
 Unmapped quizzes (no published Burbank course) are not gated by Burbank.
@@ -157,15 +199,16 @@ Register and fill at least: `bfc_code`, course title, `course_revision`, `course
 
 | Surface | Role |
 | --- | --- |
-| `burbank-lms/catalog` | List discoverable published courses (respect archive) |
-| `burbank-lms/course` | Single course summary, enroll CTA / invite field, link into quiz when enrolled |
-| `burbank-lms/enroll` | Standalone enroll/redeem UI for a selected course |
+| `burbank-lms/register` | Signup form that **requires a site invite code**, then creates the user + training access |
+| `burbank-lms/catalog` | List discoverable published courses (respect archive); enroll CTAs only for users with training access |
+| `burbank-lms/course` | Summary; open-course enroll CTA **or** course-invite field when restricted; quiz link when enrolled |
+| `burbank-lms/enroll` | Standalone enroll / course-invite redeem for a selected course |
 | `burbank-lms/my-courses` | Learner’s enrollments and status (active / passed / completed) |
 | Block templates | `archive-bfc_course`, `single-bfc_course` so FSE works without hand-placing blocks |
 
 Quiz taking continues through PressPrimer’s player; Burbank wraps via before/after quiz and results hooks for course chrome (title, status, back-to-course). Certificate history/verify remain PP shortcodes/blocks embedded or linked from My Courses when enrolled/completed.
 
-REST: prefer domain services behind WordPress REST routes owned by Burbank for enroll/withdraw/invite redeem. Do not proxy PressPrimer attempt mutation through Burbank REST; gates stay on PP hooks.
+REST: Burbank-owned routes for site-invite registration (or authenticated grant), enroll/withdraw, and course-invite redeem. Do not proxy PressPrimer attempt mutation through Burbank REST; gates stay on PP hooks.
 
 ## Capabilities, mail, branding, admin polish, AI
 
@@ -174,14 +217,14 @@ REST: prefer domain services behind WordPress REST routes owned by Burbank for e
 | Cap | Default |
 | --- | --- |
 | Phase 1 `*_bfc_courses` + `approve_bfc_courses` | Unchanged |
-| `enroll_bfc_courses` | Administrator (invite CRUD + admin enroll) |
-| *(learner access)* | No blanket `take_*` grant required: an **active enrollment row** is the source of truth for `can_start` / submit. Logged-in is enough to attempt self-enroll when policy allows. |
+| `enroll_bfc_courses` | Administrator (site + course invite CRUD, admin enroll, grant/revoke training access) |
+| *(learner access)* | User meta `burbank_lms_training_access` (from site invite or admin grant). **Active enrollment** remains the source of truth for taking a specific course’s quiz. |
 
 Bump `burbank_lms_course_capabilities_version` when granting new defaults (same idempotent pattern as Phase 1).
 
 ### Mail
 
-Send Burbank-owned emails for: self/admin enrollment confirmation, invite redemption success, course completed (after certificate issued). Prefer `wp_mail` with filterable templates. Optionally append course context onto PP certificate email content filters when the issuance is for a mapped course — do not replace PP’s certificate mail pipeline.
+Send Burbank-owned emails for: site-invite welcome / training access granted, self/admin enrollment confirmation, course-invite redemption success, course completed (after certificate issued). Prefer `wp_mail` with filterable templates. Optionally append course context onto PP certificate email content filters when the issuance is for a mapped course — do not replace PP’s certificate mail pipeline.
 
 ### Branding
 
@@ -189,7 +232,7 @@ Where PP exposes plugin_name / logo filters on learner-facing chrome that Burban
 
 ### Admin polish
 
-Course admin: enrollments list meta box, invite code manager, progress columns (enrolled / passed / completed counts). Align list filters with catalog state. Surface PP admin notices only when they affect mapped courses.
+Global admin: site invite manager. Course admin: enrollments list, **course** invite manager, progress columns (enrolled / passed / completed counts). User profile: training access grant/revoke. Align list filters with catalog state. Surface PP admin notices only when they affect mapped courses.
 
 ### AI
 
@@ -207,11 +250,13 @@ Do not build a parallel AI stack. If PressPrimer AI is used while authoring a qu
 
 Extend the isolated PHPUnit environment (Pods present; PressPrimer fixtures as today):
 
-- Invite gate on/off; multi vs once; expiry; revoke; max uses; admin bypass.
+- Site invite required for registration/training access; site vs course codes not interchangeable.
+- Open course (no course codes) vs restricted course (course codes on); multi vs once; expiry; revoke; max uses; admin bypass.
+- Logged-in without training access cannot self-enroll or `can_start` mapped quizzes.
 - `can_start` / `before_submit` for enrolled, withdrawn, archived, unmapped quiz.
 - Pass → issue → complete pipeline; idempotent `quiz_passed_at`; completion only after issued.
 - Matrix slug validate when `bc_requirement` stub exists; ignore when absent.
-- Caps for enroll vs editor vs learner.
+- Caps for enroll admin vs editor vs learner with/without training access.
 - Block registration and asset presence (existing block registration guard pattern).
 - PHPStan / PHPCS / existing CI.
 
