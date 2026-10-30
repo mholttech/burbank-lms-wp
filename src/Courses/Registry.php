@@ -73,19 +73,25 @@ class Registry {
 		if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
 			return $this->fail();
 		}
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT code, published FROM {$table} WHERE course_id = %d FOR UPDATE", $course_id ) );
-		if ( $wpdb->last_error || ( $row && $row->published && $row->code !== $code ) ) {
-			$wpdb->query( 'ROLLBACK' );
-			return $this->fail();
-		}
-		$previous = $wpdb->suppress_errors();
-		$result   = $row
-			? $wpdb->query( $wpdb->prepare( "UPDATE {$table} SET code = %s WHERE course_id = %d AND published = 0", $code, $course_id ) )
-			: $wpdb->query( $wpdb->prepare( "INSERT INTO {$table} (course_id, code) VALUES (%d, %s)", $course_id, $code ) );
-		$wpdb->suppress_errors( $previous );
-		if ( false === $result || ( $persist && ! $persist() ) || false === $wpdb->query( 'COMMIT' ) ) {
-			$wpdb->query( 'ROLLBACK' );
-			return $this->fail();
+		$previous  = $wpdb->suppress_errors();
+		$committed = false;
+		try {
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT code, published FROM {$table} WHERE course_id = %d FOR UPDATE", $course_id ) );
+			if ( $wpdb->last_error || ( $row && $row->published && $row->code !== $code ) ) {
+				return $this->fail();
+			}
+			$result = $row
+				? $wpdb->query( $wpdb->prepare( "UPDATE {$table} SET code = %s WHERE course_id = %d AND published = 0", $code, $course_id ) )
+				: $wpdb->query( $wpdb->prepare( "INSERT INTO {$table} (course_id, code) VALUES (%d, %s)", $course_id, $code ) );
+			if ( false === $result || ( $persist && ! $persist() ) || false === $wpdb->query( 'COMMIT' ) ) {
+				return $this->fail();
+			}
+			$committed = true;
+		} finally {
+			if ( ! $committed ) {
+				$wpdb->query( 'ROLLBACK' );
+			}
+			$wpdb->suppress_errors( $previous );
 		}
 		// phpcs:enable WordPress.DB
 		return true;

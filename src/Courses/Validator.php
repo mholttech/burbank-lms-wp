@@ -62,6 +62,12 @@ class Validator {
 	 */
 	private array $pods_batches = array();
 
+	/** First-publication requests are stored as drafts until identity can be sealed atomically.
+	 *
+	 * @var array<int,bool>
+	 */
+	private array $publishing = array();
+
 	/** Last rejected core write, available to editor/publication services.
 	 *
 	 * @var \WP_Error|null
@@ -113,7 +119,7 @@ class Validator {
 				}
 			}
 		}
-		if ( ! empty( $fields['subject_category'] ) && ! in_array( $fields['subject_category'], self::SUBJECTS, true ) ) {
+		if ( isset( $fields['subject_category'] ) && '' !== $fields['subject_category'] && ! in_array( $fields['subject_category'], self::SUBJECTS, true ) ) {
 			$error->add( 'burbank_course_subject', __( 'Choose a supported course subject category.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
 		foreach ( array( 'pressprimer_quiz_id', 'certificate_template_id' ) as $key ) {
@@ -121,10 +127,10 @@ class Validator {
 				$error->add( 'burbank_course_reference', __( 'Quiz and certificate template references must be positive integer IDs.', 'burbank-lms' ), array( 'status' => 400 ) );
 			}
 		}
-		if ( ! empty( $fields['course_outcome'] ) && 'independent_study' !== $fields['course_outcome'] ) {
+		if ( isset( $fields['course_outcome'] ) && '' !== $fields['course_outcome'] && 'independent_study' !== $fields['course_outcome'] ) {
 			$error->add( 'burbank_course_outcome', __( 'Only the independent_study knowledge-course outcome is supported.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
-		if ( ! empty( $fields['catalog_state'] ) && ! in_array( $fields['catalog_state'], array( 'draft', 'published', 'archived' ), true ) ) {
+		if ( isset( $fields['catalog_state'] ) && '' !== $fields['catalog_state'] && ! in_array( $fields['catalog_state'], array( 'draft', 'published', 'archived' ), true ) ) {
 			$error->add( 'burbank_course_state', __( 'Choose draft, published or archived for catalog state.', 'burbank-lms' ), array( 'status' => 400 ) );
 		}
 		return $error;
@@ -198,10 +204,15 @@ class Validator {
 				$post_id,
 				$value,
 				static function () use ( $post_id, $value, &$result ): bool {
+					global $wpdb;
+					// Another request may have changed metadata while this request waited for the registry lock.
+					wp_cache_delete( $post_id, 'post_meta' );
 					self::$writing_code = true;
 					try {
 						$result = update_post_meta( $post_id, 'bfc_code', $value );
-						return false !== $result || get_post_meta( $post_id, 'bfc_code', true ) === $value;
+						// Verify storage directly; a stale or externally populated object cache is not evidence of persistence.
+						$stored = $wpdb->get_col( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s", $post_id, 'bfc_code' ) ); // phpcs:ignore WordPress.DB -- Authoritative verification inside the registry lock.
+						return ! $wpdb->last_error && array( $value ) === $stored;
 					} finally {
 						self::$writing_code = false;
 					}
@@ -341,6 +352,14 @@ class Validator {
 		if ( $this->error->has_errors() && 'publish' === $data['post_status'] ) {
 			$data['post_status'] = 'draft';
 		}
+		if ( ! $this->error->has_errors() && 'publish' === $data['post_status'] ) {
+			$row = $id ? ( new Registry() )->get( $id ) : null;
+			if ( ! $row || ! $row['published'] ) {
+				// Core must never expose publication before the permanent reservation is sealed.
+				$this->publishing[ $id ] = true;
+				$data['post_status']     = 'draft';
+			}
+		}
 		return $data;
 	}
 
@@ -354,17 +373,35 @@ class Validator {
 		if ( empty( $this->pods_batches[ $post_id ] ) ) {
 			unset( $this->batches[ $post_id ] );
 		}
-		if ( 'bfc_course' !== $post->post_type || 'publish' !== $post->post_status ) {
+		if ( 'bfc_course' !== $post->post_type ) {
 			return;
 		}
+		$key = isset( $this->publishing[ $post_id ] ) ? $post_id : 0;
+		if ( empty( $this->publishing[ $key ] ) ) {
+			return;
+		}
+		unset( $this->publishing[ $key ] );
+		global $wpdb;
 		$registry = new Registry();
-		if ( ! $registry->reserve( $post_id, (string) get_post_meta( $post_id, 'bfc_code', true ) ) || ! $registry->publish( $post_id ) ) {
-			wp_update_post(
-				array(
-					'ID'          => $post_id,
-					'post_status' => 'draft',
-				)
-			);
+		$code     = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s", $post_id, 'bfc_code' ) ); // phpcs:ignore WordPress.DB -- Authoritative publication candidate.
+		$saved    = $registry->reserve(
+			$post_id,
+			(string) $code,
+			function () use ( $post_id, $code, $registry, $wpdb ): bool {
+				wp_cache_delete( $post_id, 'post_meta' );
+				$fields      = $this->fields( $post_id );
+				$this->error = $this->validate( $fields, $post_id );
+				if ( $this->error->has_errors() || ( $fields['bfc_code'] ?? '' ) !== $code || ! $registry->publish( $post_id ) ) {
+					return false;
+				}
+				// The post's first published status and immutable identity become visible in one commit.
+				return 1 === $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->posts} SET post_status = %s WHERE ID = %d AND post_status = %s", 'publish', $post_id, 'draft' ) ); // phpcs:ignore WordPress.DB -- Atomic first publication under the registry lock.
+			}
+		);
+		clean_post_cache( $post_id );
+		if ( $saved ) {
+			$post->post_status = 'publish';
+			wp_transition_post_status( 'publish', 'draft', $post );
 		}
 	}
 

@@ -53,7 +53,19 @@ class CourseIdentityTest extends WP_UnitTestCase {
 	/** Every specified subject range accepts its boundaries and rejects another subject. */
 	public function test_format_and_all_subject_ranges(): void {
 		$validator = new Validator();
-		foreach ( Validator::SUBJECTS as $hundred => $subject ) {
+		$subjects  = array(
+			1 => 'program_administration_membership',
+			2 => 'safety_field_awareness',
+			3 => 'communications',
+			4 => 'field_operations_documentation',
+			5 => 'rehabilitation_logistics',
+			6 => 'incident_management_coordination',
+			7 => 'leadership_program_operations',
+			8 => 'community_engagement_public_education',
+			9 => 'reserved',
+		);
+		$this->assertSame( $subjects, Validator::SUBJECTS );
+		foreach ( $subjects as $hundred => $subject ) {
 			foreach ( array( $hundred * 100, $hundred * 100 + 99 ) as $number ) {
 				$fields = array_replace(
 					$this->fields(),
@@ -278,5 +290,95 @@ class CourseIdentityTest extends WP_UnitTestCase {
 		$this->assertTrue( $registry->install() );
 		$this->assertTrue( $registry->install() );
 		$this->assertFalse( $registry->reserve( $id, 'BFC-220' ) );
+	}
+	/** A second request's stale cache must not win over metadata read under the lock. */
+	public function test_same_course_request_with_stale_metadata_cache(): void {
+		global $wpdb;
+		$id = self::factory()->post->create( array( 'post_type' => 'bfc_course' ) );
+		update_post_meta( $id, 'bfc_code', 'BFC-210' );
+		$stale = wp_cache_get( $id, 'post_meta' );
+		get_post_meta( $id, 'bfc_code', true );
+		$stale    = wp_cache_get( $id, 'post_meta' );
+		$original = $wpdb;
+		$peer     = new wpdb( DB_USER, DB_PASSWORD, DB_NAME, DB_HOST );
+		$peer->set_prefix( $original->prefix );
+		try {
+			$wpdb = $peer;
+			wp_cache_delete( $id, 'post_meta' );
+			$this->assertTrue( (bool) update_post_meta( $id, 'bfc_code', 'BFC-220' ) );
+		} finally {
+			$wpdb = $original;
+			$peer->close();
+		}
+		wp_cache_set( $id, $stale, 'post_meta' );
+		$this->assertTrue( (bool) update_post_meta( $id, 'bfc_code', 'BFC-210' ) );
+		$stored = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s", $id, 'bfc_code' ) ); // phpcs:ignore WordPress.DB -- Authoritative concurrency assertion.
+		$this->assertSame( 'BFC-210', $stored );
+		$this->assertSame( $stored, ( new Registry() )->get( $id )['code'] );
+	}
+
+	/** No published transition is observable before its immutable identity is sealed. */
+	public function test_first_published_transition_has_no_identity_move_window(): void {
+		$id      = wp_insert_post(
+			array(
+				'post_type'  => 'bfc_course',
+				'post_title' => 'Safety',
+				'meta_input' => $this->fields(),
+			)
+		);
+		$seen    = false;
+		$observe = function ( $to, $from, $post ) use ( $id, &$seen ): void {
+			if ( $id === $post->ID && 'publish' === $to ) {
+				$seen = true;
+				$this->assertSame( '1', ( new Registry() )->get( $id )['published'] );
+				$this->assertFalse( update_post_meta( $id, 'bfc_code', 'BFC-220' ) );
+			}
+		};
+		add_action( 'transition_post_status', $observe, 10, 3 );
+		try {
+			wp_update_post(
+				array(
+					'ID'          => $id,
+					'post_status' => 'publish',
+				)
+			);
+		} finally {
+			remove_action( 'transition_post_status', $observe );
+		}
+		$this->assertTrue( $seen );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+		$this->assertSame( 'BFC-210', ( new Registry() )->get( $id )['code'] );
+	}
+
+	/** Throwing persistence cannot leave a reservation pending for another transaction to commit. */
+	public function test_throwing_persistence_rolls_back_and_restores_database_errors(): void {
+		global $wpdb;
+		$id       = self::factory()->post->create( array( 'post_type' => 'bfc_course' ) );
+		$registry = new Registry();
+		$this->assertTrue( $registry->reserve( $id, 'BFC-210' ) );
+		$before = $wpdb->suppress_errors;
+		try {
+			$registry->reserve(
+				$id,
+				'BFC-220',
+				static function (): bool {
+					throw new RuntimeException( 'Expected fixture failure' );
+				}
+			);
+		} catch ( RuntimeException $error ) {
+			$this->assertSame( 'Expected fixture failure', $error->getMessage() );
+		}
+		$this->assertSame( $before, $wpdb->suppress_errors );
+		$this->assertTrue( $registry->reserve( 800003, 'BFC-230' ) );
+		$this->assertSame( 'BFC-210', $registry->get( $id )['code'] );
+	}
+
+	/** String zero is an invalid enum, including on incomplete draft write paths. */
+	public function test_zero_enum_values_are_rejected(): void {
+		$id = self::factory()->post->create( array( 'post_type' => 'bfc_course' ) );
+		foreach ( array( 'course_outcome', 'catalog_state', 'subject_category' ) as $key ) {
+			$this->assertTrue( ( new Validator() )->validate( array_replace( $this->fields(), array( $key => '0' ) ), $id )->has_errors() );
+			$this->assertFalse( update_post_meta( $id, $key, '0' ) );
+		}
 	}
 }
