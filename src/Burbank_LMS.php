@@ -57,6 +57,11 @@ class Burbank_LMS {
 		$this->define_public_hooks();
 
 		$this->loader->add_action( 'init', $this, 'register_blocks' );
+
+		$course_schema = new Courses\Schema();
+		$this->loader->add_action( 'init', $course_schema, 'register', 12 );
+		$this->loader->add_action( 'admin_notices', $course_schema, 'notice' );
+		$this->loader->add_action( 'init', new Courses\Capabilities(), 'install', 12 );
 	}
 
 	/**

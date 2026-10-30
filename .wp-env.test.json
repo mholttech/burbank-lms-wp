@@ -10,6 +10,9 @@
 		"wp-content/plugins/": "./tests/setup/plugins/"
 	},
 	"lifecycleScripts": {
-		"afterStart": "wp-env run cli --config=.wp-env.test.json wp plugin activate burbank-lms"
-	}
+		"afterStart": "wp-env run cli --config=.wp-env.test.json wp plugin activate pods burbank-lms"
+	},
+	"plugins": [
+		"https://downloads.wordpress.org/plugin/pods.3.3.9.2.zip"
+	]
 }

@@ -46,6 +46,7 @@ require_once $tests_dir . '/includes/functions.php';
 tests_add_filter(
 	'muplugins_loaded',
 	static function (): void {
+		require WP_PLUGIN_DIR . '/pods/init.php';
 		require dirname( __DIR__ ) . '/burbank-lms.php';
 	}
 );
