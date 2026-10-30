@@ -62,7 +62,7 @@ class Validator {
 	 */
 	private array $pods_batches = array();
 
-	/** First-publication requests are stored as drafts until identity can be sealed atomically.
+	/** Existing-course publication requests wait until identity can be sealed atomically.
 	 *
 	 * @var array<int,bool>
 	 */
@@ -343,7 +343,13 @@ class Validator {
 		if ( 'bfc_course' !== $data['post_type'] ) {
 			return $data;
 		}
-		$id          = (int) ( $postarr['ID'] ?? 0 );
+		$id = (int) ( $postarr['ID'] ?? 0 );
+		if ( ! $id && 'publish' === $data['post_status'] ) {
+			// Approval and publication require a previously saved, stable course ID.
+			$data['post_status'] = 'draft';
+			$this->error         = new \WP_Error( 'burbank_course_save_draft', __( 'Save this course as a draft before requesting approval and publication.', 'burbank-lms' ), array( 'status' => 400 ) );
+			return $data;
+		}
 		$fields      = array_replace( $this->batches[ $id ] ?? $this->fields( $id ), (array) ( $postarr['meta_input'] ?? array() ) );
 		$this->error = $this->check( $fields, $id, 'publish' === $data['post_status'] );
 		if ( ! $this->error->has_errors() && $id ) {
@@ -353,7 +359,7 @@ class Validator {
 			$data['post_status'] = 'draft';
 		}
 		if ( ! $this->error->has_errors() && 'publish' === $data['post_status'] ) {
-			$row = $id ? ( new Registry() )->get( $id ) : null;
+			$row = ( new Registry() )->get( $id );
 			if ( ! $row || ! $row['published'] ) {
 				// Core must never expose publication before the permanent reservation is sealed.
 				$this->publishing[ $id ] = true;
@@ -361,23 +367,6 @@ class Validator {
 			}
 		}
 		return $data;
-	}
-
-	/**
-	 * Bind a new publication request as soon as core has assigned its actual ID.
-	 *
-	 * Core transitions the inserted draft before invoking save_post callbacks, so
-	 * nested course insertions cannot consume the outer course's pending request.
-	 *
-	 * @param string   $new_status Inserted post status.
-	 * @param string   $old_status Previous status, new for an insertion.
-	 * @param \WP_Post $post Inserted post.
-	 */
-	public function bind_publication( string $new_status, string $old_status, \WP_Post $post ): void {
-		if ( 'new' === $old_status && 'draft' === $new_status && 'bfc_course' === $post->post_type && ! empty( $this->publishing[0] ) ) {
-			$this->publishing[ $post->ID ] = true;
-			unset( $this->publishing[0] );
-		}
 	}
 
 	/**

@@ -254,8 +254,15 @@ class CourseIdentityTest extends WP_UnitTestCase {
 			array(
 				'post_type'   => 'bfc_course',
 				'post_title'  => 'Scene safety',
-				'post_status' => 'publish',
+				'post_status' => 'draft',
 				'meta_input'  => $this->fields(),
+			)
+		);
+		$this->assertSame( 'draft', get_post_status( $id ) );
+		wp_update_post(
+			array(
+				'ID'          => $id,
+				'post_status' => 'publish',
 			)
 		);
 		$this->assertSame( 'publish', get_post_status( $id ) );
@@ -385,8 +392,8 @@ class CourseIdentityTest extends WP_UnitTestCase {
 	public function test_nested_draft_save_does_not_inherit_publication(): void {
 		$nested       = 0;
 		$in_callback  = false;
-		$create_draft = function () use ( &$nested, &$in_callback ): void {
-			if ( $in_callback ) {
+		$create_draft = function ( $meta_id, $post_id, $key ) use ( &$nested, &$in_callback ): void {
+			if ( $in_callback || 'course_revision' !== $key || 'bfc_course' !== get_post_type( $post_id ) ) {
 				return;
 			}
 			$in_callback = true;
@@ -399,7 +406,7 @@ class CourseIdentityTest extends WP_UnitTestCase {
 				)
 			);
 		};
-		add_action( 'save_post_bfc_course', $create_draft );
+		add_action( 'added_post_meta', $create_draft, 10, 3 );
 		try {
 			$outer = wp_insert_post(
 				array(
@@ -410,12 +417,33 @@ class CourseIdentityTest extends WP_UnitTestCase {
 				)
 			);
 		} finally {
-			remove_action( 'save_post_bfc_course', $create_draft );
+			remove_action( 'added_post_meta', $create_draft );
 		}
 		$this->assertGreaterThan( 0, $nested );
 		$this->assertSame( 'draft', get_post_status( $nested ) );
 		$this->assertSame( '0', ( new Registry() )->get( $nested )['published'] );
-		$this->assertSame( 'publish', get_post_status( $outer ) );
-		$this->assertSame( '1', ( new Registry() )->get( $outer )['published'] );
+		$this->assertSame( 'draft', get_post_status( $outer ) );
+		$this->assertSame( '0', ( new Registry() )->get( $outer )['published'] );
+	}
+	/** Publication creation always saves a draft before the existing-ID publication path. */
+	public function test_new_publication_request_requires_saved_draft(): void {
+		$id = wp_insert_post(
+			array(
+				'post_type'   => 'bfc_course',
+				'post_title'  => 'New requested publication',
+				'post_status' => 'publish',
+				'meta_input'  => $this->fields(),
+			)
+		);
+		$this->assertSame( 'draft', get_post_status( $id ) );
+		$this->assertSame( '0', ( new Registry() )->get( $id )['published'] );
+		wp_update_post(
+			array(
+				'ID'          => $id,
+				'post_status' => 'publish',
+			)
+		);
+		$this->assertSame( 'publish', get_post_status( $id ) );
+		$this->assertSame( '1', ( new Registry() )->get( $id )['published'] );
 	}
 }
