@@ -306,6 +306,46 @@ class LearnerRestTest extends WP_UnitTestCase {
 		$this->assertNotNull( ( new EnrollmentService() )->get_active( $owner_id, $course_id ) );
 	}
 
+	/** Admin with enroll_bfc_courses may withdraw another user's enrollment. */
+	public function test_admin_withdraw_other_user_happy_path(): void {
+		$learner_id = $this->verified_learner( 'admin-withdraw-target@example.com' );
+		$course_id  = $this->published_course();
+		$this->assertTrue( ( new EnrollmentService() )->self_enroll( $learner_id, $course_id ) );
+
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		$response = $this->dispatch(
+			'DELETE',
+			'/enrollments/' . $course_id,
+			array(
+				'user_id' => $learner_id,
+			)
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertIsArray( $data );
+		$this->assertTrue( $data['withdrawn'] );
+		$this->assertSame( $learner_id, (int) $data['user_id'] );
+		$this->assertSame( $course_id, (int) $data['course_id'] );
+		$this->assertNull( ( new EnrollmentService() )->get_active( $learner_id, $course_id ) );
+	}
+
+	/** Missing enrollment maps to 400, not 403. */
+	public function test_withdraw_missing_enrollment_returns_400(): void {
+		$user_id   = $this->verified_learner( 'withdraw-missing@example.com' );
+		$course_id = $this->published_course();
+		wp_set_current_user( $user_id );
+
+		$response = $this->dispatch( 'DELETE', '/enrollments/' . $course_id );
+
+		$this->assertSame( 400, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertIsArray( $data );
+		$this->assertSame( 'burbank_enrollment_not_found', $data['code'] );
+	}
+
 	/** Admin enroll assigns a learner without a course invite. */
 	public function test_admin_enroll_happy_path(): void {
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );

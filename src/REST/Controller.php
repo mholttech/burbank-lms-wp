@@ -216,7 +216,8 @@ class Controller {
 
 		$result = $this->enrollment()->withdraw( $actor_id, $user_id, $course_id );
 		if ( is_wp_error( $result ) ) {
-			return $this->to_rest_error( $result, 403 );
+			$status = 'burbank_enrollment_forbidden' === $result->get_error_code() ? 403 : 400;
+			return $this->to_rest_error( $result, $status );
 		}
 
 		return new \WP_REST_Response(
