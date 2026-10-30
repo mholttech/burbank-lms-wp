@@ -75,7 +75,7 @@ jobs:
     container:
       # Official image includes the Cloud/Pro engine. Pin the tag; bump
       # it with the Semgrep custom manager in renovate.json.
-      image: semgrep/semgrep:1.182.0
+      image: semgrep/semgrep:1.183.0
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

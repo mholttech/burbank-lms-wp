@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Create or update release PR and publish merged releases
         id: release
-        uses: googleapis/release-please-action@v5
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
@@ -48,13 +48,13 @@ jobs:
           echo "RELEASE_VERSION=${RELEASE_TAG#burbank-lms-v}" >> "$GITHUB_ENV"
 
       - name: Checkout release tag
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.release.outputs.tag }}
           persist-credentials: false
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.2'
           tools: composer:v2, wp-cli
@@ -67,7 +67,7 @@ jobs:
           test -f vendor/autoload.php
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
           cache: npm

@@ -24,7 +24,7 @@ jobs:
       node-cache-key: ${{ steps.cache-keys.outputs.node-key }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Generate cache keys
         id: cache-keys
@@ -33,7 +33,7 @@ jobs:
           echo "node-key=node-${{ inputs.mode }}-${{ runner.os }}-${{ hashFiles('package-lock.json') }}" >> $GITHUB_OUTPUT
 
       - name: PHP Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         id: php-cache
         with:
           path: |
@@ -45,7 +45,7 @@ jobs:
             php-${{ runner.os }}-
 
       - name: Node Dependencies cache
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         id: node-cache
         with:
           path: |
@@ -58,13 +58,13 @@ jobs:
 
       - name: Setup PHP
         if: steps.php-cache.outputs.cache-hit != 'true'
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.2'
 
       - name: Setup Node
         if: steps.node-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
 
