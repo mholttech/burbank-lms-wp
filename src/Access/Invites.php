@@ -159,20 +159,24 @@ class Invites {
 	/**
 	 * Atomically increment use_count when the invite is still active.
 	 *
-	 * @param int $id Invite row ID.
+	 * When `$manage_transaction` is false the caller must already hold an open
+	 * transaction; this method only performs FOR UPDATE + conditional UPDATE.
+	 *
+	 * @param int  $id                  Invite row ID.
+	 * @param bool $manage_transaction Whether to START/COMMIT/ROLLBACK here.
 	 */
-	public function redeem( int $id ): bool {
+	public function redeem( int $id, bool $manage_transaction = true ): bool {
 		if ( $id < 1 ) {
 			return false;
 		}
 		$db    = $this->db();
 		$table = $db->prefix . 'bfc_invite_codes';
 		// phpcs:disable WordPress.DB -- Transactional custom-table redemption.
-		if ( false === $db->query( 'START TRANSACTION' ) ) {
+		if ( $manage_transaction && false === $db->query( 'START TRANSACTION' ) ) {
 			return false;
 		}
 		$previous  = $db->suppress_errors();
-		$committed = false;
+		$succeeded = false;
 		try {
 			$row = $db->get_row( $db->prepare( "SELECT * FROM {$table} WHERE id = %d FOR UPDATE", $id ) );
 			if ( ! $row || ! $this->row_is_active( $row ) ) {
@@ -193,12 +197,15 @@ class Invites {
 					)
 				);
 			}
-			if ( false === $result || 1 !== (int) $db->rows_affected || false === $db->query( 'COMMIT' ) ) {
+			if ( false === $result || 1 !== (int) $db->rows_affected ) {
 				return false;
 			}
-			$committed = true;
+			if ( $manage_transaction && false === $db->query( 'COMMIT' ) ) {
+				return false;
+			}
+			$succeeded = true;
 		} finally {
-			if ( ! $committed ) {
+			if ( $manage_transaction && ! $succeeded ) {
 				$db->query( 'ROLLBACK' );
 			}
 			$db->suppress_errors( $previous );

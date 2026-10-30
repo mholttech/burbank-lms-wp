@@ -10,6 +10,7 @@ use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Access\Registration;
 use Burbank_LMS\Access\Tables as AccessTables;
 use Burbank_LMS\Courses\Capabilities;
+use Burbank_LMS\Enrollment\Repository;
 use Burbank_LMS\Enrollment\Service;
 use Burbank_LMS\Enrollment\Tables as EnrollmentTables;
 
@@ -174,6 +175,66 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 		$this->assertSame( 'invite', $row->source );
 		$this->assertSame( (int) $created['id'], (int) $row->invite_code_id );
 		$this->assertSame( 'rev-invite', $row->course_revision_snapshot );
+	}
+
+	/**
+	 * Redeem failure must leave no enrollment row (shared transaction rollback).
+	 *
+	 * Repository refuses compensate-delete so only a real ROLLBACK (not post-hoc
+	 * cleanup) can clear the insert. Invite find succeeds; redeem always fails.
+	 */
+	public function test_redeem_failure_rolls_back_enrollment_insert(): void {
+		$user_id   = $this->verified_learner( 'atomic-redeem@example.com' );
+		$course_id = $this->published_course( 'rev-atomic' );
+		$created   = ( new Invites() )->create(
+			'course',
+			array(
+				'course_id' => $course_id,
+				'label'     => 'Once seat',
+				'kind'      => 'once',
+			)
+		);
+		$this->assertIsArray( $created );
+
+		$invites = new class() extends Invites {
+			/**
+			 * Always fail redeem so the enrollment transaction must roll back.
+			 *
+			 * @param int  $id                  Invite row ID.
+			 * @param bool $manage_transaction Whether this call opens/commits a transaction.
+			 */
+			public function redeem( int $id, bool $manage_transaction = true ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Signature matches Invites::redeem.
+				return false;
+			}
+		};
+
+		$repository = new class() extends Repository {
+			/**
+			 * Refuse compensate-delete so leftover rows prove missing ROLLBACK.
+			 *
+			 * @param int $id Enrollment row ID.
+			 */
+			public function delete( int $id ): bool { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- Signature matches Repository::delete.
+				return false;
+			}
+		};
+
+		$service = new Service( $repository, $invites );
+		$result  = $service->self_enroll( $user_id, $course_id, $created['plaintext'] );
+		$this->assertWPError( $result );
+		$this->assertNull( $service->get_active( $user_id, $course_id ) );
+
+		global $wpdb;
+		// phpcs:disable WordPress.DB -- Assert no leftover enrollment after failed redeem.
+		$count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}bfc_enrollments WHERE user_id = %d AND course_id = %d",
+				$user_id,
+				$course_id
+			)
+		);
+		// phpcs:enable WordPress.DB
+		$this->assertSame( 0, $count );
 	}
 
 	/** Site invites never satisfy a restricted course enroll gate. */

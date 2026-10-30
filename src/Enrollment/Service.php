@@ -43,19 +43,16 @@ class Service {
 			return $course_error;
 		}
 
-		$invite_id = null;
-		$source    = 'self';
-		if ( $this->invites()->course_has_active_invites( $course_id ) ) {
-			$plaintext = null !== $course_invite ? (string) $course_invite : '';
-			$invite    = '' !== $plaintext ? $this->invites()->find_active( $plaintext, 'course', $course_id ) : null;
-			if ( ! $invite ) {
-				return new \WP_Error( 'burbank_enrollment_invite_required', __( 'A valid course invite is required to enroll.', 'burbank-lms' ) );
-			}
-			$invite_id = (int) $invite->id;
-			$source    = 'invite';
+		if ( ! $this->invites()->course_has_active_invites( $course_id ) ) {
+			return $this->persist_enrollment( $user_id, $course_id, 'self', null );
 		}
 
-		return $this->persist_enrollment( $user_id, $course_id, $source, $invite_id );
+		$plaintext = null !== $course_invite ? (string) $course_invite : '';
+		if ( '' === $plaintext ) {
+			return new \WP_Error( 'burbank_enrollment_invite_required', __( 'A valid course invite is required to enroll.', 'burbank-lms' ) );
+		}
+
+		return $this->persist_restricted_enrollment( $user_id, $course_id, $plaintext );
 	}
 
 	/**
@@ -136,7 +133,54 @@ class Service {
 	}
 
 	/**
-	 * Insert or reactivate an enrollment, redeeming a course invite when required.
+	 * Restricted self-enroll: find invite, insert/reactivate, and redeem in one transaction.
+	 *
+	 * @param int    $user_id       User ID.
+	 * @param int    $course_id     Course post ID.
+	 * @param string $course_invite Plaintext course invite.
+	 */
+	private function persist_restricted_enrollment( int $user_id, int $course_id, string $course_invite ): true|\WP_Error {
+		$existing = $this->repository()->get( $user_id, $course_id );
+		if ( $existing && 'active' === $existing->status ) {
+			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
+		}
+
+		global $wpdb;
+		// phpcs:disable WordPress.DB -- Shared enrollment + invite redemption transaction.
+		if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
+			return new \WP_Error( 'burbank_enrollment_transaction_failed', __( 'Enrollment could not be started.', 'burbank-lms' ) );
+		}
+		$previous  = $wpdb->suppress_errors();
+		$committed = false;
+		try {
+			$invite = $this->invites()->find_active( $course_invite, 'course', $course_id );
+			if ( ! $invite ) {
+				return new \WP_Error( 'burbank_enrollment_invite_required', __( 'A valid course invite is required to enroll.', 'burbank-lms' ) );
+			}
+			$invite_id = (int) $invite->id;
+			$written   = $this->write_enrollment_row( $user_id, $course_id, 'invite', $invite_id, $existing );
+			if ( is_wp_error( $written ) ) {
+				return $written;
+			}
+			if ( ! $this->invites()->redeem( $invite_id, false ) ) {
+				return new \WP_Error( 'burbank_enrollment_invite_redeem_failed', __( 'The course invite could not be redeemed.', 'burbank-lms' ) );
+			}
+			if ( false === $wpdb->query( 'COMMIT' ) ) {
+				return new \WP_Error( 'burbank_enrollment_transaction_failed', __( 'Enrollment could not be saved.', 'burbank-lms' ) );
+			}
+			$committed = true;
+		} finally {
+			if ( ! $committed ) {
+				$wpdb->query( 'ROLLBACK' );
+			}
+			$wpdb->suppress_errors( $previous );
+		}
+		// phpcs:enable WordPress.DB
+		return true;
+	}
+
+	/**
+	 * Insert or reactivate an enrollment without an invite redeem step.
 	 *
 	 * @param int      $user_id   User ID.
 	 * @param int      $course_id Course post ID.
@@ -148,52 +192,44 @@ class Service {
 		if ( $existing && 'active' === $existing->status ) {
 			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
 		}
+		return $this->write_enrollment_row( $user_id, $course_id, $source, $invite_id, $existing );
+	}
 
+	/**
+	 * Insert a new active row or reactivate a withdrawn/completed pair.
+	 *
+	 * @param int         $user_id   User ID.
+	 * @param int         $course_id Course post ID.
+	 * @param string      $source    Enrollment source.
+	 * @param int|null    $invite_id Course invite row ID when restricted.
+	 * @param object|null $existing  Existing enrollment row if any.
+	 */
+	private function write_enrollment_row( int $user_id, int $course_id, string $source, ?int $invite_id, ?object $existing ): true|\WP_Error {
 		$revision    = (string) get_post_meta( $course_id, 'course_revision', true );
 		$enrolled_at = gmdate( 'Y-m-d H:i:s' );
-		$inserted_id = null;
-		$reactivated = false;
 
 		if ( $existing ) {
-			$result = $this->repository()->reactivate(
+			return $this->repository()->reactivate(
 				(int) $existing->id,
 				$source,
 				$invite_id,
 				$enrolled_at,
 				$revision
 			);
-			if ( is_wp_error( $result ) ) {
-				return $result;
-			}
-			$reactivated = true;
-		} else {
-			$inserted = $this->repository()->insert(
-				array(
-					'course_id'                => $course_id,
-					'user_id'                  => $user_id,
-					'status'                   => 'active',
-					'source'                   => $source,
-					'invite_code_id'           => $invite_id,
-					'enrolled_at'              => $enrolled_at,
-					'course_revision_snapshot' => $revision,
-				)
-			);
-			if ( is_wp_error( $inserted ) ) {
-				return $inserted;
-			}
-			$inserted_id = $inserted;
 		}
 
-		if ( null !== $invite_id && $invite_id > 0 && ! $this->invites()->redeem( $invite_id ) ) {
-			if ( null !== $inserted_id ) {
-				$this->repository()->delete( $inserted_id );
-			} elseif ( $reactivated ) {
-				$this->repository()->withdraw( $user_id, $course_id );
-			}
-			return new \WP_Error( 'burbank_enrollment_invite_redeem_failed', __( 'The course invite could not be redeemed.', 'burbank-lms' ) );
-		}
-
-		return true;
+		$inserted = $this->repository()->insert(
+			array(
+				'course_id'                => $course_id,
+				'user_id'                  => $user_id,
+				'status'                   => 'active',
+				'source'                   => $source,
+				'invite_code_id'           => $invite_id,
+				'enrolled_at'              => $enrolled_at,
+				'course_revision_snapshot' => $revision,
+			)
+		);
+		return is_wp_error( $inserted ) ? $inserted : true;
 	}
 
 	/** Lazy enrollment repository. */
