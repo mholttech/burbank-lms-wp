@@ -381,4 +381,41 @@ class CourseIdentityTest extends WP_UnitTestCase {
 			$this->assertFalse( update_post_meta( $id, $key, '0' ) );
 		}
 	}
+	/** A nested draft insertion must not consume another new course's publication request. */
+	public function test_nested_draft_save_does_not_inherit_publication(): void {
+		$nested       = 0;
+		$in_callback  = false;
+		$create_draft = function () use ( &$nested, &$in_callback ): void {
+			if ( $in_callback ) {
+				return;
+			}
+			$in_callback = true;
+			$nested      = wp_insert_post(
+				array(
+					'post_type'   => 'bfc_course',
+					'post_title'  => 'Nested draft',
+					'post_status' => 'draft',
+					'meta_input'  => array_replace( $this->fields(), array( 'bfc_code' => 'BFC-220' ) ),
+				)
+			);
+		};
+		add_action( 'save_post_bfc_course', $create_draft );
+		try {
+			$outer = wp_insert_post(
+				array(
+					'post_type'   => 'bfc_course',
+					'post_title'  => 'Requested publication',
+					'post_status' => 'publish',
+					'meta_input'  => $this->fields(),
+				)
+			);
+		} finally {
+			remove_action( 'save_post_bfc_course', $create_draft );
+		}
+		$this->assertGreaterThan( 0, $nested );
+		$this->assertSame( 'draft', get_post_status( $nested ) );
+		$this->assertSame( '0', ( new Registry() )->get( $nested )['published'] );
+		$this->assertSame( 'publish', get_post_status( $outer ) );
+		$this->assertSame( '1', ( new Registry() )->get( $outer )['published'] );
+	}
 }

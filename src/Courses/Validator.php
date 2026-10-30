@@ -364,6 +364,23 @@ class Validator {
 	}
 
 	/**
+	 * Bind a new publication request as soon as core has assigned its actual ID.
+	 *
+	 * Core transitions the inserted draft before invoking save_post callbacks, so
+	 * nested course insertions cannot consume the outer course's pending request.
+	 *
+	 * @param string   $new_status Inserted post status.
+	 * @param string   $old_status Previous status, new for an insertion.
+	 * @param \WP_Post $post Inserted post.
+	 */
+	public function bind_publication( string $new_status, string $old_status, \WP_Post $post ): void {
+		if ( 'new' === $old_status && 'draft' === $new_status && 'bfc_course' === $post->post_type && ! empty( $this->publishing[0] ) ) {
+			$this->publishing[ $post->ID ] = true;
+			unset( $this->publishing[0] );
+		}
+	}
+
+	/**
 	 * Seal first publication after core has saved its metadata.
 	 *
 	 * @param int      $post_id Saved post ID.
@@ -376,11 +393,10 @@ class Validator {
 		if ( 'bfc_course' !== $post->post_type ) {
 			return;
 		}
-		$key = isset( $this->publishing[ $post_id ] ) ? $post_id : 0;
-		if ( empty( $this->publishing[ $key ] ) ) {
+		if ( empty( $this->publishing[ $post_id ] ) ) {
 			return;
 		}
-		unset( $this->publishing[ $key ] );
+		unset( $this->publishing[ $post_id ] );
 		global $wpdb;
 		$registry = new Registry();
 		$code     = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s", $post_id, 'bfc_code' ) ); // phpcs:ignore WordPress.DB -- Authoritative publication candidate.
