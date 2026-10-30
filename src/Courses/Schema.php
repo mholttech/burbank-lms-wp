@@ -66,6 +66,7 @@ class Schema {
 			return;
 		}
 
+		$provisioned = false;
 		if ( self::VERSION > (int) get_option( self::VERSION_OPTION ) || ! $pod ) {
 			$options = array(
 				'name'                   => 'bfc_course',
@@ -117,6 +118,51 @@ class Schema {
 			}
 			update_option( self::VERSION_OPTION, self::VERSION, false );
 			pods_init()->setup_content_types( true );
+			$provisioned = true;
+		}
+
+		// UI-only migration: no new storage fields, so the data schema version remains unchanged.
+		if ( $provisioned || 1 > (int) get_option( 'burbank_lms_course_editorial_ui_version' ) ) {
+			foreach ( self::FIELDS as $name => $field_type ) {
+				$field   = $api->load_field(
+					array(
+						'name' => $name,
+						'pod'  => 'bfc_course',
+					)
+				);
+				$options = array(
+					'id'   => $field['id'],
+					'pod'  => 'bfc_course',
+					'name' => $name,
+				);
+				if ( isset( Validator::LIMITS[ $name ] ) ) {
+					$options[ $field_type . '_max_length' ] = Validator::LIMITS[ $name ];
+				}
+				if ( 'number' === $field_type ) {
+					$options['number_format']   = '9999.99';
+					$options['number_decimals'] = 0;
+					$options['number_html5']    = true;
+					$options['number_min']      = 1;
+				}
+				$descriptions = array(
+					'bfc_code'         => __( 'Use BFC-100 through BFC-999. The first published code is permanent.', 'burbank-lms' ),
+					'course_revision'  => __( 'Use a new revision for material assessed changes. Approval must be renewed.', 'burbank-lms' ),
+					'subject_category' => __( 'Choose the subject matching the first digit of the BFC code:', 'burbank-lms' ) . ' ' . implode( ', ', Validator::SUBJECTS ),
+					'course_outcome'   => __( 'Use independent_study for a knowledge course.', 'burbank-lms' ),
+					'catalog_state'    => __( 'Use draft, published, or archived. Archive retains identity and approval history; WordPress post status controls publication.', 'burbank-lms' ),
+				);
+				if ( isset( $descriptions[ $name ] ) ) {
+					$options['description'] = $descriptions[ $name ];
+				}
+
+				if ( in_array( $name, Validator::AUDIT_FIELDS, true ) ) {
+					$options['hidden'] = true;
+				}
+				if ( ! $this->saved( $api->save_field( $options ) ) ) {
+					return;
+				}
+			}
+			update_option( 'burbank_lms_course_editorial_ui_version', 1, false );
 		}
 
 		foreach ( self::FIELDS as $name => $field_type ) {
@@ -128,7 +174,7 @@ class Schema {
 					'single'        => true,
 					'show_in_rest'  => true,
 					'auth_callback' => static function ( bool $allowed, string $key, int $post_id ): bool {
-						if ( in_array( $key, array( 'approved_by', 'approved_at', 'approval_notes' ), true ) ) {
+						if ( in_array( $key, Validator::AUDIT_FIELDS, true ) ) {
 							return false;
 						}
 						return current_user_can( 'edit_post', $post_id );

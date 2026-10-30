@@ -43,15 +43,10 @@ function bfc_test_mapping(): array {
 	);
 }
 /**
- * Simulate approval service persistence.
+ * Approve a valid fixture using the real authorization and snapshot service.
  *
  * @param int $id Saved course ID.
  */
 function bfc_test_approve( int $id ): void {
-	Burbank_LMS\Courses\Validator::internal_write(
-		static function () use ( $id ): void {
-			update_post_meta( $id, 'approved_by', get_current_user_id() );
-			update_post_meta( $id, 'approved_at', gmdate( 'Y-m-d H:i:s' ) );
-		}
-	);
+	( new Burbank_LMS\Courses\Editorial() )->approve( $id );
 }

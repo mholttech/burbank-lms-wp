@@ -80,6 +80,22 @@ class Burbank_LMS {
 		$this->loader->add_action( 'transition_post_status', $course_validator, 'guard_transition', PHP_INT_MIN, 3 );
 		$this->loader->add_action( 'admin_notices', $course_validator, 'notice' );
 		$this->loader->add_filter( 'redirect_post_location', $course_validator, 'redirect_notice', 10, 2 );
+		$course_editorial = new Courses\Editorial();
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			$this->loader->add_action( $hook, $course_editorial, 'metadata_changed', 10, 3 );
+		}
+		foreach ( array( 'add_post_metadata', 'update_post_metadata', 'delete_post_metadata' ) as $hook ) {
+			$this->loader->add_filter( $hook, $course_editorial, 'guard_snapshot', 10, 3 );
+		}
+		$this->loader->add_filter( 'update_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 4 );
+		$this->loader->add_filter( 'delete_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 2 );
+		$course_admin = new Courses\Admin();
+		$this->loader->add_action( 'admin_post_bfc_course_editorial', $course_admin, 'handle' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $course_admin, 'meta_box' );
+		$this->loader->add_action( 'admin_footer', $course_admin, 'action_form' );
+		$this->loader->add_action( 'admin_notices', $course_admin, 'notice' );
+		$this->loader->add_filter( 'manage_bfc_course_posts_columns', $course_admin, 'columns' );
+		$this->loader->add_action( 'manage_bfc_course_posts_custom_column', $course_admin, 'column', 10, 2 );
 	}
 
 	/**

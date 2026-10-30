@@ -205,7 +205,7 @@ class Validator {
 		$fields      = array_replace( $this->batches[ $post_id ] ?? $this->fields( $post_id ), array( $key => $value ) );
 		$this->error = $this->check( $fields, $post_id );
 		if ( in_array( $key, self::PUBLISHED_GATES, true ) && 'publish' === get_post_status( $post_id ) && ! self::$internal_depth ) {
-			$this->error = ( new Publication() )->validate( $post_id, $fields );
+			$this->error = ( new Publication() )->validate_candidate( $post_id, $fields );
 		}
 		if ( $this->error->has_errors() ) {
 			return false;
