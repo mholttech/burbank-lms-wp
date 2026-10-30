@@ -81,14 +81,14 @@ Certificate issuance is a **credential event** derived from an authenticated pas
 | Component | Owns | Must not own |
 | --- | --- | --- |
 | WordPress Gutenberg | Course narrative, text, media embeds, downloads | Assessment state |
-| Pods / existing website CPTs | Existing membership training matrix `bc_requirement` / `bc_level`; optional field UI only if evaluated | Learner pass state |
+| Pods / existing website CPTs | Required course type/field management and existing membership training matrix `bc_requirement` / `bc_level` | Learner pass state |
 | **Burbank LMS** | Course catalog type and BFC metadata; quiz mapping; invitation accounts; authz; learner course-status projections; admin health checks; free export tool | Quiz grading, certificate engine, CERT.vip records |
 | **PressPrimer Quiz (free)** | Questions, quiz configuration, attempts, grading, per-user results | Membership verification, BFC catalog |
 | **PressPrimer Certificate (free)** | Award triggers, issued certificates, PDF generation, verification, revocation, history | Course progress, member qualification |
 | Site theme `burbankcert-fse` | Page presentation, responsive styling, forest-green branding and light/dark support | Security and completion rules |
 | `mholttech/burbankcert.org` | Bedrock/Trellis deploy, version pin, activation/configuration and integration | LMS feature source code |
 
-**Site coupling:** the Burbank LMS plugin must run independently of the child theme. Treat Pods and the existing training-matrix requirement relationship as an optional read-only association unless a Pods dependency is made explicitly required. An unavailable external requirement catalog must not break course viewing or exam completion.
+**Site coupling:** the Burbank LMS plugin must run independently of the child theme. Pods is a required plugin dependency (`Requires Plugins: pods`) and manages the course post type and fields. The existing training-matrix requirement relationship is read-only; the external matrix catalog may be absent. An unavailable external requirement catalog must not break course viewing or exam completion.
 
 **Version note:** during source review, upstream PressPrimer GitHub `develop` files declared Quiz 3.1.3 and Certificate 2.1.0; installed WordPress.org release ZIPs may differ. Lock and test exact **released artifact versions**, not merely `develop` implementation details.
 
