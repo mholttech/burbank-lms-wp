@@ -17,20 +17,22 @@ class Mailer {
 	 * @param string $token   Plaintext verification token.
 	 */
 	public function send_verification_email( int $user_id, string $email, string $token ): bool {
-		$subject = apply_filters(
+		$verify_url = $this->verification_url( $user_id, $token );
+		$subject    = apply_filters(
 			'burbank_lms_verification_email_subject',
 			__( 'Verify your Burbank LMS email', 'burbank-lms' ),
 			$user_id
 		);
-		$message = apply_filters(
+		$message    = apply_filters(
 			'burbank_lms_verification_email_message',
 			sprintf(
-				/* translators: %s: verification token */
-				__( "Please verify your email for Burbank LMS.\n\nVerification token: %s\n", 'burbank-lms' ),
-				$token
+				/* translators: %s: clickable verification URL */
+				__( "Please verify your email for Burbank LMS.\n\nVerify your email:\n%s\n", 'burbank-lms' ),
+				$verify_url
 			),
 			$user_id,
-			$token
+			$token,
+			$verify_url
 		);
 		$headers = apply_filters( 'burbank_lms_verification_email_headers', array(), $user_id );
 		$sent    = wp_mail( $email, $subject, $message, $headers );
@@ -198,6 +200,31 @@ class Mailer {
 	 */
 	public function on_course_completed( int $user_id, int $course_id, $enrollment = null ): void {
 		$this->send_completion_email( $user_id, $course_id, $enrollment );
+	}
+
+	/**
+	 * Build the public email-verification URL (query-arg front entry).
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $token   Plaintext verification token.
+	 */
+	public function verification_url( int $user_id, string $token ): string {
+		$url = add_query_arg(
+			array(
+				'burbank_lms_verify' => '1',
+				'uid'                => $user_id,
+				'token'              => $token,
+			),
+			home_url( '/' )
+		);
+		/**
+		 * Filter the clickable verification URL included in the verification email.
+		 *
+		 * @param string $url     Absolute verification URL.
+		 * @param int    $user_id User ID.
+		 * @param string $token   Plaintext verification token.
+		 */
+		return (string) apply_filters( 'burbank_lms_verification_url', $url, $user_id, $token );
 	}
 
 	/**

@@ -168,6 +168,13 @@ class Service {
 			if ( ! $invite ) {
 				return new \WP_Error( 'burbank_enrollment_invite_required', __( 'A valid course invite is required to enroll.', 'burbank-lms' ) );
 			}
+			if ( ! empty( $invite->bound_email ) ) {
+				$user  = get_userdata( $user_id );
+				$email = $user ? (string) $user->user_email : '';
+				if ( '' === $email || 0 !== strcasecmp( (string) $invite->bound_email, $email ) ) {
+					return new \WP_Error( 'burbank_enrollment_bound_email', __( 'This course invite is bound to a different email address.', 'burbank-lms' ) );
+				}
+			}
 			$invite_id = (int) $invite->id;
 			$written   = $this->write_enrollment_row( $user_id, $course_id, 'invite', $invite_id, $existing );
 			if ( is_wp_error( $written ) ) {

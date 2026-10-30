@@ -136,6 +136,53 @@ class MailerTest extends WP_UnitTestCase {
 		return $course_id;
 	}
 
+	/** Verification mail includes a clickable home_url with uid and token query args. */
+	public function test_verification_email_includes_clickable_url(): void {
+		$tokens = array();
+		add_action(
+			'burbank_lms_sent_verification_email',
+			static function ( int $uid, string $token ) use ( &$tokens ): void {
+				$tokens[ $uid ] = $token;
+			},
+			10,
+			2
+		);
+		$created = ( new Invites() )->create(
+			'site',
+			array(
+				'label' => 'Batch',
+				'kind'  => 'multi',
+			)
+		);
+		$this->assertIsArray( $created );
+		$this->mails = array();
+		$user_id     = ( new Registration() )->register(
+			array(
+				'invite'       => $created['plaintext'],
+				'email'        => 'verify-link@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'legal_name'   => 'Link Learner',
+				'display_name' => 'Link',
+			)
+		);
+		$this->assertIsInt( $user_id );
+		$this->assertArrayHasKey( $user_id, $tokens );
+
+		$verify_mails = array_values(
+			array_filter(
+				$this->mails,
+				static fn( array $mail ): bool => false !== strpos( (string) $mail['subject'], 'Verify' )
+			)
+		);
+		$this->assertNotEmpty( $verify_mails );
+		$message = (string) $verify_mails[0]['message'];
+		$this->assertStringContainsString( 'burbank_lms_verify=1', $message );
+		$this->assertStringContainsString( 'uid=' . $user_id, $message );
+		$this->assertStringContainsString( 'token=' . rawurlencode( $tokens[ $user_id ] ), $message );
+		$this->assertStringContainsString( home_url( '/' ), $message );
+		$this->assertStringNotContainsString( 'Verification token: ' . $tokens[ $user_id ], $message );
+	}
+
 	/** Granting training access sends a welcome email. */
 	public function test_welcome_email_on_access_granted(): void {
 		$user_id     = self::factory()->user->create(

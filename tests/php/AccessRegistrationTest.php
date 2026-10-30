@@ -146,6 +146,54 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap via user_has_cap.
 	}
 
+	/** Front query-arg handler verifies email and enables can_learn. */
+	public function test_public_query_handler_enables_can_learn(): void {
+		$tokens = array();
+		add_action(
+			'burbank_lms_sent_verification_email',
+			static function ( int $uid, string $token ) use ( &$tokens ): void {
+				$tokens[ $uid ] = $token;
+			},
+			10,
+			2
+		);
+
+		$invite  = $this->site_invite();
+		$user_id = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'query-verify@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'legal_name'   => 'Query Verify',
+				'display_name' => 'Query',
+			)
+		);
+		$this->assertIsInt( $user_id );
+		$this->assertArrayHasKey( $user_id, $tokens );
+		$this->assertFalse( ( new Learner() )->can_learn( $user_id ) );
+
+		$_GET['burbank_lms_verify'] = '1';
+		$_GET['uid']                = (string) $user_id;
+		$_GET['token']              = $tokens[ $user_id ];
+
+		$redirected = null;
+		add_filter(
+			'wp_redirect',
+			static function ( string $location ) use ( &$redirected ) {
+				$redirected = $location;
+				return false;
+			}
+		);
+
+		$this->registration()->handle_verification_request();
+
+		unset( $_GET['burbank_lms_verify'], $_GET['uid'], $_GET['token'] );
+
+		$this->assertNotNull( $redirected );
+		$this->assertStringContainsString( 'burbank_lms_verified=1', $redirected );
+		$this->assertTrue( ( new Learner() )->can_learn( $user_id ) );
+	}
+
 	/** After verify_email, can_learn is true and quiz take cap is present. */
 	public function test_verify_email_enables_can_learn_and_quiz_cap(): void {
 		$tokens = array();

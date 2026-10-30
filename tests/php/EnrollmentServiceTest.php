@@ -177,6 +177,49 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 		$this->assertSame( 'rev-invite', $row->course_revision_snapshot );
 	}
 
+	/** Course invites with bound_email reject learners whose user_email does not match. */
+	public function test_restricted_bound_email_mismatch_fails(): void {
+		$user_id   = $this->verified_learner( 'bound-mismatch@example.com' );
+		$course_id = $this->published_course();
+		$created   = ( new Invites() )->create(
+			'course',
+			array(
+				'course_id'   => $course_id,
+				'label'       => 'Bound seat',
+				'kind'        => 'multi',
+				'bound_email' => 'someone-else@example.com',
+			)
+		);
+		$this->assertIsArray( $created );
+
+		$result = $this->service()->self_enroll( $user_id, $course_id, $created['plaintext'] );
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_enrollment_bound_email', $result->get_error_code() );
+		$this->assertNull( $this->service()->get_active( $user_id, $course_id ) );
+	}
+
+	/** Course invites with bound_email accept when learner user_email matches. */
+	public function test_restricted_bound_email_match_succeeds(): void {
+		$user_id   = $this->verified_learner( 'bound-match@example.com' );
+		$course_id = $this->published_course( 'rev-bound' );
+		$created   = ( new Invites() )->create(
+			'course',
+			array(
+				'course_id'   => $course_id,
+				'label'       => 'Bound seat',
+				'kind'        => 'multi',
+				'bound_email' => 'bound-match@example.com',
+			)
+		);
+		$this->assertIsArray( $created );
+
+		$result = $this->service()->self_enroll( $user_id, $course_id, $created['plaintext'] );
+		$this->assertTrue( $result );
+		$row = $this->service()->get_active( $user_id, $course_id );
+		$this->assertNotNull( $row );
+		$this->assertSame( 'invite', $row->source );
+	}
+
 	/**
 	 * Redeem failure must leave no enrollment row (shared transaction rollback).
 	 *

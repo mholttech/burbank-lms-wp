@@ -128,9 +128,13 @@ class LearnerRestTest extends WP_UnitTestCase {
 	 * @param string               $method HTTP method.
 	 * @param string               $route  Route under burbank-lms/v1.
 	 * @param array<string, mixed> $body   JSON body params.
+	 * @param array<string, mixed> $query  Query string params.
 	 */
-	private function dispatch( string $method, string $route, array $body = array() ): WP_REST_Response {
+	private function dispatch( string $method, string $route, array $body = array(), array $query = array() ): WP_REST_Response {
 		$request = new WP_REST_Request( $method, '/burbank-lms/v1' . $route );
+		if ( array() !== $query ) {
+			$request->set_query_params( $query );
+		}
 		if ( array() !== $body ) {
 			$request->set_header( 'Content-Type', 'application/json' );
 			$request->set_body( wp_json_encode( $body ) );
@@ -183,6 +187,53 @@ class LearnerRestTest extends WP_UnitTestCase {
 		$data = $response->get_data();
 		$this->assertIsArray( $data );
 		$this->assertSame( 'burbank_register_invite_required', $data['code'] );
+	}
+
+	/** Public verify-email REST path enables can_learn (not Registration::verify_email alone). */
+	public function test_verify_email_public_rest_enables_can_learn(): void {
+		$tokens = array();
+		add_action(
+			'burbank_lms_sent_verification_email',
+			static function ( int $uid, string $token ) use ( &$tokens ): void {
+				$tokens[ $uid ] = $token;
+			},
+			10,
+			2
+		);
+
+		wp_set_current_user( 0 );
+		$invite   = $this->site_invite();
+		$response = $this->dispatch(
+			'POST',
+			'/register',
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'verify-rest@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'legal_name'   => 'Verify Rest',
+				'display_name' => 'Verify',
+			)
+		);
+		$this->assertSame( 201, $response->get_status() );
+		$user_id = (int) $response->get_data()['user_id'];
+		$this->assertArrayHasKey( $user_id, $tokens );
+		$this->assertFalse( ( new Learner() )->can_learn( $user_id ) );
+
+		$verify = $this->dispatch(
+			'GET',
+			'/verify-email',
+			array(),
+			array(
+				'uid'   => $user_id,
+				'token' => $tokens[ $user_id ],
+			)
+		);
+		$this->assertSame( 200, $verify->get_status() );
+		$data = $verify->get_data();
+		$this->assertIsArray( $data );
+		$this->assertTrue( ! empty( $data['verified'] ) );
+		$this->assertSame( $user_id, (int) $data['user_id'] );
+		$this->assertTrue( ( new Learner() )->can_learn( $user_id ) );
 	}
 
 	/** Self-enroll succeeds for a verified learner on an open course. */

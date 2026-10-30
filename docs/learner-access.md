@@ -63,7 +63,7 @@ One table `{prefix}bfc_invite_codes`, two scopes. Site and course codes are neve
 | `multi` | Reusable until revoked, expired, or `max_uses` reached (`max_uses` null = unlimited) |
 | `once` | Single use (`use_count` must stay `0` while active) |
 
-**Active code** = not revoked, not expired, and (`once` with `use_count = 0`) or (`multi` under `max_uses` if set). Plaintext is shown once at create; storage is hashed (HMAC). Optional email-binding on a site invite requires the redeem email to match.
+**Active code** = not revoked, not expired, and (`once` with `use_count = 0`) or (`multi` under `max_uses` if set). Plaintext is shown once at create; storage is hashed (HMAC). Optional `bound_email` on a **site** invite requires the registration email to match; on a **course** invite, `Enrollment\Service` compares it to the learner’s `user_email` before redeem.
 
 Admin UI: **Training → Site invites** for site codes; course edit screen meta box for course codes. Capability: `enroll_bfc_courses` (administrator by default).
 
@@ -77,9 +77,16 @@ Learner registration goes through `Registration::register()` (Register block or 
 - legal / certificate name (`burbank_lms_legal_name`)
 - display name
 
-Atomic flow: validate active **site** invite → create user → store legal name → grant `burbank_lms_access` → increment invite use → send verification email via `Mail\Mailer`.
+Flow: validate active **site** invite → create user → store legal name → grant `burbank_lms_access` → increment invite use → send verification email via `Mail\Mailer`.
+
+**Compensating transaction (not a single DB transaction):** `wp_insert_user` cannot share a MySQL transaction with invite redeem across WordPress’s user tables reliably. On failure after user create, `Registration::register` compensates by revoking training access (when granted) and deleting the user before returning a `WP_Error`. Course restricted enroll uses a real shared transaction for enrollment insert + invite redeem.
 
 Default `wp-login.php?action=register` for learners is rejected (`registration_errors`). Admin `create_users` stays intact; staff may grant training access without a code.
+
+Verification email includes a clickable `home_url` link with `?burbank_lms_verify=1&uid={id}&token={plaintext}`. Public entry points:
+
+- `template_redirect` → `Registration::handle_verification_request` (browser click; redirects to login with `burbank_lms_verified=1` or `burbank_lms_verify_error`)
+- `GET`/`POST` `/burbank-lms/v1/verify-email` with `token` and optional `uid`
 
 Until email is verified: login is allowed; enroll, mapped quiz, and certificate history stay blocked. Changing email clears verification and pauses enroll/quiz until the learner verifies again.
 
@@ -132,6 +139,7 @@ Unmapped quizzes (no published `bfc_course` with that `pressprimer_quiz_id`) are
 | Method | Route | Auth |
 | --- | --- | --- |
 | `POST` | `/register` | Public (rate-limited); site invite required |
+| `GET`/`POST` | `/verify-email` | Public; `token` required, optional `uid` |
 | `GET` | `/enrollments` | Logged-in learner (`can_learn` for useful data) |
 | `POST` | `/enrollments` | Logged-in `can_learn`; optional `course_invite` |
 | `DELETE` | `/enrollments/{course_id}` | Self or `enroll_bfc_courses` (optional `user_id`) |
@@ -154,7 +162,7 @@ Does not proxy PressPrimer attempt APIs. Service `WP_Error` codes map to REST re
 
 ## Mail and branding
 
-`Mail\Mailer` sends filterable `wp_mail` messages for verification, welcome (on `burbank_lms_access_granted`), enrollment confirmation (on `burbank_lms_enrolled`), and completion (on `burbank_lms_course_completed`). Subject/message/headers filters are namespaced `burbank_lms_*_email_*`.
+`Mail\Mailer` sends filterable `wp_mail` messages for verification (clickable URL via `verification_url()` / `burbank_lms_verification_url`), welcome (on `burbank_lms_access_granted`), enrollment confirmation (on `burbank_lms_enrolled`), and completion (on `burbank_lms_course_completed`). Subject/message/headers filters are namespaced `burbank_lms_*_email_*`.
 
 Optional branding: set option `burbank_lms_brand_pressprimer` to a truthy value. `Branding\PressPrimer` then overrides PressPrimer `plugin_name` / dashboard logo (and quiz shell branding) filters with Burbank-facing labels. Certificate upsell and mascot filters are not implemented.
 

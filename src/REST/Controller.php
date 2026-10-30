@@ -76,6 +76,25 @@ class Controller {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/verify-email',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'verify_email' ),
+					'permission_callback' => '__return_true',
+					'args'                => $this->verify_email_args(),
+				),
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'verify_email' ),
+					'permission_callback' => '__return_true',
+					'args'                => $this->verify_email_args(),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/enrollments',
 			array(
 				array(
@@ -145,6 +164,29 @@ class Controller {
 					),
 				),
 			)
+		);
+	}
+
+	/**
+	 * Public email verification (GET or POST).
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function verify_email( \WP_REST_Request $request ) {
+		$token  = (string) $request->get_param( 'token' );
+		$uid    = (int) $request->get_param( 'uid' );
+		$result = $this->registration()->verify_email( $token, $uid > 0 ? $uid : null );
+		if ( is_wp_error( $result ) ) {
+			return $this->to_rest_error( $result );
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'verified' => true,
+				'user_id'  => (int) $result,
+			),
+			200
 		);
 	}
 
@@ -365,6 +407,26 @@ class Controller {
 			);
 		}
 		return true;
+	}
+
+	/**
+	 * Shared args for GET/POST verify-email.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function verify_email_args(): array {
+		return array(
+			'token' => array(
+				'type'              => 'string',
+				'required'          => false,
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'uid'   => array(
+				'type'              => 'integer',
+				'required'          => false,
+				'sanitize_callback' => 'absint',
+			),
+		);
 	}
 
 	/**
