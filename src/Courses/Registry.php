@@ -77,7 +77,9 @@ class Registry {
 		$committed = false;
 		try {
 			$row = $wpdb->get_row( $wpdb->prepare( "SELECT code, published FROM {$table} WHERE course_id = %d FOR UPDATE", $course_id ) );
-			if ( $wpdb->last_error || ( $row && $row->published && $row->code !== $code ) ) {
+			// wp_publish_post writes core status before firing transition hooks.
+			$status = $wpdb->get_var( $wpdb->prepare( "SELECT post_status FROM {$wpdb->posts} WHERE ID = %d", $course_id ) );
+			if ( $wpdb->last_error || ( $row && ( $row->published || 'publish' === $status ) && $row->code !== $code ) ) {
 				return $this->fail();
 			}
 			$result = $row

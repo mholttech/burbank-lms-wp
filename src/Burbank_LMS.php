@@ -77,6 +77,9 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'wp_insert_post_empty_content', $course_validator, 'reject_invalid_batch', 10, 2 );
 		$this->loader->add_filter( 'wp_insert_post_data', $course_validator, 'guard_post', 10, 2 );
 		$this->loader->add_action( 'wp_after_insert_post', $course_validator, 'seal_published', 10, 2 );
+		$this->loader->add_action( 'transition_post_status', $course_validator, 'guard_transition', PHP_INT_MIN, 3 );
+		$this->loader->add_action( 'admin_notices', $course_validator, 'notice' );
+		$this->loader->add_filter( 'redirect_post_location', $course_validator, 'redirect_notice', 10, 2 );
 	}
 
 	/**

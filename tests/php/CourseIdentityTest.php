@@ -250,15 +250,17 @@ class CourseIdentityTest extends WP_UnitTestCase {
 
 	/** Programmatic publication seals identity even after reverting the post to draft. */
 	public function test_publication_seals_identity(): void {
-		$id = wp_insert_post(
+		$mapping = bfc_test_mapping();
+		$id      = wp_insert_post(
 			array(
 				'post_type'   => 'bfc_course',
 				'post_title'  => 'Scene safety',
 				'post_status' => 'draft',
-				'meta_input'  => $this->fields(),
+				'meta_input'  => array_replace( $this->fields(), $mapping ),
 			)
 		);
 		$this->assertSame( 'draft', get_post_status( $id ) );
+		bfc_test_approve( $id );
 		wp_update_post(
 			array(
 				'ID'          => $id,
@@ -326,13 +328,15 @@ class CourseIdentityTest extends WP_UnitTestCase {
 
 	/** No published transition is observable before its immutable identity is sealed. */
 	public function test_first_published_transition_has_no_identity_move_window(): void {
+		$mapping = bfc_test_mapping();
 		$id      = wp_insert_post(
 			array(
 				'post_type'  => 'bfc_course',
 				'post_title' => 'Safety',
-				'meta_input' => $this->fields(),
+				'meta_input' => array_replace( $this->fields(), $mapping ),
 			)
 		);
+		bfc_test_approve( $id );
 		$seen    = false;
 		$observe = function ( $to, $from, $post ) use ( $id, &$seen ): void {
 			if ( $id === $post->ID && 'publish' === $to ) {
@@ -427,16 +431,18 @@ class CourseIdentityTest extends WP_UnitTestCase {
 	}
 	/** Publication creation always saves a draft before the existing-ID publication path. */
 	public function test_new_publication_request_requires_saved_draft(): void {
-		$id = wp_insert_post(
+		$mapping = bfc_test_mapping();
+		$id      = wp_insert_post(
 			array(
 				'post_type'   => 'bfc_course',
 				'post_title'  => 'New requested publication',
 				'post_status' => 'publish',
-				'meta_input'  => $this->fields(),
+				'meta_input'  => array_replace( $this->fields(), $mapping ),
 			)
 		);
 		$this->assertSame( 'draft', get_post_status( $id ) );
 		$this->assertSame( '0', ( new Registry() )->get( $id )['published'] );
+		bfc_test_approve( $id );
 		wp_update_post(
 			array(
 				'ID'          => $id,

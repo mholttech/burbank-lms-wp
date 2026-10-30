@@ -38,6 +38,12 @@ class Validator {
 	/** Fields only the approval service may write through trusted server-side code. */
 	public const AUDIT_FIELDS = array( 'approved_by', 'approved_at', 'approval_notes' );
 
+	/** Metadata whose change can invalidate an already published course. Other fields (for example archiving) stay editable when a dependency fails. */
+	public const PUBLISHED_GATES = array( 'bfc_code', 'course_revision', 'subject_category', 'course_outcome', 'pressprimer_quiz_id', 'certificate_template_id' );
+
+	/** Statuses that make, or schedule, publication of a course. */
+	private const PUBLICATION_STATUSES = array( 'publish', 'future' );
+
 	/** Scoped internal approval write depth.
 	 *
 	 * @var int
@@ -192,6 +198,9 @@ class Validator {
 		}
 		$fields      = array_replace( $this->batches[ $post_id ] ?? $this->fields( $post_id ), array( $key => $value ) );
 		$this->error = $this->check( $fields, $post_id );
+		if ( in_array( $key, self::PUBLISHED_GATES, true ) && 'publish' === get_post_status( $post_id ) && ! self::$internal_depth ) {
+			$this->error = ( new Publication() )->validate( $post_id, $fields );
+		}
 		if ( $this->error->has_errors() ) {
 			return false;
 		}
@@ -243,6 +252,14 @@ class Validator {
 		if ( ! $post_id || 'bfc_code' === $key || ( in_array( $key, self::AUDIT_FIELDS, true ) && ! self::$internal_depth ) || ( get_current_user_id() && ! current_user_can( 'edit_post', $post_id ) && ! self::$internal_depth ) ) {
 			return false;
 		}
+		if ( in_array( $key, self::PUBLISHED_GATES, true ) && 'publish' === get_post_status( $post_id ) && ! self::$internal_depth ) {
+			$fields = $this->fields( $post_id );
+			unset( $fields[ $key ] );
+			$this->error = ( new Publication() )->validate( $post_id, $fields );
+			if ( $this->error->has_errors() ) {
+				return false;
+			}
+		}
 		return $check;
 	}
 
@@ -265,7 +282,9 @@ class Validator {
 			}
 		}
 		$fields = array_replace( $this->fields( $id ), $meta );
-		$error  = $this->check( $fields, $id, isset( $prepared->post_status ) && 'publish' === $prepared->post_status );
+		// A status-less update of a published course still leaves it published, so it needs the same gate.
+		$status = isset( $prepared->post_status ) ? $prepared->post_status : ( $id ? get_post_status( $id ) : 'draft' );
+		$error  = ( in_array( $status, self::PUBLICATION_STATUSES, true ) ? ( new Publication() )->validate( $id, $fields ) : $this->check( $fields, $id ) );
 		if ( ! $error->has_errors() ) {
 			$prepared->meta_input = $meta;
 		}
@@ -343,22 +362,25 @@ class Validator {
 		if ( 'bfc_course' !== $data['post_type'] ) {
 			return $data;
 		}
-		$id = (int) ( $postarr['ID'] ?? 0 );
-		if ( ! $id && 'publish' === $data['post_status'] ) {
+		$id      = (int) ( $postarr['ID'] ?? 0 );
+		$status  = $data['post_status'];
+		$publish = in_array( $status, self::PUBLICATION_STATUSES, true );
+		if ( ! $id && $publish ) {
 			// Approval and publication require a previously saved, stable course ID.
 			$data['post_status'] = 'draft';
 			$this->error         = new \WP_Error( 'burbank_course_save_draft', __( 'Save this course as a draft before requesting approval and publication.', 'burbank-lms' ), array( 'status' => 400 ) );
 			return $data;
 		}
 		$fields      = array_replace( $this->batches[ $id ] ?? $this->fields( $id ), (array) ( $postarr['meta_input'] ?? array() ) );
-		$this->error = $this->check( $fields, $id, 'publish' === $data['post_status'] );
+		$this->error = ( $publish ? ( new Publication() )->validate( $id, $fields ) : $this->check( $fields, $id ) );
 		if ( ! $this->error->has_errors() && $id ) {
 			$this->batches[ $id ] = $fields;
 		}
-		if ( $this->error->has_errors() && 'publish' === $data['post_status'] ) {
+		if ( $this->error->has_errors() && $publish ) {
 			$data['post_status'] = 'draft';
 		}
-		if ( ! $this->error->has_errors() && 'publish' === $data['post_status'] ) {
+		// A scheduled course is sealed by its later publish transition, never at scheduling time.
+		if ( ! $this->error->has_errors() && 'publish' === $status ) {
 			$row = ( new Registry() )->get( $id );
 			if ( ! $row || ! $row['published'] ) {
 				// Core must never expose publication before the permanent reservation is sealed.
@@ -379,35 +401,49 @@ class Validator {
 		if ( empty( $this->pods_batches[ $post_id ] ) ) {
 			unset( $this->batches[ $post_id ] );
 		}
-		if ( 'bfc_course' !== $post->post_type ) {
-			return;
-		}
-		if ( empty( $this->publishing[ $post_id ] ) ) {
+		if ( 'bfc_course' !== $post->post_type || empty( $this->publishing[ $post_id ] ) ) {
 			return;
 		}
 		unset( $this->publishing[ $post_id ] );
+		if ( $this->seal( $post_id, true ) ) {
+			$post->post_status = 'publish';
+			wp_transition_post_status( 'publish', 'draft', $post );
+		}
+	}
+
+	/**
+	 * Revalidate and permanently bind identity under the registry lock.
+	 *
+	 * @param int  $post_id Course post ID.
+	 * @param bool $promote Move a saved draft to publish in the same transaction; false when core already stored publish.
+	 * @return bool Whether publication is valid and sealed.
+	 */
+	private function seal( int $post_id, bool $promote ): bool {
 		global $wpdb;
 		$registry = new Registry();
 		$code     = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s", $post_id, 'bfc_code' ) ); // phpcs:ignore WordPress.DB -- Authoritative publication candidate.
 		$saved    = $registry->reserve(
 			$post_id,
 			(string) $code,
-			function () use ( $post_id, $code, $registry, $wpdb ): bool {
+			function () use ( $post_id, $code, $registry, $wpdb, $promote ): bool {
 				wp_cache_delete( $post_id, 'post_meta' );
 				$fields      = $this->fields( $post_id );
-				$this->error = $this->validate( $fields, $post_id );
+				$this->error = ( new Publication() )->validate( $post_id, $fields );
 				if ( $this->error->has_errors() || ( $fields['bfc_code'] ?? '' ) !== $code || ! $registry->publish( $post_id ) ) {
 					return false;
+				}
+				if ( ! $promote ) {
+					return true;
 				}
 				// The post's first published status and immutable identity become visible in one commit.
 				return 1 === $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->posts} SET post_status = %s WHERE ID = %d AND post_status = %s", 'publish', $post_id, 'draft' ) ); // phpcs:ignore WordPress.DB -- Atomic first publication under the registry lock.
 			}
 		);
 		clean_post_cache( $post_id );
-		if ( $saved ) {
-			$post->post_status = 'publish';
-			wp_transition_post_status( 'publish', 'draft', $post );
+		if ( ! $saved && ( ! $this->error || ! $this->error->has_errors() ) ) {
+			$this->error = new \WP_Error( 'burbank_course_seal', __( 'The permanent course identity could not be reserved. Save the course again to retry publication.', 'burbank-lms' ), array( 'status' => 409 ) );
 		}
+		return $saved;
 	}
 
 	/**
@@ -453,6 +489,63 @@ class Validator {
 	public function pods_finished( $pieces, bool $is_new, int $id ) {
 		unset( $this->batches[ $id ], $this->pods_batches[ $id ] );
 		return $pieces;
+	}
+
+	/**
+	 * Protect core's direct and scheduled publication path (wp_publish_post, cron, untrash).
+	 *
+	 * WordPress offers no pre-write filter on this path: it stores `publish` and then fires the
+	 * transition. An invalid course is therefore reverted to draft immediately, but this boundary
+	 * cannot hide the transient `publish` row from a concurrent reader, nor stop transition listeners
+	 * registered after this one from receiving the rejected `publish` argument.
+	 *
+	 * @param string   $new_status Requested status.
+	 * @param string   $old_status Previous status.
+	 * @param \WP_Post $post Saved post.
+	 */
+	public function guard_transition( string $new_status, string $old_status, \WP_Post $post ): void {
+		if ( 'bfc_course' !== $post->post_type || 'publish' !== $new_status || $new_status === $old_status ) {
+			return;
+		}
+		$this->error = ( new Publication() )->validate( $post->ID, $this->fields( $post->ID ) );
+		if ( ! $this->error->has_errors() ) {
+			$row = ( new Registry() )->get( $post->ID );
+			if ( ( $row && $row['published'] ) || $this->seal( $post->ID, false ) ) {
+				return;
+			}
+		}
+		global $wpdb;
+		$wpdb->update( $wpdb->posts, array( 'post_status' => 'draft' ), array( 'ID' => $post->ID ) ); // phpcs:ignore WordPress.DB -- Core wp_publish_post has no pre-write filter.
+		$post->post_status = 'draft';
+		clean_post_cache( $post->ID );
+	}
+
+	/**
+	 * Carry classic-editor errors across WordPress' normal save redirect.
+	 *
+	 * Core reports "Post published" for any Publish click; replace it with "Draft saved" when held.
+	 *
+	 * @param string $location Core redirect URL.
+	 * @param int    $post_id Saved post ID.
+	 */
+	public function redirect_notice( string $location, int $post_id = 0 ): string {
+		if ( $this->error && $this->error->has_errors() && get_current_user_id() && ( ! $post_id || 'bfc_course' === get_post_type( $post_id ) ) ) {
+			set_transient( 'burbank_course_notice_' . get_current_user_id(), $this->error->get_error_messages(), 60 );
+			if ( $post_id && 'publish' !== get_post_status( $post_id ) ) {
+				$location = add_query_arg( 'message', 10, $location );
+			}
+		}
+		return $location;
+	}
+
+	/** Display actionable errors after recoverable classic-editor draft fallback. */
+	public function notice(): void {
+		$messages = get_transient( 'burbank_course_notice_' . get_current_user_id() );
+		delete_transient( 'burbank_course_notice_' . get_current_user_id() );
+		$messages = $messages ?: ( $this->error ? $this->error->get_error_messages() : array() );
+		if ( $messages && current_user_can( 'edit_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered by Courses\Capabilities.
+			echo '<div class="notice notice-error"><p>' . esc_html( implode( ' ', $messages ) ) . '</p></div>';
+		}
 	}
 
 	/** Return the most recent rejected core save for editor notices. */

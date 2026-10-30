@@ -1,0 +1,16 @@
+<?php
+/** Static analysis declarations copied from the supported released model APIs.
+ * Not loaded at runtime; application tests use the actual released plugins.
+ */
+class PressPrimer_Quiz_Quiz {
+	/** @return object|null */
+	public static function get( $id ) {}
+}
+class PressPrimer_Certificate_Template {
+	/** @return object|null */
+	public static function get( $id ) {}
+}
+class PressPrimer_Certificate_Trigger {
+	/** @return object[] */
+	public static function get_for_template( $template_id ) {}
+}
