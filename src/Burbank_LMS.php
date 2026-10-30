@@ -57,6 +57,103 @@ class Burbank_LMS {
 		$this->define_public_hooks();
 
 		$this->loader->add_action( 'init', $this, 'register_blocks' );
+		$this->loader->add_action( 'init', new Learner\Templates(), 'register' );
+
+		$course_picks = new Courses\Picks();
+		$this->loader->add_action( 'pods_form_ui_field_pick_related_objects_custom', $course_picks, 'register' );
+		$this->loader->add_action( 'init', $course_picks, 'register', 11 );
+		$course_schema = new Courses\Schema();
+		$this->loader->add_action( 'init', $course_schema, 'register', 12 );
+		$this->loader->add_action( 'admin_notices', $course_schema, 'notice' );
+		$this->loader->add_action( 'init', new Courses\Capabilities(), 'install', 12 );
+		$course_registry = new Courses\Registry();
+		$this->loader->add_action( 'init', $course_registry, 'install', 12 );
+		$this->loader->add_action( 'admin_notices', $course_registry, 'notice' );
+		$access_tables = new Access\Tables();
+		$this->loader->add_action( 'init', $access_tables, 'install', 12 );
+		$enrollment_tables = new Enrollment\Tables();
+		$this->loader->add_action( 'init', $enrollment_tables, 'install', 12 );
+		$registration = new Access\Registration();
+		$this->loader->add_filter( 'registration_errors', $registration, 'block_default_registration' );
+		$this->loader->add_action( 'profile_update', $registration, 'handle_email_change', 10, 2 );
+		$this->loader->add_action( 'template_redirect', $registration, 'handle_verification_request' );
+		$rest = new REST\Controller( $registration );
+		$this->loader->add_action( 'rest_api_init', $rest, 'register_routes' );
+		$profile = new Access\Profile();
+		$this->loader->add_filter( 'add_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
+		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
+		$this->loader->add_filter( 'delete_user_metadata', $profile, 'guard_legal_name_delete', 10, 3 );
+		$this->loader->add_filter( 'delete_user_metadata_by_mid', $profile, 'guard_legal_name_delete_id', 10, 2 );
+		$learner = new Access\Learner();
+		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
+		$mailer = new Mail\Mailer();
+		$this->loader->add_action( 'burbank_lms_access_granted', $mailer, 'on_access_granted', 10, 2 );
+		$this->loader->add_action( 'burbank_lms_enrolled', $mailer, 'on_enrolled', 10, 4 );
+		$this->loader->add_action( 'burbank_lms_course_completed', $mailer, 'on_course_completed', 10, 3 );
+		$branding = new Branding\PressPrimer();
+		$this->loader->add_filter( 'pressprimer_quiz_plugin_name', $branding, 'filter_plugin_name' );
+		$this->loader->add_filter( 'pressprimer_quiz_dashboard_logo', $branding, 'filter_logo' );
+		$this->loader->add_filter( 'pressprimer_quiz_shell_branding', $branding, 'filter_shell_branding' );
+		$this->loader->add_filter( 'ppcert_plugin_name', $branding, 'filter_plugin_name' );
+		$this->loader->add_filter( 'ppcert_dashboard_logo', $branding, 'filter_logo' );
+		$progress                = new Progress\Service();
+		$enrollment_service      = new Enrollment\Service();
+		$pressprimer_quiz        = new Integrations\PressPrimer_Quiz( $progress, $enrollment_service, $learner );
+		$pressprimer_certificate = new Integrations\PressPrimer_Certificate( $progress, $enrollment_service, $profile );
+		$this->loader->add_filter( 'pressprimer_quiz_can_start', $pressprimer_quiz, 'can_start', 10, 2 );
+		$this->loader->add_filter( 'pressprimer_quiz_before_submit', $pressprimer_quiz, 'before_submit', 10, 2 );
+		$this->loader->add_action( 'pressprimer_quiz_quiz_passed', $pressprimer_quiz, 'quiz_passed', 10, 2 );
+		$this->loader->add_filter( 'ppcert_register_merge_fields', $pressprimer_certificate, 'register_merge_fields', 10, 2 );
+		$this->loader->add_filter( 'ppcert_merge_data', $pressprimer_certificate, 'merge_data', 10, 2 );
+		$this->loader->add_filter( 'ppcert_issue_validation', $pressprimer_certificate, 'issue_validation', 10, 2 );
+		$this->loader->add_action( 'ppcert_certificate_issued', $pressprimer_certificate, 'certificate_issued', 10, 2 );
+		$course_validator = new Courses\Validator();
+		$this->loader->add_filter( 'add_post_metadata', $course_validator, 'guard_meta', 10, 4 );
+		$this->loader->add_filter( 'update_post_metadata', $course_validator, 'guard_meta', 10, 4 );
+		$this->loader->add_filter( 'delete_post_metadata', $course_validator, 'guard_delete', 10, 3 );
+		$this->loader->add_filter( 'update_post_metadata_by_mid', $course_validator, 'guard_meta_id', 10, 4 );
+		$this->loader->add_filter( 'delete_post_metadata_by_mid', $course_validator, 'guard_delete_id', 10, 2 );
+		$this->loader->add_filter( 'pods_api_post_save_pod_item_bfc_course', $course_validator, 'pods_finished', 10, 3 );
+		$this->loader->add_filter( 'rest_pre_insert_bfc_course', $course_validator, 'rest_preflight', 10, 2 );
+		$this->loader->add_filter( 'pods_api_field_validation', $course_validator, 'pods_preflight', 10, 7 );
+		$this->loader->add_filter( 'wp_insert_post_empty_content', $course_validator, 'reject_invalid_batch', 10, 2 );
+		$this->loader->add_filter( 'wp_insert_post_data', $course_validator, 'guard_post', 10, 2 );
+		$this->loader->add_action( 'wp_after_insert_post', $course_validator, 'seal_published', 10, 2 );
+		$this->loader->add_action( 'transition_post_status', $course_validator, 'guard_transition', PHP_INT_MIN, 3 );
+		$this->loader->add_action( 'before_delete_post', $course_validator, 'begin_delete', PHP_INT_MIN );
+		$this->loader->add_action( 'deleted_post', $course_validator, 'end_delete', PHP_INT_MAX );
+		$this->loader->add_action( 'admin_notices', $course_validator, 'notice' );
+		$this->loader->add_filter( 'redirect_post_location', $course_validator, 'redirect_notice', 10, 2 );
+		$course_editorial = new Courses\Editorial();
+		foreach ( array( 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ) as $hook ) {
+			$this->loader->add_action( $hook, $course_editorial, 'metadata_changed', 10, 3 );
+		}
+		foreach ( array( 'add_post_metadata', 'update_post_metadata', 'delete_post_metadata' ) as $hook ) {
+			$this->loader->add_filter( $hook, $course_editorial, 'guard_snapshot', 10, 3 );
+		}
+		$this->loader->add_filter( 'update_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 4 );
+		$this->loader->add_filter( 'delete_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 2 );
+		$this->loader->add_filter( 'pre_delete_post', $course_editorial, 'guard_deletion', PHP_INT_MAX, 2 );
+		$course_admin = new Courses\Admin();
+		$this->loader->add_action( 'admin_post_bfc_course_editorial', $course_admin, 'handle' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $course_admin, 'meta_box' );
+		$this->loader->add_action( 'admin_footer', $course_admin, 'action_form' );
+		$this->loader->add_action( 'admin_notices', $course_admin, 'notice' );
+		$this->loader->add_filter( 'manage_bfc_course_posts_columns', $course_admin, 'columns' );
+		$this->loader->add_action( 'manage_bfc_course_posts_custom_column', $course_admin, 'column', 10, 2 );
+		$access_admin = new Access\Admin();
+		$this->loader->add_action( 'admin_menu', $access_admin, 'register_menu' );
+		$this->loader->add_action( 'admin_post_bfc_invite_create', $access_admin, 'handle_create_invite' );
+		$this->loader->add_action( 'admin_post_bfc_invite_revoke', $access_admin, 'handle_revoke_invite' );
+		$this->loader->add_action( 'admin_post_bfc_learner_profile', $access_admin, 'handle_profile' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $access_admin, 'register_meta_box' );
+		$this->loader->add_action( 'show_user_profile', $access_admin, 'render_profile' );
+		$this->loader->add_action( 'edit_user_profile', $access_admin, 'render_profile' );
+		$this->loader->add_action( 'admin_notices', $access_admin, 'notice' );
+		$enrollment_admin = new Enrollment\Admin();
+		$this->loader->add_action( 'admin_post_bfc_enrollment_admin_enroll', $enrollment_admin, 'handle_enroll' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $enrollment_admin, 'register_meta_box' );
+		$this->loader->add_action( 'admin_notices', $enrollment_admin, 'notice' );
 	}
 
 	/**

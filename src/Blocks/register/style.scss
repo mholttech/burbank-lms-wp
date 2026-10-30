@@ -1,0 +1,21 @@
+.bfc-register {
+	&__form {
+		display: grid;
+		gap: 0.75rem;
+		max-width: 28rem;
+	}
+
+	&__field {
+		display: grid;
+		gap: 0.25rem;
+		margin: 0;
+	}
+
+	&__status {
+		margin: 0;
+
+		&.is-error {
+			color: #b32d2e;
+		}
+	}
+}

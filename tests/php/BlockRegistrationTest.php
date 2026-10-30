@@ -20,6 +20,20 @@
 class BlockRegistrationTest extends WP_UnitTestCase {
 
 	/**
+	 * Learner suite blocks that must ship in the build output.
+	 *
+	 * @var string[]
+	 */
+	private const EXPECTED_LEARNER_BLOCKS = array(
+		'burbank-lms/register',
+		'burbank-lms/profile',
+		'burbank-lms/catalog',
+		'burbank-lms/course',
+		'burbank-lms/enroll',
+		'burbank-lms/my-courses',
+	);
+
+	/**
 	 * Block.json fields that may reference script/style assets.
 	 *
 	 * @var string[]
@@ -32,6 +46,25 @@ class BlockRegistrationTest extends WP_UnitTestCase {
 		'style',
 		'viewStyle',
 	);
+
+	/**
+	 * Built output must include every learner block from the suite plan.
+	 */
+	public function test_expected_learner_blocks_are_built(): void {
+		$blocks = $this->discover_blocks();
+		$names  = wp_list_pluck( $blocks, 'name' );
+
+		foreach ( self::EXPECTED_LEARNER_BLOCKS as $expected ) {
+			$this->assertContains(
+				$expected,
+				$names,
+				sprintf(
+					'Expected learner block "%s" missing from build/Blocks. Run `npm run create-block` / `npm run build`.',
+					$expected
+				)
+			);
+		}
+	}
 
 	/**
 	 * Every built block must be reported as registered by the REST API.

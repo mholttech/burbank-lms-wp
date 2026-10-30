@@ -23,6 +23,9 @@ class Activator {
 	 * @return void
 	 */
 	public static function activate(): void {
+		( new Courses\Registry() )->install();
+		( new Access\Tables() )->install();
+		( new Enrollment\Tables() )->install();
 	}
 
 	/**
