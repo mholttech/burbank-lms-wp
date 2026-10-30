@@ -179,7 +179,7 @@ class Invites {
 		$succeeded = false;
 		try {
 			$row = $db->get_row( $db->prepare( "SELECT * FROM {$table} WHERE id = %d FOR UPDATE", $id ) );
-			if ( ! $row || ! $this->row_is_active( $row ) ) {
+			if ( ! $row || ! $this->is_active( $row ) ) {
 				return false;
 			}
 			if ( 'once' === $row->kind ) {
@@ -268,24 +268,21 @@ class Invites {
 			return false;
 		}
 		foreach ( $rows as $row ) {
-			if ( $this->row_is_active( $row ) ) {
+			if ( $this->is_active( $row ) ) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	/** Return the database handle used for invite persistence. */
-	private function db(): \wpdb {
-		return $this->wpdb ?? $GLOBALS['wpdb'];
-	}
-
 	/**
 	 * Whether a stored invite row is still redeemable.
 	 *
+	 * Matches revoked, expiry, once-use, and multi max_uses rules used by find_active/redeem.
+	 *
 	 * @param object $row Invite row object.
 	 */
-	private function row_is_active( object $row ): bool {
+	public function is_active( object $row ): bool {
 		if ( ! empty( $row->revoked_at ) ) {
 			return false;
 		}
@@ -303,6 +300,11 @@ class Invites {
 			return true;
 		}
 		return $use_count < (int) $row->max_uses;
+	}
+
+	/** Return the database handle used for invite persistence. */
+	private function db(): \wpdb {
+		return $this->wpdb ?? $GLOBALS['wpdb'];
 	}
 
 	/**

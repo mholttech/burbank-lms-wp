@@ -307,6 +307,8 @@ class Admin {
 		echo '<p><label>' . esc_html__( 'Label', 'burbank-lms' ) . ' <input type="text" name="bfc_invite_label" class="regular-text"></label></p>';
 		echo '<p><label>' . esc_html__( 'Kind', 'burbank-lms' ) . ' <select name="bfc_invite_kind"><option value="multi">' . esc_html__( 'Multi-use', 'burbank-lms' ) . '</option><option value="once">' . esc_html__( 'One-time', 'burbank-lms' ) . '</option></select></label></p>';
 		echo '<p><label>' . esc_html__( 'Max uses (multi)', 'burbank-lms' ) . ' <input type="number" name="bfc_invite_max_uses" min="1" class="small-text"></label></p>';
+		echo '<p><label>' . esc_html__( 'Expires at (UTC)', 'burbank-lms' ) . ' <input type="text" name="bfc_invite_expires_at" class="regular-text" placeholder="YYYY-MM-DD HH:MM:SS"></label></p>';
+		echo '<p><label>' . esc_html__( 'Bound email', 'burbank-lms' ) . ' <input type="email" name="bfc_invite_bound_email" class="regular-text"></label></p>';
 		echo '<p><button type="submit" class="button button-primary">' . esc_html__( 'Create invite', 'burbank-lms' ) . '</button></p>';
 		echo '</form>';
 	}
@@ -323,25 +325,35 @@ class Admin {
 			echo '<p>' . esc_html__( 'No invites yet.', 'burbank-lms' ) . '</p>';
 			return;
 		}
+		$invites = new Invites();
 		echo '<table class="widefat striped"><thead><tr>';
 		echo '<th>' . esc_html__( 'ID', 'burbank-lms' ) . '</th>';
 		echo '<th>' . esc_html__( 'Label', 'burbank-lms' ) . '</th>';
 		echo '<th>' . esc_html__( 'Kind', 'burbank-lms' ) . '</th>';
 		echo '<th>' . esc_html__( 'Uses', 'burbank-lms' ) . '</th>';
+		echo '<th>' . esc_html__( 'Bound email', 'burbank-lms' ) . '</th>';
 		echo '<th>' . esc_html__( 'Status', 'burbank-lms' ) . '</th>';
 		echo '<th>' . esc_html__( 'Actions', 'burbank-lms' ) . '</th>';
 		echo '</tr></thead><tbody>';
 		foreach ( $rows as $row ) {
-			$id       = (int) $row->id;
-			$revoked  = ! empty( $row->revoked_at );
-			$max      = null === $row->max_uses || '' === $row->max_uses ? '∞' : (string) (int) $row->max_uses;
-			$uses     = (int) $row->use_count . ' / ' . $max;
-			$status   = $revoked ? __( 'Revoked', 'burbank-lms' ) : __( 'Active', 'burbank-lms' );
+			$id      = (int) $row->id;
+			$revoked = ! empty( $row->revoked_at );
+			$max     = null === $row->max_uses || '' === $row->max_uses ? '∞' : (string) (int) $row->max_uses;
+			$uses    = (int) $row->use_count . ' / ' . $max;
+			$bound   = ! empty( $row->bound_email ) ? (string) $row->bound_email : '—';
+			if ( $revoked ) {
+				$status = __( 'Revoked', 'burbank-lms' );
+			} elseif ( $invites->is_active( $row ) ) {
+				$status = __( 'Active', 'burbank-lms' );
+			} else {
+				$status = __( 'Inactive', 'burbank-lms' );
+			}
 			echo '<tr>';
 			echo '<td>' . esc_html( (string) $id ) . '</td>';
 			echo '<td>' . esc_html( (string) $row->label ) . '</td>';
 			echo '<td>' . esc_html( (string) $row->kind ) . '</td>';
 			echo '<td>' . esc_html( $uses ) . '</td>';
+			echo '<td>' . esc_html( $bound ) . '</td>';
 			echo '<td>' . esc_html( $status ) . '</td><td>';
 			if ( ! $revoked ) {
 				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline;">';

@@ -203,6 +203,75 @@ echo ( new \\Burbank_LMS\\Access\\Invites() )->redeem( %4$d ) ? "1" : "0";
 		$this->assertNull( $this->invites()->find_active( $course['plaintext'], 'site' ) );
 	}
 
+	/** Public is_active mirrors revoked, expiry, once, and max_uses redeemability. */
+	public function test_is_active_matches_redeemability_rules(): void {
+		$invites = $this->invites();
+		$once    = $invites->create(
+			'site',
+			array(
+				'label' => 'Once',
+				'kind'  => 'once',
+			)
+		);
+		$this->assertIsArray( $once );
+		$row = $invites->find_active( $once['plaintext'], 'site' );
+		$this->assertNotNull( $row );
+		$this->assertTrue( $invites->is_active( $row ) );
+		$this->assertTrue( $invites->redeem( (int) $once['id'] ) );
+		$row->use_count = 1;
+		$this->assertFalse( $invites->is_active( $row ) );
+
+		$multi = $invites->create(
+			'site',
+			array(
+				'label'    => 'Capped',
+				'kind'     => 'multi',
+				'max_uses' => 1,
+			)
+		);
+		$this->assertIsArray( $multi );
+		$capped = $invites->find_active( $multi['plaintext'], 'site' );
+		$this->assertNotNull( $capped );
+		$this->assertTrue( $invites->is_active( $capped ) );
+		$this->assertTrue( $invites->redeem( (int) $multi['id'] ) );
+		$capped->use_count = 1;
+		$this->assertFalse( $invites->is_active( $capped ) );
+
+		$expired = $invites->create(
+			'site',
+			array(
+				'label'      => 'Expired',
+				'kind'       => 'multi',
+				'expires_at' => gmdate( 'Y-m-d H:i:s', time() - 60 ),
+			)
+		);
+		$this->assertIsArray( $expired );
+		$expired_row             = new \stdClass();
+		$expired_row->kind       = 'multi';
+		$expired_row->max_uses   = null;
+		$expired_row->use_count  = 0;
+		$expired_row->expires_at = gmdate( 'Y-m-d H:i:s', time() - 60 );
+		$expired_row->revoked_at = null;
+		$this->assertFalse( $invites->is_active( $expired_row ) );
+
+		$revoked = $invites->create(
+			'site',
+			array(
+				'label' => 'Revoke',
+				'kind'  => 'multi',
+			)
+		);
+		$this->assertIsArray( $revoked );
+		$this->assertTrue( $invites->revoke( (int) $revoked['id'] ) );
+		$revoked_row             = new \stdClass();
+		$revoked_row->kind       = 'multi';
+		$revoked_row->max_uses   = null;
+		$revoked_row->use_count  = 0;
+		$revoked_row->expires_at = null;
+		$revoked_row->revoked_at = gmdate( 'Y-m-d H:i:s' );
+		$this->assertFalse( $invites->is_active( $revoked_row ) );
+	}
+
 	/** Restricted-course detection follows active course-scoped rows. */
 	public function test_course_has_active_invites(): void {
 		$course_id = self::factory()->post->create( array( 'post_type' => 'bfc_course' ) );

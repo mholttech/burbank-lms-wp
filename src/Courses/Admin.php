@@ -12,6 +12,13 @@ use Burbank_LMS\Enrollment\Repository;
 /** Server-rendered controls require no new editor assets. */
 class Admin {
 	/**
+	 * Per-request enrollment count cache keyed by course ID.
+	 *
+	 * @var array<int, array{enrolled:int,passed:int,completed:int}>
+	 */
+	private array $enrollment_counts = array();
+
+	/**
 	 * Validate CSRF before dispatching to capability-checked services.
 	 *
 	 * @param int    $course_id Course post ID.
@@ -141,7 +148,10 @@ class Admin {
 			$approved = ( new Editorial() )->matches_approval( $course_id, ( new Validator() )->fields( $course_id ) ) && user_can( (int) get_post_meta( $course_id, 'approved_by', true ), 'approve_bfc_courses' ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered course capability.
 			echo esc_html( $approved ? __( 'Approved', 'burbank-lms' ) : __( 'Approval required', 'burbank-lms' ) );
 		} elseif ( in_array( $column, array( 'bfc_enrolled', 'bfc_passed', 'bfc_completed' ), true ) ) {
-			$counts = ( new Repository() )->counts_for_course( $course_id );
+			if ( ! isset( $this->enrollment_counts[ $course_id ] ) ) {
+				$this->enrollment_counts[ $course_id ] = ( new Repository() )->counts_for_course( $course_id );
+			}
+			$counts = $this->enrollment_counts[ $course_id ];
 			$key    = match ( $column ) {
 				'bfc_enrolled' => 'enrolled',
 				'bfc_passed' => 'passed',
