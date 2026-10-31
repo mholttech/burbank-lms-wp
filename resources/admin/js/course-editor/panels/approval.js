@@ -4,6 +4,7 @@
 
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Notice, TextControl } from '@wordpress/components';
+import { useEntityProp } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 import { store as editorStore } from '@wordpress/editor';
 import { useEffect, useState } from '@wordpress/element';
@@ -73,10 +74,24 @@ export default function ApprovalPanel() {
 	}, [] );
 
 	const disabled = ! postId || isAutoDraft;
+	const [ meta, setMeta ] = useEntityProp( 'postType', 'bfc_course', 'meta' );
 	const [ editorial, setEditorial ] = useState( EMPTY_EDITORIAL );
 	const [ revision, setRevision ] = useState( '' );
 	const [ busy, setBusy ] = useState( false );
 	const [ notice, setNotice ] = useState( null );
+
+	/**
+	 * Keep Details-panel entity meta aligned after Admin REST mutations.
+	 *
+	 * Revision/archive update the saved course server-side; without this, a
+	 * later Save would push stale useEntityProp values back to the server.
+	 *
+	 * @param {Object} patch Meta keys to merge into the edited entity.
+	 */
+	const syncEntityMeta = ( patch ) => {
+		const current = meta && typeof meta === 'object' ? meta : {};
+		setMeta( { ...current, ...patch } );
+	};
 
 	useEffect( () => {
 		if ( disabled ) {
@@ -136,6 +151,12 @@ export default function ApprovalPanel() {
 				data: options.data,
 			} );
 			setEditorial( normalizeEditorial( data ) );
+			if ( action === 'revision' && options.data?.revision ) {
+				syncEntityMeta( { course_revision: options.data.revision } );
+			}
+			if ( action === 'archive' ) {
+				syncEntityMeta( { catalog_state: 'archived' } );
+			}
 			if ( options.clearRevision ) {
 				setRevision( '' );
 			}
