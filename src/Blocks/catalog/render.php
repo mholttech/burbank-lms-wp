@@ -42,11 +42,15 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 	<?php if ( empty( $courses ) ) : ?>
 		<p><?php esc_html_e( 'No courses are available yet.', 'burbank-lms' ); ?></p>
 	<?php else : ?>
+		<?php
+		$search_id  = wp_unique_id( 'bfc-catalog-search-' );
+		$subject_id = wp_unique_id( 'bfc-catalog-subject-' );
+		?>
 		<div class="bfc-catalog__filters">
 			<p class="bfc-catalog__field">
-				<label for="bfc-catalog-search"><?php esc_html_e( 'Search courses', 'burbank-lms' ); ?></label>
+				<label for="<?php echo esc_attr( $search_id ); ?>"><?php esc_html_e( 'Search courses', 'burbank-lms' ); ?></label>
 				<input
-					id="bfc-catalog-search"
+					id="<?php echo esc_attr( $search_id ); ?>"
 					type="search"
 					class="bfc-catalog__search"
 					data-bfc-catalog-search
@@ -55,8 +59,8 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 				>
 			</p>
 			<p class="bfc-catalog__field">
-				<label for="bfc-catalog-subject"><?php esc_html_e( 'Subject', 'burbank-lms' ); ?></label>
-				<select id="bfc-catalog-subject" class="bfc-catalog__subject" data-bfc-catalog-subject>
+				<label for="<?php echo esc_attr( $subject_id ); ?>"><?php esc_html_e( 'Subject', 'burbank-lms' ); ?></label>
+				<select id="<?php echo esc_attr( $subject_id ); ?>" class="bfc-catalog__subject" data-bfc-catalog-subject>
 					<option value=""><?php esc_html_e( 'All subjects', 'burbank-lms' ); ?></option>
 					<?php foreach ( $subjects as $slug => $label ) : ?>
 						<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
