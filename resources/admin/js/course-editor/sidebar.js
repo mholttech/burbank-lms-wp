@@ -6,6 +6,7 @@ import { PanelBody } from '@wordpress/components';
 import { PluginSidebar, PluginSidebarMoreMenuItem } from '@wordpress/edit-post';
 import { __ } from '@wordpress/i18n';
 
+import ApprovalPanel from './panels/approval';
 import DetailsPanel from './panels/details';
 
 export const PLUGIN_NAME = 'burbank-lms-course';
@@ -42,7 +43,9 @@ export default function CourseSidebar() {
 					title={ __( 'Approval', 'burbank-lms' ) }
 					initialOpen={ false }
 					className="burbank-lms-course-sidebar__panel"
-				/>
+				>
+					<ApprovalPanel />
+				</PanelBody>
 				<PanelBody
 					title={ __( 'Invites', 'burbank-lms' ) }
 					initialOpen={ false }
