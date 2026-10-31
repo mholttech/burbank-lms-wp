@@ -106,6 +106,9 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$block = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
 		$this->assertStringContainsString( 'bfc-soft-gate', $block );
 		$this->assertStringNotContainsString( 'bfc-catalog__list', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-search', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-subject', $block );
+		$this->assertStringNotContainsString( 'bfc-catalog__enroll', $block );
 		$this->assertStringNotContainsString( 'BFC-901', $block );
 	}
 
@@ -117,6 +120,9 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$block = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
 		$this->assertStringContainsString( 'bfc-soft-gate', $block );
 		$this->assertStringNotContainsString( 'bfc-catalog__list', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-search', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-subject', $block );
+		$this->assertStringNotContainsString( 'bfc-catalog__enroll', $block );
 		$this->assertStringNotContainsString( 'BFC-902', $block );
 	}
 }
