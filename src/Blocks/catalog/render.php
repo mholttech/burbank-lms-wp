@@ -15,9 +15,20 @@ use Burbank_LMS\Enrollment\Service as Enrollment_Service;
 use Burbank_LMS\Learner\Block_Context;
 use Burbank_LMS\Learner\Catalog;
 use Burbank_LMS\Learner\Presentation;
+use Burbank_LMS\Learner\Soft_Gate;
+
+$user_id = get_current_user_id();
+$gate    = new Soft_Gate();
+if ( $gate->should_block( $user_id ) ) {
+	printf(
+		'<div %1$s>%2$s</div>',
+		get_block_wrapper_attributes( array( 'class' => 'bfc-catalog' ) ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper.
+		$gate->render( $gate->audience( $user_id ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
+	);
+	return;
+}
 
 $courses      = ( new Catalog() )->query();
-$user_id      = get_current_user_id();
 $can_learn    = $user_id > 0 && ( new Learner() )->can_learn( $user_id );
 $invites      = new Invites();
 $enroll       = new Enrollment_Service();

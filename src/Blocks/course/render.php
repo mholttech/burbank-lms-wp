@@ -14,6 +14,7 @@ use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
 use Burbank_LMS\Learner\Block_Context;
 use Burbank_LMS\Learner\Presentation;
+use Burbank_LMS\Learner\Soft_Gate;
 
 $course_id = isset( $attributes['courseId'] ) ? absint( $attributes['courseId'] ) : 0;
 if ( $course_id < 1 ) {
@@ -29,7 +30,17 @@ if ( ! $course_post instanceof \WP_Post || 'bfc_course' !== $course_post->post_t
 	return;
 }
 
-$user_id      = get_current_user_id();
+$user_id = get_current_user_id();
+$gate    = new Soft_Gate();
+if ( $gate->should_block( $user_id ) ) {
+	printf(
+		'<div %1$s>%2$s</div>',
+		get_block_wrapper_attributes( array( 'class' => 'bfc-course' ) ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper.
+		$gate->render( $gate->audience( $user_id ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
+	);
+	return;
+}
+
 $can_learn    = $user_id > 0 && ( new Learner() )->can_learn( $user_id );
 $restricted   = ( new Invites() )->course_has_active_invites( $course_id );
 $enrollment   = new Enrollment_Service();

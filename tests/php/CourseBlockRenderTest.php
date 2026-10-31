@@ -101,4 +101,29 @@ class CourseBlockRenderTest extends WP_UnitTestCase {
 			$html
 		);
 	}
+
+	/** Guests see soft-gate instead of course meta or enroll chrome. */
+	public function test_course_render_soft_gates_guest(): void {
+		$course_id = $this->published_course();
+		wp_set_current_user( 0 );
+		$html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'bfc-soft-gate', $html );
+		$this->assertStringNotContainsString( 'BFC-998', $html );
+		$this->assertStringNotContainsString( 'bfc-course__enroll', $html );
+		$this->assertStringNotContainsString( 'bfc-course__meta', $html );
+		$this->assertStringNotContainsString( 'Sign in with training access', $html );
+	}
+
+	/** Subscribers without training access see soft-gate, not enroll chrome. */
+	public function test_course_render_soft_gates_no_access(): void {
+		$course_id = $this->published_course();
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+		$html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'bfc-soft-gate', $html );
+		$this->assertStringNotContainsString( 'BFC-998', $html );
+		$this->assertStringNotContainsString( 'bfc-course__enroll', $html );
+		$this->assertStringNotContainsString( 'bfc-course__meta', $html );
+		$this->assertStringNotContainsString( 'Ask a training administrator', $html );
+	}
 }
