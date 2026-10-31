@@ -36,7 +36,7 @@ class Service {
 	 */
 	public function self_enroll( int $user_id, int $course_id, ?string $course_invite = null ): true|\WP_Error {
 		if ( ! $this->learner()->can_learn( $user_id ) ) {
-			return new \WP_Error( 'burbank_enrollment_cannot_learn', __( 'You must verify your email and have training access to enroll.', 'burbank-lms' ) );
+			return new \WP_Error( 'burbank_enrollment_cannot_learn', __( 'You must have training access to enroll.', 'burbank-lms' ) );
 		}
 		$course_error = $this->assert_enrollable_course( $course_id );
 		if ( is_wp_error( $course_error ) ) {

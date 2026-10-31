@@ -19,8 +19,6 @@ class Learner {
 
 	public const META_SUSPENDED = 'burbank_lms_suspended';
 
-	public const META_EMAIL_VERIFIED_AT = 'burbank_lms_email_verified_at';
-
 	/**
 	 * Grant training access and optionally record the redeeming site invite.
 	 *
@@ -109,10 +107,7 @@ class Learner {
 		if ( ! user_can( $user_id, self::CAP_ACCESS ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
 			return false;
 		}
-		if ( $this->is_suspended( $user_id ) ) {
-			return false;
-		}
-		return $this->is_email_verified( $user_id );
+		return ! $this->is_suspended( $user_id );
 	}
 
 	/**
@@ -164,14 +159,5 @@ class Learner {
 	 */
 	public function is_suspended( int $user_id ): bool {
 		return '1' === (string) get_user_meta( $user_id, self::META_SUSPENDED, true );
-	}
-
-	/**
-	 * Whether the learner has verified their email address.
-	 *
-	 * @param int $user_id User ID.
-	 */
-	public function is_email_verified( int $user_id ): bool {
-		return '' !== (string) get_user_meta( $user_id, self::META_EMAIL_VERIFIED_AT, true );
 	}
 }

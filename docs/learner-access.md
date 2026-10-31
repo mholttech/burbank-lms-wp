@@ -8,7 +8,7 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | --- | --- |
 | Invite table install | `Access\Tables` |
 | Site and course invite CRUD / redeem | `Access\Invites` |
-| Site-invite registration, email verification, alternate-path block | `Access\Registration` |
+| Site-invite registration, alternate-path block | `Access\Registration` |
 | Training access, suspend, `can_learn`, quiz-cap sync | `Access\Learner` |
 | Legal name guards and admin correction audit | `Access\Profile` |
 | Site invite admin + user profile Training Access | `Access\Admin` |
@@ -41,13 +41,12 @@ WordPress user + burbank_lms_access
         Active enrollment → quiz → pass → certificate → completed
 ```
 
-`Learner::can_learn( $user_id )` is true only when the user has `burbank_lms_access`, has verified email (`burbank_lms_email_verified_at`), and is not suspended. Self-enroll and mapped quiz start/submit require it.
+`Learner::can_learn( $user_id )` is true when the user has `burbank_lms_access` and is not suspended. Self-enroll and mapped quiz start/submit require it. Administrators receive `burbank_lms_access` from the capabilities installer, so they can enroll and take courses without a separate grant.
 
 | State | Catalog CTAs | Self-enroll | Mapped quiz | Own cert history |
 | --- | --- | --- | --- | --- |
 | No training access | No | No | No | No |
-| Access, email unverified | No | No | No | No |
-| Verified + access | Yes | Per course policy | With enrollment | Yes |
+| Training access | Yes | Per course policy | With enrollment | Yes |
 | Suspended | No | No | No | Yes (read-only past credentials) |
 
 ## Invites
@@ -68,7 +67,7 @@ One table `{prefix}bfc_invite_codes`, two scopes. Site and course codes are neve
 
 Admin UI: **Training → Site invites** for site codes (PHP admin screens); course codes are managed in the Course sidebar **Invites** panel on the block editor (admin REST). Capability: `enroll_bfc_courses` (administrator by default). Site invite admin and user profile Training Access stay PHP for now.
 
-## Registration and verification
+## Registration
 
 Learner registration goes through `Registration::register()` (Register block or `POST /burbank-lms/v1/register`). Required fields:
 
@@ -78,18 +77,11 @@ Learner registration goes through `Registration::register()` (Register block or 
 - legal / certificate name (`burbank_lms_legal_name`)
 - display name
 
-Flow: validate active **site** invite → create user → store legal name → grant `burbank_lms_access` → increment invite use → send verification email via `Mail\Mailer`.
+Flow: validate active **site** invite → create user → store legal name → grant `burbank_lms_access` → increment invite use. Granting access enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). There is no separate email-verification step.
 
 **Compensating transaction (not a single DB transaction):** `wp_insert_user` cannot share a MySQL transaction with invite redeem across WordPress’s user tables reliably. On failure after user create, `Registration::register` compensates by revoking training access (when granted) and deleting the user before returning a `WP_Error`. Course restricted enroll uses a real shared transaction for enrollment insert + invite redeem.
 
 Default `wp-login.php?action=register` for learners is rejected (`registration_errors`). Admin `create_users` stays intact; staff may grant training access without a code.
-
-Verification email includes a clickable `home_url` link with `?burbank_lms_verify=1&uid={id}&token={plaintext}`. Public entry points:
-
-- `template_redirect` → `Registration::handle_verification_request` (browser click; redirects to login with `burbank_lms_verified=1` or `burbank_lms_verify_error`)
-- `GET`/`POST` `/burbank-lms/v1/verify-email` with `token` and optional `uid`
-
-Until email is verified: login is allowed; enroll, mapped quiz, and certificate history stay blocked. Changing email clears verification and pauses enroll/quiz until the learner verifies again.
 
 Legal name is set at registration. Afterward only an admin with `enroll_bfc_courses` may correct it (audited). Certificate merge fields use legal name and never email.
 
@@ -142,7 +134,6 @@ Unmapped quizzes (no published `bfc_course` with that `pressprimer_quiz_id`) are
 | Method | Route | Auth |
 | --- | --- | --- |
 | `POST` | `/register` | Public (rate-limited); site invite required |
-| `GET`/`POST` | `/verify-email` | Public; `token` required, optional `uid` |
 | `GET` | `/enrollments` | Logged-in learner (`can_learn` for useful data) |
 | `POST` | `/enrollments` | Logged-in `can_learn`; optional `course_invite` |
 | `DELETE` | `/enrollments/{course_id}` | Self or `enroll_bfc_courses` (optional `user_id`) |
@@ -175,7 +166,7 @@ Does not proxy PressPrimer attempt APIs. Service `WP_Error` codes map to REST re
 
 ## Mail and branding
 
-`Mail\Mailer` sends filterable `wp_mail` messages for verification (clickable URL via `verification_url()` / `burbank_lms_verification_url`), welcome (on `burbank_lms_access_granted`), enrollment confirmation (on `burbank_lms_enrolled`), and completion (on `burbank_lms_course_completed`). Subject/message/headers filters are namespaced `burbank_lms_*_email_*`.
+`Mail\Mailer` sends filterable `wp_mail` messages for welcome (on `burbank_lms_access_granted`), enrollment confirmation (on `burbank_lms_enrolled`), and completion (on `burbank_lms_course_completed`). Subject/message/headers filters are namespaced `burbank_lms_*_email_*`.
 
 Optional branding: set option `burbank_lms_brand_pressprimer` to a truthy value. `Branding\PressPrimer` then overrides PressPrimer `plugin_name` / dashboard logo (and quiz shell branding) filters with Burbank-facing labels. Certificate upsell and mascot filters are not implemented.
 
@@ -185,8 +176,8 @@ Optional branding: set option `burbank_lms_brand_pressprimer` to a truthy value.
 | --- | --- |
 | Phase 1 `*_bfc_courses` + `approve_bfc_courses` | Unchanged |
 | `enroll_bfc_courses` | Administrator (invites, admin enroll, grant/revoke, suspend, legal-name correction) |
-| `burbank_lms_access` | Learners after site invite or admin grant (meta mirror `burbank_lms_training_access`) |
-| `pressprimer_quiz_take_quiz` | Synced to verified, non-suspended users with training access |
+| `burbank_lms_access` | Administrator role; learners after site invite or admin grant (meta mirror `burbank_lms_training_access`) |
+| `pressprimer_quiz_take_quiz` | Synced to non-suspended users with training access |
 
 Active enrollment remains the source of truth for taking a specific course’s mapped quiz.
 

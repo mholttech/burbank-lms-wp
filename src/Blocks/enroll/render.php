@@ -31,7 +31,7 @@ if ( ! $can_learn ) {
 		'<div %1$s><p>%2$s</p></div>',
 		$wrapper, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes().
 		is_user_logged_in()
-			? esc_html__( 'Verify your email and training access before enrolling.', 'burbank-lms' )
+			? esc_html__( 'Ask a training administrator to grant training access before enrolling.', 'burbank-lms' )
 			: esc_html__( 'Sign in with training access to enroll.', 'burbank-lms' )
 	);
 	return;

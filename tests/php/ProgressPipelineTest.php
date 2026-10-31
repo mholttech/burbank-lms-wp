@@ -187,7 +187,7 @@ class ProgressPipelineTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Register and verify a learner.
+	 * Register a learner with training access.
 	 *
 	 * @param string $email Learner email.
 	 */
@@ -195,15 +195,6 @@ class ProgressPipelineTest extends WP_UnitTestCase {
 		if ( '' === $email ) {
 			$email = 'progress-learner-' . wp_generate_password( 8, false ) . '@example.com';
 		}
-		$tokens = array();
-		add_action(
-			'burbank_lms_sent_verification_email',
-			static function ( int $uid, string $token ) use ( &$tokens ): void {
-				$tokens[ $uid ] = $token;
-			},
-			10,
-			2
-		);
 		$created = ( new Invites() )->create(
 			'site',
 			array(
@@ -212,8 +203,7 @@ class ProgressPipelineTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsArray( $created );
-		$registration = new Registration();
-		$user_id      = $registration->register(
+		$user_id = ( new Registration() )->register(
 			array(
 				'invite'       => $created['plaintext'],
 				'email'        => $email,
@@ -223,7 +213,6 @@ class ProgressPipelineTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
-		$this->assertSame( $user_id, $registration->verify_email( $tokens[ $user_id ] ) );
 		return $user_id;
 	}
 }

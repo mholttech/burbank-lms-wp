@@ -62,12 +62,14 @@ class AccessTablesTest extends WP_UnitTestCase {
 		$this->assertSame( '0', $indexes[0]['Non_unique'] );
 	}
 
-	/** Self-enroll capability is administrator-only at capability version 2. */
+	/** Enroll and training-access caps are administrator-only at capability version 3. */
 	public function test_enroll_capability_granted_to_administrator(): void {
 		update_option( Capabilities::VERSION_OPTION, 1, false );
 		( new Capabilities() )->install();
 		$this->assertTrue( get_role( 'administrator' )->has_cap( 'enroll_bfc_courses' ) );
+		$this->assertTrue( get_role( 'administrator' )->has_cap( 'burbank_lms_access' ) );
 		$this->assertFalse( (bool) get_role( 'editor' )->has_cap( 'enroll_bfc_courses' ) );
-		$this->assertSame( 2, (int) get_option( Capabilities::VERSION_OPTION ) );
+		$this->assertFalse( (bool) get_role( 'editor' )->has_cap( 'burbank_lms_access' ) );
+		$this->assertSame( 3, (int) get_option( Capabilities::VERSION_OPTION ) );
 	}
 }

@@ -58,7 +58,7 @@ Registry installation runs on activation and on `init`. It requires InnoDB. If i
 | Role | Capabilities |
 | --- | --- |
 | Editor (Training Editor) | `edit_bfc_courses`, `edit_others_bfc_courses`, `edit_private_bfc_courses`, `edit_published_bfc_courses`, `publish_bfc_courses`, `read_private_bfc_courses`, `delete_bfc_courses`, `delete_others_bfc_courses`, `delete_private_bfc_courses`, `delete_published_bfc_courses` |
-| Administrator (Training Administrator) | All of the above plus `approve_bfc_courses` |
+| Administrator (Training Administrator) | All of the above plus `approve_bfc_courses`, `enroll_bfc_courses`, and `burbank_lms_access` |
 
 Editors can draft, edit and publish courses, but publication still requires a stored approval from a user who currently holds `approve_bfc_courses` (see [Publication gates](#publication-gates)). Learner training access and `enroll_bfc_courses` are documented in [learner-access.md](learner-access.md).
 

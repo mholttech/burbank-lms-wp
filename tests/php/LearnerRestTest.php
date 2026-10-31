@@ -62,23 +62,13 @@ class LearnerRestTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Register and verify a learner; return user id.
+	 * Register a learner with training access; return user id.
 	 *
 	 * @param string $email Learner email.
 	 */
 	private function verified_learner( string $email = 'rest-learner@example.com' ): int {
-		$tokens = array();
-		add_action(
-			'burbank_lms_sent_verification_email',
-			static function ( int $uid, string $token ) use ( &$tokens ): void {
-				$tokens[ $uid ] = $token;
-			},
-			10,
-			2
-		);
-		$invite       = $this->site_invite();
-		$registration = new Registration();
-		$user_id      = $registration->register(
+		$invite  = $this->site_invite();
+		$user_id = ( new Registration() )->register(
 			array(
 				'invite'       => $invite['plaintext'],
 				'email'        => $email,
@@ -88,8 +78,6 @@ class LearnerRestTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
-		$this->assertArrayHasKey( $user_id, $tokens );
-		$this->assertSame( $user_id, $registration->verify_email( $tokens[ $user_id ] ) );
 		return $user_id;
 	}
 
@@ -166,7 +154,7 @@ class LearnerRestTest extends WP_UnitTestCase {
 		$user_id = (int) $data['user_id'];
 		$this->assertGreaterThan( 0, $user_id );
 		$this->assertTrue( user_can( $user_id, Learner::CAP_ACCESS ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
-		$this->assertFalse( ( new Learner() )->can_learn( $user_id ) );
+		$this->assertTrue( ( new Learner() )->can_learn( $user_id ) );
 	}
 
 	/** Register without invite returns 400 with machine code. */
@@ -189,54 +177,7 @@ class LearnerRestTest extends WP_UnitTestCase {
 		$this->assertSame( 'burbank_register_invite_required', $data['code'] );
 	}
 
-	/** Public verify-email REST path enables can_learn (not Registration::verify_email alone). */
-	public function test_verify_email_public_rest_enables_can_learn(): void {
-		$tokens = array();
-		add_action(
-			'burbank_lms_sent_verification_email',
-			static function ( int $uid, string $token ) use ( &$tokens ): void {
-				$tokens[ $uid ] = $token;
-			},
-			10,
-			2
-		);
-
-		wp_set_current_user( 0 );
-		$invite   = $this->site_invite();
-		$response = $this->dispatch(
-			'POST',
-			'/register',
-			array(
-				'invite'       => $invite['plaintext'],
-				'email'        => 'verify-rest@example.com',
-				'password'     => 'CorrectHorseBatteryStaple1!',
-				'legal_name'   => 'Verify Rest',
-				'display_name' => 'Verify',
-			)
-		);
-		$this->assertSame( 201, $response->get_status() );
-		$user_id = (int) $response->get_data()['user_id'];
-		$this->assertArrayHasKey( $user_id, $tokens );
-		$this->assertFalse( ( new Learner() )->can_learn( $user_id ) );
-
-		$verify = $this->dispatch(
-			'GET',
-			'/verify-email',
-			array(),
-			array(
-				'uid'   => $user_id,
-				'token' => $tokens[ $user_id ],
-			)
-		);
-		$this->assertSame( 200, $verify->get_status() );
-		$data = $verify->get_data();
-		$this->assertIsArray( $data );
-		$this->assertTrue( ! empty( $data['verified'] ) );
-		$this->assertSame( $user_id, (int) $data['user_id'] );
-		$this->assertTrue( ( new Learner() )->can_learn( $user_id ) );
-	}
-
-	/** Self-enroll succeeds for a verified learner on an open course. */
+	/** Self-enroll succeeds for a learner with training access on an open course. */
 	public function test_enroll_happy_path(): void {
 		$user_id   = $this->verified_learner( 'enroll-ok@example.com' );
 		$course_id = $this->published_course();
@@ -275,10 +216,9 @@ class LearnerRestTest extends WP_UnitTestCase {
 		$this->assertSame( 401, $response->get_status() );
 	}
 
-	/** Logged-in learner without can_learn gets 403. */
+	/** Logged-in learner without training access gets 403. */
 	public function test_enroll_without_can_learn_returns_403(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
-		( new Learner() )->grant_access( $user_id );
 		$course_id = $this->published_course();
 		wp_set_current_user( $user_id );
 

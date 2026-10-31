@@ -83,7 +83,7 @@ $wrapper    = get_block_wrapper_attributes(
 	<?php elseif ( ! is_user_logged_in() ) : ?>
 		<p><?php esc_html_e( 'Sign in with training access to enroll.', 'burbank-lms' ); ?></p>
 	<?php else : ?>
-		<p><?php esc_html_e( 'Verify your email and training access before enrolling.', 'burbank-lms' ); ?></p>
+		<p><?php esc_html_e( 'Ask a training administrator to grant training access before enrolling.', 'burbank-lms' ); ?></p>
 	<?php endif; ?>
 	<p class="bfc-course__notice" hidden data-bfc-status></p>
 </div>

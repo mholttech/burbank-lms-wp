@@ -33,20 +33,11 @@ class AccessLearnerTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Register and verify a learner; return user id.
+	 * Register a learner with training access; return user id.
 	 *
 	 * @param string $email Learner email address.
 	 */
-	private function verified_learner( string $email = 'learner@example.com' ): int {
-		$tokens = array();
-		add_action(
-			'burbank_lms_sent_verification_email',
-			static function ( int $uid, string $token ) use ( &$tokens ): void {
-				$tokens[ $uid ] = $token;
-			},
-			10,
-			2
-		);
+	private function learner_with_access( string $email = 'learner@example.com' ): int {
 		$created = ( new Invites() )->create(
 			'site',
 			array(
@@ -55,8 +46,7 @@ class AccessLearnerTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsArray( $created );
-		$registration = new Registration();
-		$user_id      = $registration->register(
+		$user_id = ( new Registration() )->register(
 			array(
 				'invite'       => $created['plaintext'],
 				'email'        => $email,
@@ -66,14 +56,12 @@ class AccessLearnerTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
-		$this->assertArrayHasKey( $user_id, $tokens );
-		$this->assertSame( $user_id, $registration->verify_email( $tokens[ $user_id ] ) );
 		return $user_id;
 	}
 
-	/** Suspend blocks can_learn; reactivate restores when verified. */
+	/** Suspend blocks can_learn; reactivate restores when access remains. */
 	public function test_suspend_blocks_can_learn_and_reactivate_restores(): void {
-		$user_id = $this->verified_learner();
+		$user_id = $this->learner_with_access();
 		$learner = new Learner();
 		$this->assertTrue( $learner->can_learn( $user_id ) );
 
@@ -86,19 +74,19 @@ class AccessLearnerTest extends WP_UnitTestCase {
 		$this->assertTrue( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap.
 	}
 
-	/** Admin grant without invite still sets access meta and cap. */
+	/** Admin grant without invite still sets access meta and enables can_learn. */
 	public function test_admin_grant_access_without_invite(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		$learner = new Learner();
 		$learner->grant_access( $user_id );
 		$this->assertTrue( user_can( $user_id, 'burbank_lms_access' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
 		$this->assertSame( '1', (string) get_user_meta( $user_id, 'burbank_lms_training_access', true ) );
-		$this->assertFalse( $learner->can_learn( $user_id ) );
+		$this->assertTrue( $learner->can_learn( $user_id ) );
 	}
 
 	/** Revoke removes access and quiz cap. */
 	public function test_revoke_access_removes_caps(): void {
-		$user_id = $this->verified_learner( 'revoke@example.com' );
+		$user_id = $this->learner_with_access( 'revoke@example.com' );
 		$learner = new Learner();
 		$this->assertTrue( $learner->can_learn( $user_id ) );
 		$learner->revoke_access( $user_id );
@@ -109,7 +97,7 @@ class AccessLearnerTest extends WP_UnitTestCase {
 
 	/** Learner cannot update legal name; admin correction writes audit. */
 	public function test_learner_cannot_update_legal_name_admin_correction_audits(): void {
-		$user_id = $this->verified_learner( 'profile@example.com' );
+		$user_id = $this->learner_with_access( 'profile@example.com' );
 		$profile = new Profile();
 
 		wp_set_current_user( $user_id );
@@ -142,7 +130,7 @@ class AccessLearnerTest extends WP_UnitTestCase {
 
 	/** Learners cannot delete legal name usermeta to clear-then-rewrite. */
 	public function test_learner_cannot_delete_legal_name_meta(): void {
-		$user_id = $this->verified_learner( 'delete-name@example.com' );
+		$user_id = $this->learner_with_access( 'delete-name@example.com' );
 		$profile = new Profile();
 		wp_set_current_user( $user_id );
 
@@ -171,17 +159,24 @@ class AccessLearnerTest extends WP_UnitTestCase {
 
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		$learner = new Learner();
-		$learner->grant_access( $user_id );
 		$this->assertFalse( $learner->can_learn( $user_id ) );
 		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Filter overrides role grant.
 
-		update_user_meta( $user_id, Learner::META_EMAIL_VERIFIED_AT, gmdate( 'c' ) );
-		$learner->sync_quiz_cap( $user_id );
+		$learner->grant_access( $user_id );
 		$this->assertTrue( $learner->can_learn( $user_id ) );
 		$this->assertTrue( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- can_learn allows take quiz.
 
 		$learner->suspend( $user_id );
 		$this->assertFalse( $learner->can_learn( $user_id ) );
 		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Suspended still denied.
+	}
+
+	/** Administrators receive training access from the capabilities installer. */
+	public function test_administrator_role_receives_training_access(): void {
+		delete_option( \Burbank_LMS\Courses\Capabilities::VERSION_OPTION );
+		( new \Burbank_LMS\Courses\Capabilities() )->install();
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$this->assertTrue( user_can( $admin_id, Learner::CAP_ACCESS ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Role-granted training access.
+		$this->assertTrue( ( new Learner() )->can_learn( $admin_id ) );
 	}
 }
