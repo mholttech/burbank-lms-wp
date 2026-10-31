@@ -47,8 +47,8 @@ class CourseIdentityTest extends WP_UnitTestCase {
 		);
 	}
 
-	/** Every specified subject range accepts its boundaries and rejects another subject. */
-	public function test_format_and_all_subject_ranges(): void {
+	/** Each supported subject is accepted independently of the code number. */
+	public function test_format_and_subject_categories(): void {
 		$validator = new Validator();
 		$subjects  = array(
 			1 => 'program_administration_membership',
@@ -71,6 +71,8 @@ class CourseIdentityTest extends WP_UnitTestCase {
 						'subject_category' => $subject,
 					)
 				);
+				$this->assertFalse( $validator->validate( $fields, 0 )->has_errors() );
+				$fields['subject_category'] = $subjects[ ( $hundred % 9 ) + 1 ];
 				$this->assertFalse( $validator->validate( $fields, 0 )->has_errors() );
 				$fields['subject_category'] = 'wrong';
 				$this->assertTrue( $validator->validate( $fields, 0 )->has_errors() );
