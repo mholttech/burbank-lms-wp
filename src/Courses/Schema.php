@@ -10,7 +10,9 @@ namespace Burbank_LMS\Courses;
 /** Provisions the course definition through the required Pods API. */
 class Schema {
 	public const VERSION_OPTION = 'burbank_lms_course_schema_version';
-	private const VERSION       = 2;
+	/** Set when data schema provisioning changes rewrite-affecting CPT options; cleared after one flush. */
+	public const REWRITE_FLUSH_OPTION = 'burbank_lms_course_schema_rewrite_flush';
+	private const VERSION             = 2;
 
 	/** UI-only Pods field presentation (pick sources, limits, help text). */
 	public const EDITORIAL_UI_OPTION   = 'burbank_lms_course_editorial_ui_version';
@@ -124,6 +126,7 @@ class Schema {
 			}
 			update_option( self::VERSION_OPTION, self::VERSION, false );
 			pods_init()->setup_content_types( true );
+			update_option( self::REWRITE_FLUSH_OPTION, 1, false );
 			$provisioned = true;
 		}
 
@@ -224,6 +227,16 @@ class Schema {
 			return false;
 		}
 		return true;
+	}
+
+	/** Flush rewrite rules once after schema provisioning that affects the course archive. */
+	public function maybe_flush_rewrite_rules(): void {
+		if ( ! get_option( self::REWRITE_FLUSH_OPTION ) ) {
+			return;
+		}
+
+		delete_option( self::REWRITE_FLUSH_OPTION );
+		flush_rewrite_rules( false );
 	}
 
 	/** Return the latest actionable initialization error. */

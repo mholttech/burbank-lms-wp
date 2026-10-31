@@ -154,7 +154,7 @@ Does not proxy PressPrimer attempt APIs. Service `WP_Error` codes map to REST re
 
 ## Blocks and FSE
 
-The `bfc_course` CPT is public with `has_archive` and archive slug **`courses`** (`Courses\Schema`), so the catalog lives at `/courses/` (pretty permalinks). My Courses and empty-state CTAs use `get_post_type_archive_link( 'bfc_course' )`.
+The `bfc_course` CPT is public with `has_archive` and archive slug **`courses`** (`Courses\Schema`), so the catalog lives at `/courses/` (pretty permalinks). My Courses and empty-state CTAs use `get_post_type_archive_link( 'bfc_course' )`. When the course **data schema version** upgrades (for example v2 enabling the archive), the plugin flushes rewrite rules once on the next request; if `/courses/` still 404s, save **Settings → Permalinks** once.
 
 ### Composition
 
