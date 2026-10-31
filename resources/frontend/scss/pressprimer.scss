@@ -23,21 +23,26 @@
 	--ppq-shadow-lg: none;
 	--ppq-shadow-focus: 0 0 0 3px var(--wp--preset--color--content-link);
 }
+
 .wp-site-blocks main .ppq-quiz-landing {
 	padding: 0;
 }
+
 .wp-site-blocks .ppq-quiz-landing .ppq-quiz-content {
 	padding: clamp(18px, 3vw, 32px);
 }
+
 .wp-site-blocks .ppq-quiz-landing :is(.ppq-quiz-meta, .ppq-meta-item) {
 	background: transparent;
 	border: 0;
 	box-shadow: none;
 	padding: 0;
 }
+
 .wp-site-blocks .ppq-quiz-meta-grid {
 	gap: 1.25rem;
 }
+
 /* Keep feedback meaning while avoiding pastel panels in night mode. */
 html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-quiz-landing, .ppq-quiz-interface, .ppq-results-container, .ppq-question-review-container, .ppq-shell) {
 	--ppq-success: #a3d5b5;
@@ -51,6 +56,7 @@ html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-quiz-landing, .ppq-quiz
 	--ppq-warning-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
 	--ppq-info-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
 }
+
 html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notice-warning, .ppq-notice-error, .ppq-notice-success) {
 	color: var(--wp--preset--color--content-text);
 }
@@ -67,14 +73,17 @@ html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notic
 	--ppcert-background: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
 	--ppcert-background-gray: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
 }
+
 .wp-site-blocks .ppcert-verify__input {
 	background: var(--wp--preset--color--content-background);
 	color: var(--wp--preset--color--content-text);
 }
+
 .wp-site-blocks .ppcert-verify__input:focus-visible {
 	outline: 2px solid var(--wp--preset--color--content-link);
 	outline-offset: 2px;
 }
+
 html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppcert-verify, .ppcert-view, .ppcert-my-certificates) {
 	--ppcert-success: #a3d5b5;
 	--ppcert-success-strong: #a3d5b5;

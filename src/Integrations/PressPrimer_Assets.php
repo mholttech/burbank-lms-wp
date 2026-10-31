@@ -23,27 +23,19 @@ class PressPrimer_Assets {
 			return;
 		}
 
-		$entry      = self::HANDLE;
-		$asset_file = BURBANK_LMS_PATH . "build/{$entry}.asset.php";
-		$css_file   = BURBANK_LMS_PATH . "build/{$entry}.css";
+		$entry    = self::HANDLE;
+		$css_file = BURBANK_LMS_PATH . "build/{$entry}.css";
 
 		if ( ! file_exists( $css_file ) ) {
 			return;
 		}
 
-		$version = (string) filemtime( $css_file );
-		if ( file_exists( $asset_file ) ) {
-			$asset = require $asset_file;
-			if ( isset( $asset['version'] ) && is_scalar( $asset['version'] ) ) {
-				$version = (string) $asset['version'];
-			}
-		}
-
+		// CSS-only entry: version from filemtime (avoid require of built *.asset.php for PHPStan).
 		wp_enqueue_style(
 			self::HANDLE,
 			BURBANK_LMS_URL . "build/{$entry}.css",
 			array(),
-			$version
+			(string) filemtime( $css_file )
 		);
 	}
 
