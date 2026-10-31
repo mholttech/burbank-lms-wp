@@ -1,0 +1,88 @@
+/* Map both PressPrimer interfaces to the visitor's selected theme. */
+.wp-site-blocks main :is(.ppq-quiz-landing, .ppq-quiz-interface, .ppq-results-container, .ppq-question-review-container, .ppq-shell) {
+	--ppq-bg: var(--wp--preset--color--content-background);
+	--ppq-bg-card: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppq-bg-surface: var(--wp--preset--color--content-background);
+	--ppq-bg-alt: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppq-bg-hover: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+	--ppq-bg-active: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+	--ppq-background: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppq-background-gray: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+	--ppq-text: var(--wp--preset--color--content-text);
+	--ppq-text-secondary: var(--wp--preset--color--content-muted);
+	--ppq-text-light: var(--wp--preset--color--content-muted);
+	--ppq-border: var(--wp--preset--color--content-border);
+	--ppq-border-light: var(--wp--preset--color--content-border);
+	--ppq-border-focus: var(--wp--preset--color--content-link);
+	--ppq-primary: var(--wp--preset--color--action-red);
+	--ppq-primary-dark: var(--wp--preset--color--action-red);
+	--ppq-primary-hover: var(--wp--preset--color--action-red);
+	--ppq-primary-light: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+	--ppq-text-inverse: #fff;
+	--ppq-shadow-card: none;
+	--ppq-shadow-lg: none;
+	--ppq-shadow-focus: 0 0 0 3px var(--wp--preset--color--content-link);
+}
+.wp-site-blocks main .ppq-quiz-landing {
+	padding: 0;
+}
+.wp-site-blocks .ppq-quiz-landing .ppq-quiz-content {
+	padding: clamp(18px, 3vw, 32px);
+}
+.wp-site-blocks .ppq-quiz-landing :is(.ppq-quiz-meta, .ppq-meta-item) {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	padding: 0;
+}
+.wp-site-blocks .ppq-quiz-meta-grid {
+	gap: 1.25rem;
+}
+/* Keep feedback meaning while avoiding pastel panels in night mode. */
+html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-quiz-landing, .ppq-quiz-interface, .ppq-results-container, .ppq-question-review-container, .ppq-shell) {
+	--ppq-success: #a3d5b5;
+	--ppq-success-strong: #a3d5b5;
+	--ppq-error: #ff9da4;
+	--ppq-error-strong: #ff9da4;
+	--ppq-warning: #f3cf86;
+	--ppq-info: #add4f0;
+	--ppq-success-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppq-error-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppq-warning-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppq-info-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+}
+html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notice-warning, .ppq-notice-error, .ppq-notice-success) {
+	color: var(--wp--preset--color--content-text);
+}
+
+.wp-site-blocks main :is(.ppcert-verify, .ppcert-view, .ppcert-my-certificates) {
+	--ppcert-primary: var(--wp--preset--color--action-red);
+	--ppcert-primary-hover: var(--wp--preset--color--action-red);
+	--ppcert-primary-light: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+	--ppcert-text: var(--wp--preset--color--content-text);
+	--ppcert-text-secondary: var(--wp--preset--color--content-muted);
+	--ppcert-text-light: var(--wp--preset--color--content-muted);
+	--ppcert-border: var(--wp--preset--color--content-border);
+	--ppcert-border-light: var(--wp--preset--color--content-border);
+	--ppcert-background: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppcert-background-gray: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+}
+.wp-site-blocks .ppcert-verify__input {
+	background: var(--wp--preset--color--content-background);
+	color: var(--wp--preset--color--content-text);
+}
+.wp-site-blocks .ppcert-verify__input:focus-visible {
+	outline: 2px solid var(--wp--preset--color--content-link);
+	outline-offset: 2px;
+}
+html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppcert-verify, .ppcert-view, .ppcert-my-certificates) {
+	--ppcert-success: #a3d5b5;
+	--ppcert-success-strong: #a3d5b5;
+	--ppcert-warning: #f3cf86;
+	--ppcert-warning-strong: #f3cf86;
+	--ppcert-error: #ff9da4;
+	--ppcert-error-strong: #ff9da4;
+	--ppcert-success-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppcert-warning-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--ppcert-error-light: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+}

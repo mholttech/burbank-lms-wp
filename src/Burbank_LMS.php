@@ -100,6 +100,8 @@ class Burbank_LMS {
 		$enrollment_service      = new Enrollment\Service();
 		$pressprimer_quiz        = new Integrations\PressPrimer_Quiz( $progress, $enrollment_service, $learner );
 		$pressprimer_certificate = new Integrations\PressPrimer_Certificate( $progress, $enrollment_service, $profile );
+		$pressprimer_assets      = new Integrations\PressPrimer_Assets();
+		$this->loader->add_action( 'wp_enqueue_scripts', $pressprimer_assets, 'enqueue' );
 		$this->loader->add_filter( 'pressprimer_quiz_can_start', $pressprimer_quiz, 'can_start', 10, 2 );
 		$this->loader->add_filter( 'pressprimer_quiz_before_submit', $pressprimer_quiz, 'before_submit', 10, 2 );
 		$this->loader->add_action( 'pressprimer_quiz_quiz_passed', $pressprimer_quiz, 'quiz_passed', 10, 2 );
