@@ -11,13 +11,14 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Site-invite registration, email verification, alternate-path block | `Access\Registration` |
 | Training access, suspend, `can_learn`, quiz-cap sync | `Access\Learner` |
 | Legal name guards and admin correction audit | `Access\Profile` |
-| Site invite admin + user profile + course invite meta box | `Access\Admin` |
+| Site invite admin + user profile Training Access | `Access\Admin` |
 | Enrollment table install | `Enrollment\Tables` |
 | Enroll / withdraw / restricted redeem | `Enrollment\Service`, `Enrollment\Repository` |
-| Course enrollments meta box | `Enrollment\Admin` |
+| Enrollment dispatch helpers (non-editor) | `Enrollment\Admin` |
+| Course editor Invites / Enrollments panels + editorial REST | Course sidebar + `REST\Admin_Controller` (see [course-authoring.md](course-authoring.md)) |
 | Quiz pass stamp and certificate completion | `Progress\Service` |
 | Catalog queries and FSE templates | `Learner\Catalog`, `Learner\Templates`, `Learner\Block_Context` |
-| REST register / enroll / withdraw | `REST\Controller` (`burbank-lms/v1`) |
+| Learner REST register / enroll / withdraw | `REST\Controller` (`burbank-lms/v1`) |
 | Lifecycle emails | `Mail\Mailer` |
 | Optional PressPrimer chrome branding | `Branding\PressPrimer` |
 | Quiz / certificate adapters | `Integrations\PressPrimer_Quiz`, `Integrations\PressPrimer_Certificate` |
@@ -65,7 +66,7 @@ One table `{prefix}bfc_invite_codes`, two scopes. Site and course codes are neve
 
 **Active code** = not revoked, not expired, and (`once` with `use_count = 0`) or (`multi` under `max_uses` if set). Plaintext is shown once at create; storage is hashed (HMAC). Optional `bound_email` on a **site** invite requires the registration email to match; on a **course** invite, `Enrollment\Service` compares it to the learner’s `user_email` before redeem.
 
-Admin UI: **Training → Site invites** for site codes; course edit screen meta box for course codes. Capability: `enroll_bfc_courses` (administrator by default).
+Admin UI: **Training → Site invites** for site codes (PHP admin screens); course codes are managed in the Course sidebar **Invites** panel on the block editor (admin REST). Capability: `enroll_bfc_courses` (administrator by default). Site invite admin and user profile Training Access stay PHP for now.
 
 ## Registration and verification
 
@@ -120,10 +121,10 @@ Publication and archive checks apply to every enroll path. Archived courses (`ca
 | --- | --- | --- |
 | Self-enroll (open) | `can_learn` | Published, not archived, no active course invites |
 | Self-enroll (restricted) | `can_learn` | Same + redeem course invite |
-| Admin enroll | `enroll_bfc_courses` | Publication/archive checks; bypasses course codes (`source=admin`) |
+| Admin enroll | `enroll_bfc_courses` | Publication/archive checks; bypasses course codes (`source=admin`). Course sidebar Enrollments panel or `POST /enrollments/admin` |
 | Withdraw | Learner (own) or admin | `status=withdrawn`; blocks quiz until re-enrolled |
 
-Successful enroll fires `burbank_lms_enrolled` (Mailer sends confirmation).
+Successful enroll fires `burbank_lms_enrolled` (Mailer sends confirmation). The Course sidebar Enrollments panel lists enrollments for the open course via `GET /courses/{id}/enrollments` (`REST\Admin_Controller`).
 
 ## Progress and completion
 
@@ -136,6 +137,8 @@ Unmapped quizzes (no published `bfc_course` with that `pressprimer_quiz_id`) are
 
 ## REST (`burbank-lms/v1`)
 
+### Learner (`REST\Controller`)
+
 | Method | Route | Auth |
 | --- | --- | --- |
 | `POST` | `/register` | Public (rate-limited); site invite required |
@@ -144,6 +147,16 @@ Unmapped quizzes (no published `bfc_course` with that `pressprimer_quiz_id`) are
 | `POST` | `/enrollments` | Logged-in `can_learn`; optional `course_invite` |
 | `DELETE` | `/enrollments/{course_id}` | Self or `enroll_bfc_courses` (optional `user_id`) |
 | `POST` | `/enrollments/admin` | `enroll_bfc_courses` |
+
+### Course editor admin (`REST\Admin_Controller`)
+
+Cookie + REST nonce. Used by the Course sidebar Invites / Enrollments / Approval panels. Full editorial route table is in [course-authoring.md](course-authoring.md). Course-invite and enrollment-list routes:
+
+| Method | Route | Auth |
+| --- | --- | --- |
+| `GET`/`POST` | `/courses/{id}/invites` | `enroll_bfc_courses` + edit course |
+| `DELETE` | `/invites/{id}` | `enroll_bfc_courses` (course-scoped invite) |
+| `GET` | `/courses/{id}/enrollments` | `enroll_bfc_courses` + edit course |
 
 Does not proxy PressPrimer attempt APIs. Service `WP_Error` codes map to REST responses.
 
@@ -179,4 +192,4 @@ Active enrollment remains the source of truth for taking a specific course’s m
 
 ## Tests
 
-`Access*Test`, `Enrollment*Test`, `ProgressPipelineTest`, `PressPrimerGateTest`, `LearnerRestTest`, `MailerTest`, and block registration coverage run with `npm run test:php`.
+`Access*Test`, `Enrollment*Test`, `ProgressPipelineTest`, `PressPrimerGateTest`, `LearnerRestTest`, `CourseEditorRestTest`, `MailerTest`, and block registration coverage run with `npm run test:php`.

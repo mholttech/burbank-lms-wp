@@ -184,13 +184,21 @@ class Schema {
 		}
 
 		foreach ( self::FIELDS as $name => $field_type ) {
+			$is_number = 'number' === $field_type;
 			register_post_meta(
 				'bfc_course',
 				$name,
 				array(
-					'type'          => 'number' === $field_type ? 'integer' : 'string',
+					'type'          => $is_number ? 'integer' : 'string',
 					'single'        => true,
-					'show_in_rest'  => true,
+					// Integer+null lets Gutenberg REST delete quiz/template (and other number) meta on clear.
+					'show_in_rest'  => $is_number
+						? array(
+							'schema' => array(
+								'type' => array( 'integer', 'null' ),
+							),
+						)
+						: true,
 					'auth_callback' => static function ( bool $allowed, string $key, int $post_id ): bool {
 						if ( in_array( $key, Validator::AUDIT_FIELDS, true ) ) {
 							return false;

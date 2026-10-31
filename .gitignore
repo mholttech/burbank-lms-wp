@@ -31,3 +31,9 @@ tests/auth.json
 
 # Agent skills are installed and updated with npx skills.
 .agents/
+
+# Local git worktrees.
+.worktrees/
+
+# Local brainstorm / visual companion / SDD sessions.
+.superpowers/

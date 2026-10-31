@@ -79,6 +79,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'template_redirect', $registration, 'handle_verification_request' );
 		$rest = new REST\Controller( $registration );
 		$this->loader->add_action( 'rest_api_init', $rest, 'register_routes' );
+		$admin_rest = new REST\Admin_Controller();
+		$this->loader->add_action( 'rest_api_init', $admin_rest, 'register_routes' );
 		$profile = new Access\Profile();
 		$this->loader->add_filter( 'add_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
 		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
@@ -135,25 +137,19 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'delete_post_metadata_by_mid', $course_editorial, 'guard_snapshot_id', 10, 2 );
 		$this->loader->add_filter( 'pre_delete_post', $course_editorial, 'guard_deletion', PHP_INT_MAX, 2 );
 		$course_admin = new Courses\Admin();
-		$this->loader->add_action( 'admin_post_bfc_course_editorial', $course_admin, 'handle' );
-		$this->loader->add_action( 'add_meta_boxes_bfc_course', $course_admin, 'meta_box' );
-		$this->loader->add_action( 'admin_footer', $course_admin, 'action_form' );
-		$this->loader->add_action( 'admin_notices', $course_admin, 'notice' );
 		$this->loader->add_filter( 'manage_bfc_course_posts_columns', $course_admin, 'columns' );
 		$this->loader->add_action( 'manage_bfc_course_posts_custom_column', $course_admin, 'column', 10, 2 );
+		$course_editor = new Courses\Editor();
+		$this->loader->add_action( 'enqueue_block_editor_assets', $course_editor, 'enqueue' );
+		$this->loader->add_action( 'add_meta_boxes_bfc_course', $course_editor, 'hide_pods_fields', 99 );
 		$access_admin = new Access\Admin();
 		$this->loader->add_action( 'admin_menu', $access_admin, 'register_menu' );
 		$this->loader->add_action( 'admin_post_bfc_invite_create', $access_admin, 'handle_create_invite' );
 		$this->loader->add_action( 'admin_post_bfc_invite_revoke', $access_admin, 'handle_revoke_invite' );
 		$this->loader->add_action( 'admin_post_bfc_learner_profile', $access_admin, 'handle_profile' );
-		$this->loader->add_action( 'add_meta_boxes_bfc_course', $access_admin, 'register_meta_box' );
 		$this->loader->add_action( 'show_user_profile', $access_admin, 'render_profile' );
 		$this->loader->add_action( 'edit_user_profile', $access_admin, 'render_profile' );
 		$this->loader->add_action( 'admin_notices', $access_admin, 'notice' );
-		$enrollment_admin = new Enrollment\Admin();
-		$this->loader->add_action( 'admin_post_bfc_enrollment_admin_enroll', $enrollment_admin, 'handle_enroll' );
-		$this->loader->add_action( 'add_meta_boxes_bfc_course', $enrollment_admin, 'register_meta_box' );
-		$this->loader->add_action( 'admin_notices', $enrollment_admin, 'notice' );
 	}
 
 	/**

@@ -1,0 +1,52 @@
+/**
+ * Course block-editor sidebar styles.
+ */
+
+.burbank-lms-course-sidebar {
+
+	.burbank-lms-course-sidebar__panel {
+
+		.components-base-control {
+			margin-bottom: 16px;
+		}
+
+		.components-base-control:last-child {
+			margin-bottom: 0;
+		}
+
+		.components-base-control__help {
+			margin-bottom: 0;
+		}
+
+		.components-notice {
+			margin: 0 0 12px;
+		}
+
+		details {
+			margin-top: 12px;
+		}
+
+		.burbank-lms-course-sidebar__table-scroll {
+			overflow-x: auto;
+			margin-top: 8px;
+		}
+
+		.burbank-lms-course-sidebar__table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 12px;
+
+			th,
+			td {
+				padding: 4px 8px;
+				border-bottom: 1px solid #ddd;
+				text-align: left;
+				white-space: nowrap;
+			}
+
+			th {
+				font-weight: 600;
+			}
+		}
+	}
+}
