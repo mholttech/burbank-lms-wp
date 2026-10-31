@@ -9,6 +9,7 @@ namespace Burbank_LMS\Integrations;
 
 use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
+use Burbank_LMS\Learner\Presentation;
 use Burbank_LMS\Progress\Service as Progress_Service;
 
 /**
@@ -105,6 +106,54 @@ class PressPrimer_Quiz {
 	}
 
 	/**
+	 * Echo course chrome above quiz meta for mapped quizzes.
+	 *
+	 * @param mixed $quiz PressPrimer quiz object.
+	 */
+	public function before_quiz_meta( $quiz ): void {
+		$this->render_chrome( $quiz );
+	}
+
+	/**
+	 * Echo course chrome above results for mapped quizzes.
+	 *
+	 * @param mixed $attempt_or_quiz Attempt or quiz object.
+	 */
+	public function before_results( $attempt_or_quiz ): void {
+		$this->render_chrome_from_context( $attempt_or_quiz );
+	}
+
+	/**
+	 * Echo course chrome below results for mapped quizzes.
+	 *
+	 * @param mixed $attempt_or_quiz Attempt or quiz object.
+	 */
+	public function after_results( $attempt_or_quiz ): void {
+		$this->render_chrome_from_context( $attempt_or_quiz );
+	}
+
+	/**
+	 * Demote PressPrimer quiz title H1 to H2 so the course page owns the H1.
+	 *
+	 * Ports theme `burbankcert_quiz_heading` behavior.
+	 *
+	 * @param string $html Block render HTML.
+	 */
+	public function demote_quiz_title( string $html ): string {
+		return preg_replace_callback(
+			'/<h1\b([^>]*)>(.*?)<\/h1>/is',
+			static function ( array $heading ): string {
+				if ( ! preg_match( '/(?:^|\s)class=(["\'])(.*?)\1/is', $heading[1], $class )
+					|| ! in_array( 'ppq-quiz-title', preg_split( '/\s+/', trim( $class[2] ) ), true ) ) {
+					return $heading[0];
+				}
+				return '<h2' . $heading[1] . '>' . $heading[2] . '</h2>';
+			},
+			$html
+		) ?? $html;
+	}
+
+	/**
 	 * Shared gate: can_learn + active enrollment on the mapped course.
 	 *
 	 * @param int $user_id   User ID.
@@ -131,7 +180,7 @@ class PressPrimer_Quiz {
 	 *
 	 * @param int $quiz_id PressPrimer quiz row ID.
 	 */
-	private function published_course_id_for_quiz( int $quiz_id ): ?int {
+	protected function published_course_id_for_quiz( int $quiz_id ): ?int {
 		if ( $quiz_id < 1 ) {
 			return null;
 		}
@@ -153,6 +202,60 @@ class PressPrimer_Quiz {
 			)
 		);
 		return $ids ? (int) $ids[0] : null;
+	}
+
+	/**
+	 * Print back-link + enrollment status for a mapped quiz; no-op when unmapped.
+	 *
+	 * @param mixed $quiz PressPrimer quiz object.
+	 */
+	private function render_chrome( $quiz ): void {
+		$quiz_id = $this->quiz_id( $quiz );
+		if ( $quiz_id < 1 ) {
+			return;
+		}
+		$course_id = $this->published_course_id_for_quiz( $quiz_id );
+		if ( null === $course_id ) {
+			return;
+		}
+
+		echo '<div class="bfc-quiz-chrome">';
+		printf(
+			'<a class="bfc-quiz-chrome__back" href="%s">%s</a>',
+			esc_url( get_permalink( $course_id ) ),
+			esc_html(
+				sprintf(
+					/* translators: %s: course title */
+					__( 'Back to %s', 'burbank-lms' ),
+					get_the_title( $course_id )
+				)
+			)
+		);
+		$presentation = new Presentation();
+		$status       = $presentation->enrollment_status(
+			$this->enrollment()->get( get_current_user_id(), $course_id )
+		);
+		$label        = $presentation->status_label( $status );
+		if ( $label ) {
+			printf( '<p class="bfc-quiz-chrome__status">%s</p>', esc_html( $label ) );
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Resolve quiz id from an attempt or quiz object, then render chrome.
+	 *
+	 * @param mixed $attempt_or_quiz Attempt (quiz_id) or quiz (id).
+	 */
+	private function render_chrome_from_context( $attempt_or_quiz ): void {
+		if ( ! is_object( $attempt_or_quiz ) ) {
+			return;
+		}
+		if ( isset( $attempt_or_quiz->quiz_id ) ) {
+			$this->render_chrome( (object) array( 'id' => (int) $attempt_or_quiz->quiz_id ) );
+			return;
+		}
+		$this->render_chrome( $attempt_or_quiz );
 	}
 
 	/**

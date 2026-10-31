@@ -103,6 +103,10 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'pressprimer_quiz_can_start', $pressprimer_quiz, 'can_start', 10, 2 );
 		$this->loader->add_filter( 'pressprimer_quiz_before_submit', $pressprimer_quiz, 'before_submit', 10, 2 );
 		$this->loader->add_action( 'pressprimer_quiz_quiz_passed', $pressprimer_quiz, 'quiz_passed', 10, 2 );
+		$this->loader->add_action( 'pressprimer_quiz_before_quiz_meta', $pressprimer_quiz, 'before_quiz_meta', 10, 1 );
+		$this->loader->add_action( 'pressprimer_quiz_before_results', $pressprimer_quiz, 'before_results', 10, 1 );
+		$this->loader->add_action( 'pressprimer_quiz_after_results', $pressprimer_quiz, 'after_results', 10, 1 );
+		$this->loader->add_filter( 'render_block_pressprimer-quiz/quiz', $pressprimer_quiz, 'demote_quiz_title', 10, 1 );
 		$this->loader->add_filter( 'ppcert_register_merge_fields', $pressprimer_certificate, 'register_merge_fields', 10, 2 );
 		$this->loader->add_filter( 'ppcert_merge_data', $pressprimer_certificate, 'merge_data', 10, 2 );
 		$this->loader->add_filter( 'ppcert_issue_validation', $pressprimer_certificate, 'issue_validation', 10, 2 );
