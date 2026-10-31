@@ -189,7 +189,7 @@ Archiving is the supported way to retire a course. **Archive** in the Course sid
 
 1. Complete, valid metadata and an available or already-bound BFC code.
 2. A saved `bfc_course` post (no publication on creation).
-3. The supported PressPrimer releases, a published quiz, a published certificate template, and exactly one active matching quiz trigger. See [pressprimer-compatibility.md](pressprimer-compatibility.md).
+3. PressPrimer Quiz 3.1.3+ and Certificate 2.0.2+ with intact contracts, a published quiz, a published certificate template, and exactly one active matching quiz trigger. See [pressprimer-compatibility.md](pressprimer-compatibility.md).
 4. No other non-auto-draft course (including drafts, trash and archived courses) assigned the same quiz.
 5. Stored `approved_by`/`approved_at` written by a user who currently holds `approve_bfc_courses`, matching the latest snapshot's assessed configuration.
 6. **Matrix soft-check (publish only):** if `bc_requirement` exists and `matrix_requirement_slug` is non-empty, a published requirement with that slug must exist. Empty slug or absent type → no failure. Already-published courses keep publish on ordinary editorial saves even if the matrix later diverges (`$check_matrix` defaults off when the post is already `publish`).

@@ -8,14 +8,14 @@
 namespace Burbank_LMS\Integrations;
 
 /**
- * Fail closed outside the inspected release pair.
+ * Fail closed below the inspected minimum releases or when contracts change.
  *
- * Contracts inspected in the released artifacts (not documented elsewhere):
+ * Contracts inspected in the minimum released artifacts (not documented elsewhere):
  *
- * - PressPrimer Quiz 3.1.3: `PressPrimer_Quiz_Quiz::get( $id )` (inherited from `PressPrimer_Quiz_Model`)
+ * - PressPrimer Quiz 3.1.3+: `PressPrimer_Quiz_Quiz::get( $id )` (inherited from `PressPrimer_Quiz_Model`)
  *   returns a row object or null. `status` is `draft|published|archived`; the quiz table has no `deleted_at`.
  *   Certificate issuance receives the quiz ID through the `pressprimer_quiz_quiz_passed` action.
- * - PressPrimer Certificate 2.0.2: `PressPrimer_Certificate_Template::get( $id )` returns a non-soft-deleted row
+ * - PressPrimer Certificate 2.0.2+: `PressPrimer_Certificate_Template::get( $id )` returns a non-soft-deleted row
  *   (`status` is `draft|published|archived`) or null. `PressPrimer_Certificate_Trigger::get_for_template( $id )`
  *   returns rows with `trigger_type`, `source_ref` and `is_active`. Its quiz adapter issues for the trigger type
  *   `ppq_quiz` using `Trigger::find_active( 'ppq_quiz', $quiz_id )`, which returns active rows (with `template_id`) on
@@ -23,10 +23,10 @@ namespace Burbank_LMS\Integrations;
  *   store NULL.
  */
 class PressPrimer {
-	/** Supported released Quiz plugin version. */
+	/** Minimum supported Quiz plugin version. */
 	public const QUIZ_VERSION = '3.1.3';
 
-	/** Supported released Certificate plugin version. */
+	/** Minimum supported Certificate plugin version. */
 	public const CERTIFICATE_VERSION = '2.0.2';
 
 	/** Certificate trigger type issued by the Quiz adapter. */
@@ -44,8 +44,8 @@ class PressPrimer {
 			$error->add(
 				'burbank_course_dependencies',
 				sprintf(
-					/* translators: 1: Quiz version, 2: Certificate version. */
-					__( 'Activate the supported PressPrimer Quiz %1$s and PressPrimer Certificate %2$s releases before publishing.', 'burbank-lms' ),
+					/* translators: 1: Quiz minimum version, 2: Certificate minimum version. */
+					__( 'Activate PressPrimer Quiz %1$s or newer and PressPrimer Certificate %2$s or newer before publishing.', 'burbank-lms' ),
 					self::QUIZ_VERSION,
 					self::CERTIFICATE_VERSION
 				),
@@ -108,10 +108,14 @@ class PressPrimer {
 		return $error;
 	}
 
-	/** Whether both plugins are the pinned releases and expose the inspected public contracts. */
+	/** Whether both plugins meet the minimum releases and expose the inspected public contracts. */
 	private function supported(): bool {
 		$versions = $this->installed_versions();
-		if ( self::QUIZ_VERSION !== ( $versions['quiz'] ?? null ) || self::CERTIFICATE_VERSION !== ( $versions['certificate'] ?? null ) ) {
+		$quiz     = $versions['quiz'] ?? null;
+		$cert     = $versions['certificate'] ?? null;
+		if ( null === $quiz || null === $cert
+			|| version_compare( $quiz, self::QUIZ_VERSION, '<' )
+			|| version_compare( $cert, self::CERTIFICATE_VERSION, '<' ) ) {
 			return false;
 		}
 		foreach ( $this->contract_methods() as $class => $methods ) {

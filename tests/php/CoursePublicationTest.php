@@ -255,14 +255,14 @@ class CoursePublicationTest extends WP_UnitTestCase {
 		$this->assertContains( 'burbank_course_duplicate_quiz', ( new Publication() )->validate( 0, $mapping )->get_error_codes() );
 	}
 
-	/** Missing plugins, unsupported releases and changed contracts fail closed. */
+	/** Missing plugins, older releases and changed contracts fail closed. */
 	public function test_missing_unsupported_and_changed_contracts_fail_closed(): void {
 		$mapping = bfc_test_mapping();
 		$cases   = array(
 			'missing quiz'        => array( null, '2.0.2', null ),
 			'missing certificate' => array( '3.1.3', null, null ),
 			'old quiz'            => array( '3.1.2', '2.0.2', null ),
-			'new certificate'     => array( '3.1.3', '2.1.0', null ),
+			'old certificate'     => array( '3.1.3', '2.0.1', null ),
 			'changed contract'    => array(
 				'3.1.3',
 				'2.0.2',
@@ -275,46 +275,31 @@ class CoursePublicationTest extends WP_UnitTestCase {
 			),
 		);
 		foreach ( $cases as $label => $case ) {
-			$adapter = new class( ...$case ) extends Burbank_LMS\Integrations\PressPrimer {
-				/** Simulated installed releases.
-				 *
-				 * @var array<string,string|null>
-				 */
-				private array $simulated;
-				/** Simulated contract methods.
-				 *
-				 * @var array<string,array<string,int>>|null
-				 */
-				private ?array $contracts;
-				/** Capture simulated state.
-				 *
-				 * @param string|null                          $quiz Quiz version.
-				 * @param string|null                          $certificate Certificate version.
-				 * @param array<string,array<string,int>>|null $contracts Contract overrides.
-				 */
-				public function __construct( ?string $quiz, ?string $certificate, ?array $contracts ) {
-					$this->simulated = array(
-						'quiz'        => $quiz,
-						'certificate' => $certificate,
-					);
-					$this->contracts = $contracts;
-				}
-				/** Simulated releases. */
-				protected function installed_versions(): array {
-					return $this->simulated;
-				}
-				/** Simulated contract methods. */
-				protected function contract_methods(): array {
-					return $this->contracts ?? parent::contract_methods();
-				}
-			};
+			$adapter = $this->simulated_pressprimer( ...$case );
 			$result  = $adapter->validate_mapping( $mapping['pressprimer_quiz_id'], $mapping['certificate_template_id'] );
 			$this->assertSame( array( 'burbank_course_dependencies' ), $result->get_error_codes(), $label );
 			$this->assertStringContainsString( '3.1.3', $result->get_error_message(), $label );
+			$this->assertStringContainsString( 'or newer', $result->get_error_message(), $label );
 		}
 	}
 
-	/** The real adapter is satisfied only by the pinned released contracts. */
+	/** Newer PressPrimer releases that still expose the inspected contracts are allowed. */
+	public function test_newer_releases_with_intact_contracts_are_supported(): void {
+		$mapping = bfc_test_mapping();
+		$cases   = array(
+			'newer certificate' => array( '3.1.3', '2.1.0', null ),
+			'newer quiz'        => array( '3.2.0', '2.0.2', null ),
+			'both newer'        => array( '3.2.0', '2.1.0', null ),
+			'minimum pair'      => array( '3.1.3', '2.0.2', null ),
+		);
+		foreach ( $cases as $label => $case ) {
+			$adapter = $this->simulated_pressprimer( ...$case );
+			$result  = $adapter->validate_mapping( $mapping['pressprimer_quiz_id'], $mapping['certificate_template_id'] );
+			$this->assertFalse( $result->has_errors(), $label );
+		}
+	}
+
+	/** The real adapter accepts the minimum releases or newer when contracts are intact. */
 	public function test_real_released_contracts_are_supported_or_absent(): void {
 		$mapping = bfc_test_mapping_or_empty();
 		$result  = ( new Burbank_LMS\Integrations\PressPrimer() )->validate_mapping( (int) ( $mapping['pressprimer_quiz_id'] ?? 1 ), (int) ( $mapping['certificate_template_id'] ?? 2 ) );
@@ -322,9 +307,52 @@ class CoursePublicationTest extends WP_UnitTestCase {
 			$this->assertSame( array( 'burbank_course_dependencies' ), $result->get_error_codes() );
 			return;
 		}
-		$this->assertSame( '3.1.3', PRESSPRIMER_QUIZ_VERSION );
-		$this->assertSame( '2.0.2', PPCERT_VERSION );
+		$this->assertTrue( version_compare( PRESSPRIMER_QUIZ_VERSION, '3.1.3', '>=' ) );
+		$this->assertTrue( version_compare( PPCERT_VERSION, '2.0.2', '>=' ) );
 		$this->assertFalse( $result->has_errors() );
+	}
+
+	/**
+	 * Adapter with simulated installed versions and optional contract overrides.
+	 *
+	 * @param string|null                          $quiz Quiz version.
+	 * @param string|null                          $certificate Certificate version.
+	 * @param array<string,array<string,int>>|null $contracts Contract overrides.
+	 */
+	private function simulated_pressprimer( ?string $quiz, ?string $certificate, ?array $contracts ): Burbank_LMS\Integrations\PressPrimer {
+		return new class( $quiz, $certificate, $contracts ) extends Burbank_LMS\Integrations\PressPrimer {
+			/** Simulated installed releases.
+			 *
+			 * @var array<string,string|null>
+			 */
+			private array $simulated;
+			/** Simulated contract methods.
+			 *
+			 * @var array<string,array<string,int>>|null
+			 */
+			private ?array $contracts;
+			/** Capture simulated state.
+			 *
+			 * @param string|null                          $quiz Quiz version.
+			 * @param string|null                          $certificate Certificate version.
+			 * @param array<string,array<string,int>>|null $contracts Contract overrides.
+			 */
+			public function __construct( ?string $quiz, ?string $certificate, ?array $contracts ) {
+				$this->simulated = array(
+					'quiz'        => $quiz,
+					'certificate' => $certificate,
+				);
+				$this->contracts = $contracts;
+			}
+			/** Simulated releases. */
+			protected function installed_versions(): array {
+				return $this->simulated;
+			}
+			/** Simulated contract methods. */
+			protected function contract_methods(): array {
+				return $this->contracts ?? parent::contract_methods();
+			}
+		};
 	}
 
 	/** Template, quiz and trigger problems each produce their own recoverable error. */
