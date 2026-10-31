@@ -5,7 +5,7 @@
 import apiFetch from '@wordpress/api-fetch';
 import { Button, Notice, TextControl } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { dispatch, select, useSelect } from '@wordpress/data';
 import { store as editorStore } from '@wordpress/editor';
 import { useEffect, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
@@ -64,8 +64,8 @@ function formatSnapshot( snapshot ) {
  */
 export default function ApprovalPanel() {
 	const config = getConfig();
-	const { postId, isAutoDraft } = useSelect( ( select ) => {
-		const editor = select( editorStore );
+	const { postId, isAutoDraft } = useSelect( ( selectStore ) => {
+		const editor = selectStore( editorStore );
 		return {
 			postId: editor.getCurrentPostId(),
 			isAutoDraft:
@@ -74,7 +74,7 @@ export default function ApprovalPanel() {
 	}, [] );
 
 	const disabled = ! postId || isAutoDraft;
-	const [ meta, setMeta ] = useEntityProp( 'postType', 'bfc_course', 'meta' );
+	const [ , setMeta ] = useEntityProp( 'postType', 'bfc_course', 'meta' );
 	const [ editorial, setEditorial ] = useState( EMPTY_EDITORIAL );
 	const [ revision, setRevision ] = useState( '' );
 	const [ busy, setBusy ] = useState( false );
@@ -85,12 +85,34 @@ export default function ApprovalPanel() {
 	 *
 	 * Revision/archive update the saved course server-side; without this, a
 	 * later Save would push stale useEntityProp values back to the server.
+	 * Read live edited meta from the store at sync time so concurrent Details
+	 * edits are not overwritten by a stale render-time closure.
 	 *
 	 * @param {Object} patch Meta keys to merge into the edited entity.
 	 */
 	const syncEntityMeta = ( patch ) => {
-		const current = meta && typeof meta === 'object' ? meta : {};
-		setMeta( { ...current, ...patch } );
+		const current = select( editorStore ).getEditedPostAttribute( 'meta' );
+		const base = current && typeof current === 'object' ? current : {};
+		setMeta( { ...base, ...patch } );
+	};
+
+	/**
+	 * Align the document status with the saved course after editorial actions.
+	 *
+	 * Material revision drafts a published/future course server-side; without
+	 * this the document panel still shows Publish.
+	 *
+	 * @param {string|undefined} status Post status from the editorial payload.
+	 */
+	const syncPostStatus = ( status ) => {
+		if ( typeof status !== 'string' || status === '' ) {
+			return;
+		}
+		const current =
+			select( editorStore ).getEditedPostAttribute( 'status' );
+		if ( current !== status ) {
+			dispatch( editorStore ).editPost( { status } );
+		}
 	};
 
 	useEffect( () => {
@@ -157,6 +179,7 @@ export default function ApprovalPanel() {
 			if ( action === 'archive' ) {
 				syncEntityMeta( { catalog_state: 'archived' } );
 			}
+			syncPostStatus( data?.status );
 			if ( options.clearRevision ) {
 				setRevision( '' );
 			}

@@ -166,19 +166,60 @@ class CourseEditorRestTest extends WP_UnitTestCase {
 		wp_set_current_user( $admin );
 		$id = $this->course( 'BFC-214' );
 		$this->assertTrue( ( new Editorial() )->approve( $id ) );
+		update_post_meta( $id, 'catalog_state', 'published' );
+		global $wpdb;
+		$wpdb->update( // phpcs:ignore WordPress.DB -- Bypass publication guards so revision can draft a live course.
+			$wpdb->posts,
+			array( 'post_status' => 'publish' ),
+			array( 'ID' => $id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+		clean_post_cache( $id );
+		$this->assertSame( 'publish', get_post_status( $id ) );
 
 		$revision = $this->dispatch( 'POST', '/courses/' . $id . '/revision', array( 'revision' => '2' ) );
 		$this->assertSame( 200, $revision->get_status() );
 		$this->assertSame( '2', get_post_meta( $id, 'course_revision', true ) );
+		$this->assertSame( 'draft', get_post_status( $id ) );
 		$rev_data = $revision->get_data();
 		$this->assertFalse( $rev_data['approved'] );
 		$this->assertNull( $rev_data['approved_by'] );
+		$this->assertSame( 'draft', $rev_data['status'] );
 		$this->assertCount( 1, $rev_data['snapshots'] );
 
 		$archive = $this->dispatch( 'POST', '/courses/' . $id . '/archive' );
 		$this->assertSame( 200, $archive->get_status() );
 		$this->assertSame( 'archived', get_post_meta( $id, 'catalog_state', true ) );
-		$this->assertArrayHasKey( 'snapshots', $archive->get_data() );
+		$archive_data = $archive->get_data();
+		$this->assertArrayHasKey( 'snapshots', $archive_data );
+		$this->assertSame( 'draft', $archive_data['status'] );
+	}
+
+	/** REST null for integer meta deletes the key (Gutenberg clear path). */
+	public function test_rest_null_clears_integer_course_meta(): void {
+		$id = $this->course( 'BFC-225' );
+		$this->assertTrue( metadata_exists( 'post', $id, 'pressprimer_quiz_id' ) );
+		$this->assertTrue( metadata_exists( 'post', $id, 'certificate_template_id' ) );
+
+		$request = new WP_REST_Request( 'POST', rest_get_route_for_post( $id ) );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body(
+			wp_json_encode(
+				array(
+					'meta' => array(
+						'pressprimer_quiz_id'     => null,
+						'certificate_template_id' => null,
+					),
+				)
+			)
+		);
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertFalse( metadata_exists( 'post', $id, 'pressprimer_quiz_id' ) );
+		$this->assertFalse( metadata_exists( 'post', $id, 'certificate_template_id' ) );
+		$this->assertSame( '', get_post_meta( $id, 'pressprimer_quiz_id', true ) );
+		$this->assertSame( '', get_post_meta( $id, 'certificate_template_id', true ) );
 	}
 
 	/** Non-course posts are rejected with 404. */

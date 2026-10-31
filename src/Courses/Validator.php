@@ -326,11 +326,28 @@ class Validator {
 		}
 		$meta   = array_intersect_key( $meta, Schema::FIELDS );
 		$fields = array_replace( $this->fields( $id ), $meta );
+		// Gutenberg clears integer meta with JSON null; treat that as deletion for validation and writes.
+		foreach ( $meta as $key => $value ) {
+			if ( null === $value ) {
+				unset( $fields[ $key ] );
+			}
+		}
 		// A status-less update of a published course still leaves it published, so it needs the same gate.
 		$status = isset( $prepared->post_status ) ? $prepared->post_status : ( $id ? get_post_status( $id ) : 'draft' );
 		$error  = ( in_array( $status, self::PUBLICATION_STATUSES, true ) ? ( new Publication() )->validate( $id, $fields ) : $this->check( $fields, $id ) );
 		if ( ! $error->has_errors() ) {
-			$prepared->meta_input = $meta;
+			$writes = array();
+			foreach ( $meta as $key => $value ) {
+				if ( null === $value ) {
+					// Avoid meta_input storing '' for null; core meta fields also delete when schema allows null.
+					if ( $id ) {
+						delete_post_meta( $id, $key );
+					}
+				} else {
+					$writes[ $key ] = $value;
+				}
+			}
+			$prepared->meta_input = $writes;
 		}
 		return $error->has_errors() ? $error : $prepared;
 	}

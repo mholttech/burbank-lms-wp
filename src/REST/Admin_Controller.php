@@ -471,7 +471,7 @@ class Admin_Controller {
 	 * GET-shaped editorial payload for hydrate and action responses.
 	 *
 	 * @param int $course_id Course post ID.
-	 * @return array{approved:bool,approved_by:int|null,approved_at:string|null,can_approve:bool,snapshots:array<int,array<string,mixed>>}
+	 * @return array{approved:bool,approved_by:int|null,approved_at:string|null,can_approve:bool,status:string,snapshots:array<int,array<string,mixed>>}
 	 */
 	private function editorial_payload( int $course_id ): array {
 		$editorial   = $this->editorial();
@@ -481,12 +481,14 @@ class Admin_Controller {
 		$approved    = $editorial->matches_approval( $course_id, $fields )
 			&& $approved_by > 0
 			&& user_can( $approved_by, 'approve_bfc_courses' ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered course capability.
+		$status      = get_post_status( $course_id );
 
 		return array(
 			'approved'    => $approved,
 			'approved_by' => $approved_by > 0 ? $approved_by : null,
 			'approved_at' => '' !== $approved_at ? $approved_at : null,
 			'can_approve' => current_user_can( 'approve_bfc_courses' ), // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Registered course capability.
+			'status'      => is_string( $status ) ? $status : 'draft',
 			'snapshots'   => $editorial->snapshots( $course_id ),
 		);
 	}
