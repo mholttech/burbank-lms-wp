@@ -59,7 +59,7 @@ html[data-bc-theme="dark"] {
 		padding: 0;
 	}
 
-	&__link.is-current {
+	&__item.is-current &__link {
 		font-weight: 600;
 		text-decoration: underline;
 	}
