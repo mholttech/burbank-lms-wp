@@ -40,19 +40,20 @@ const HELP = {
 };
 
 /**
- * Coerce a select value to a positive integer ID, or empty string when cleared.
+ * Coerce a select value to a positive integer ID, or undefined when cleared.
  *
- * Registered meta type is integer; empty stays '' so draft validation allows unset refs.
+ * Registered meta type is integer; Gutenberg REST rejects ''. Clearing omits the
+ * key so draft-empty (missing meta) stays valid for incomplete drafts.
  *
  * @param {string} value SelectControl value.
- * @return {number|string} Positive integer ID, or empty string when cleared.
+ * @return {number|undefined} Positive integer ID, or undefined when cleared.
  */
 function toIntegerId( value ) {
 	if ( value === '' || value === null || value === undefined ) {
-		return '';
+		return undefined;
 	}
 	const parsed = parseInt( value, 10 );
-	return Number.isFinite( parsed ) && parsed > 0 ? parsed : '';
+	return Number.isFinite( parsed ) && parsed > 0 ? parsed : undefined;
 }
 
 /**
@@ -84,7 +85,19 @@ export default function DetailsPanel() {
 
 	const safeMeta = meta && typeof meta === 'object' ? meta : {};
 
+	/**
+	 * Update a meta key. Pass undefined to omit the key (integer clear path).
+	 *
+	 * @param {string} key   Meta key.
+	 * @param {*}      value Next value, or undefined to delete.
+	 */
 	const update = ( key, value ) => {
+		if ( value === undefined ) {
+			const next = { ...safeMeta };
+			delete next[ key ];
+			setMeta( next );
+			return;
+		}
 		setMeta( { ...safeMeta, [ key ]: value } );
 	};
 
