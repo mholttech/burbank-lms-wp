@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.0...burbank-lms-v1.2.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* accept newer PressPrimer Quiz and Certificate releases ([#14](https://github.com/mholttech/burbank-lms-wp/issues/14)) ([fb77756](https://github.com/mholttech/burbank-lms-wp/commit/fb77756ecac1e06f9d03632e914cc3b47adbd755))
+
 ## [1.2.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.1.0...burbank-lms-v1.2.0) (2026-10-31)
 
 
