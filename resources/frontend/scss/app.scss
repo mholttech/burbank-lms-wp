@@ -2,3 +2,18 @@
  * All of the CSS for your public-facing functionality should be
  * included in this file.
  */
+
+.bfc-quiz-chrome {
+	display: grid;
+	gap: 0.5rem;
+	margin: 0 0 1rem;
+
+	&__back {
+		display: inline-block;
+	}
+
+	&__status {
+		margin: 0;
+		font-size: 0.95em;
+	}
+}

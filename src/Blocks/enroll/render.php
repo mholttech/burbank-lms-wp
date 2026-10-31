@@ -65,7 +65,7 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 				<input id="bfc-enroll-invite" name="course_invite" type="text" autocomplete="off">
 			</p>
 			<p class="bfc-enroll__actions">
-				<button type="submit"><?php esc_html_e( 'Enroll', 'burbank-lms' ); ?></button>
+				<button type="submit" class="wp-element-button"><?php esc_html_e( 'Enroll', 'burbank-lms' ); ?></button>
 			</p>
 			<p class="bfc-enroll__status" hidden data-bfc-status></p>
 		</form>

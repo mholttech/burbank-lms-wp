@@ -26,10 +26,21 @@ if ( ! is_user_logged_in() ) {
 	);
 	return;
 }
+$archive = get_post_type_archive_link( 'bfc_course' );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
 	<p class="bfc-my-courses__loading" data-bfc-loading><?php esc_html_e( 'Loading your courses…', 'burbank-lms' ); ?></p>
 	<ul class="bfc-my-courses__list" data-bfc-list hidden></ul>
 	<p class="bfc-my-courses__empty" data-bfc-empty hidden><?php esc_html_e( 'You are not enrolled in any courses yet.', 'burbank-lms' ); ?></p>
+	<?php if ( is_string( $archive ) && $archive ) : ?>
+		<p class="bfc-my-courses__catalog-cta">
+			<a class="wp-element-button" href="<?php echo esc_url( $archive ); ?>"><?php esc_html_e( 'Browse course catalog', 'burbank-lms' ); ?></a>
+		</p>
+	<?php endif; ?>
 	<p class="bfc-my-courses__status" hidden data-bfc-status></p>
+	<?php if ( shortcode_exists( 'ppcert_my_certificates' ) ) : ?>
+		<div class="bfc-my-courses__certificates">
+			<?php echo do_shortcode( '[ppcert_my_certificates]' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PressPrimer shortcode markup. ?>
+		</div>
+	<?php endif; ?>
 </div>

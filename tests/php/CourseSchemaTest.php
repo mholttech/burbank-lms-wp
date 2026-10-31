@@ -18,6 +18,7 @@ class CourseSchemaTest extends WP_UnitTestCase {
 		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_course_registry" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
 		pods_api()->cache_flush_pods();
 		delete_option( Schema::VERSION_OPTION );
+		delete_option( Schema::REWRITE_FLUSH_OPTION );
 	}
 
 	/** The course uses native editor and REST support. */
@@ -27,6 +28,8 @@ class CourseSchemaTest extends WP_UnitTestCase {
 		$type = get_post_type_object( 'bfc_course' );
 		$this->assertNotNull( $type );
 		$this->assertTrue( $type->show_in_rest );
+		$this->assertNotFalse( $type->has_archive );
+		$this->assertIsString( get_post_type_archive_link( 'bfc_course' ) );
 		foreach ( array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ) as $feature ) {
 			$this->assertTrue( post_type_supports( 'bfc_course', $feature ), $feature );
 		}
@@ -50,6 +53,29 @@ class CourseSchemaTest extends WP_UnitTestCase {
 				$this->assertTrue( $registered[ $field ]['show_in_rest'] );
 			}
 		}
+	}
+
+	/** Data schema upgrades schedule a one-time rewrite flush; idempotent register does not re-flag. */
+	public function test_schema_upgrade_flags_rewrite_flush_once(): void {
+		update_option( Schema::VERSION_OPTION, 1, false );
+		$schema = new Schema();
+		$schema->register();
+		$this->assertSame( 1, (int) get_option( Schema::REWRITE_FLUSH_OPTION ) );
+		$schema->register();
+		$this->assertSame( 1, (int) get_option( Schema::REWRITE_FLUSH_OPTION ) );
+		update_option( 'rewrite_rules', 'courses/?$=index.php?post_type=bfc_course' );
+		$schema->maybe_flush_rewrite_rules();
+		$this->assertFalse( get_option( Schema::REWRITE_FLUSH_OPTION ) );
+		$this->assertSame( '', get_option( 'rewrite_rules' ) );
+	}
+
+	/** Current schema version does not re-flag rewrite flush on every request. */
+	public function test_schema_at_version_skips_rewrite_flush_flag(): void {
+		$schema = new Schema();
+		$schema->register();
+		$schema->maybe_flush_rewrite_rules();
+		$schema->register();
+		$this->assertFalse( get_option( Schema::REWRITE_FLUSH_OPTION ) );
 	}
 
 	/** Repeated provisioning retains data and unrelated settings. */

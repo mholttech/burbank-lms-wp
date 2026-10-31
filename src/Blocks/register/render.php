@@ -50,7 +50,7 @@ $wrapper = get_block_wrapper_attributes(
 			<input id="bfc-register-password" name="password" type="password" required autocomplete="new-password">
 		</p>
 		<p class="bfc-register__actions">
-			<button type="submit"><?php esc_html_e( 'Create account', 'burbank-lms' ); ?></button>
+			<button type="submit" class="wp-element-button"><?php esc_html_e( 'Create account', 'burbank-lms' ); ?></button>
 		</p>
 		<p class="bfc-register__status" hidden data-bfc-status></p>
 	</form>

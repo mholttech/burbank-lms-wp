@@ -1,6 +1,25 @@
 .bfc-course {
 	display: grid;
-	gap: 0.75rem;
+	gap: 1rem;
+	padding: clamp(1rem, 2vw, 1.5rem);
+	border: 1px solid var(--wp--preset--color--content-border, #c3c4c7);
+	border-radius: 6px;
+	background: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	color: var(--wp--preset--color--content-text, inherit);
+
+	&__meta {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	&__status {
+		display: inline-block;
+		margin: 0;
+		padding: 0.25rem 0.6rem;
+		border-radius: 999px;
+		background: var(--wp--preset--color--content-border, #c3c4c7);
+		font-size: 0.9em;
+	}
 
 	&__invite-form,
 	&__field {
@@ -8,7 +27,11 @@
 		gap: 0.35rem;
 	}
 
+	&__quiz-cta {
+		display: inline-block;
+	}
+
 	&__notice.is-error {
-		color: #b32d2e;
+		color: var(--wp--preset--color--action-red, #b32d2e);
 	}
 }

@@ -23,4 +23,20 @@ class LearnerTemplatesTest extends WP_UnitTestCase {
 		$this->assertTrue( $registry->is_registered( 'burbank-lms//archive-bfc_course' ) );
 		$this->assertTrue( $registry->is_registered( 'burbank-lms//single-bfc_course' ) );
 	}
+
+	/** Single template markup includes title, featured image, post content, and course block. */
+	public function test_single_template_includes_post_content(): void {
+		if ( ! function_exists( 'register_block_template' ) ) {
+			$this->markTestSkipped( 'register_block_template requires WordPress 6.7+.' );
+		}
+		$templates = new \Burbank_LMS\Learner\Templates();
+		$ref       = new ReflectionClass( $templates );
+		$method    = $ref->getMethod( 'single_content' );
+		$method->setAccessible( true );
+		$content = (string) $method->invoke( $templates );
+		$this->assertStringContainsString( 'wp:post-content', $content );
+		$this->assertStringContainsString( 'wp:post-featured-image', $content );
+		$this->assertStringContainsString( 'wp:burbank-lms/course', $content );
+		$this->assertStringContainsString( 'wp:post-title', $content );
+	}
 }

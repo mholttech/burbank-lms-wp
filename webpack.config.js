@@ -16,6 +16,10 @@ const customEntries = {
 		path.resolve( __dirname, 'resources/admin/js/course-editor/index.js' ),
 		path.resolve( __dirname, 'resources/admin/scss/course-editor.scss' ),
 	],
+	'burbank-lms-pressprimer': path.resolve(
+		__dirname,
+		'resources/frontend/scss/pressprimer.scss'
+	),
 };
 
 /**

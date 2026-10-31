@@ -55,7 +55,7 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 			form.reset();
 			setStatus(
 				status,
-				'Account created. Check your email to verify before enrolling.',
+				'Account created. You can sign in and enroll in courses.',
 				false
 			);
 		} catch ( error ) {

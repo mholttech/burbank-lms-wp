@@ -53,7 +53,8 @@ class Templates {
 		return '<!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group">
 	<!-- wp:post-title {"level":1} /-->
-	<!-- wp:post-excerpt /-->
+	<!-- wp:post-featured-image /-->
+	<!-- wp:post-content /-->
 	<!-- wp:burbank-lms/course /-->
 </div>
 <!-- /wp:group -->';

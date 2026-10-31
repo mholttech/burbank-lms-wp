@@ -107,5 +107,11 @@ jobs:
           $COMPOSER_AUTH
           EOF
 
+      # Setup caches node_modules + build under a shared key, but mode=dev skips
+      # building. test-js builds in its own job without uploading artifacts, so
+      # application tests must rebuild here for block render.php and CSS entries.
+      - name: Build assets
+        run: npm run build
+
       - name: Run application tests
         run: npm run test:php
