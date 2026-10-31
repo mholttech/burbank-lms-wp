@@ -109,7 +109,7 @@ export default function InvitesPanel() {
 	const [ invites, setInvites ] = useState( [] );
 	const [ form, setForm ] = useState( EMPTY_FORM );
 	const [ busy, setBusy ] = useState( false );
-	const [ notice, setNotice ] = useState( null );
+	const [ notices, setNotices ] = useState( [] );
 
 	const loadInvites = useCallback( async () => {
 		const data = await apiFetch( {
@@ -126,20 +126,22 @@ export default function InvitesPanel() {
 
 		let cancelled = false;
 		setBusy( true );
-		setNotice( null );
+		setNotices( [] );
 
 		loadInvites()
 			.catch( ( error ) => {
 				if ( ! cancelled ) {
-					setNotice( {
-						status: 'error',
-						message:
-							error?.message ||
-							__(
-								'Could not load course invites.',
-								'burbank-lms'
-							),
-					} );
+					setNotices( [
+						{
+							status: 'error',
+							message:
+								error?.message ||
+								__(
+									'Could not load course invites.',
+									'burbank-lms'
+								),
+						},
+					] );
 				}
 			} )
 			.finally( () => {
@@ -165,10 +167,12 @@ export default function InvitesPanel() {
 
 	/**
 	 * POST a new course invite and surface plaintext once.
+	 * Plaintext success is shown before list refresh so a refresh failure
+	 * cannot hide the one-time code.
 	 */
 	const createInvite = async () => {
 		setBusy( true );
-		setNotice( null );
+		setNotices( [] );
 		try {
 			/* REST create args use snake_case field names. */
 			/* eslint-disable camelcase -- REST contract */
@@ -193,9 +197,8 @@ export default function InvitesPanel() {
 				method: 'POST',
 				data: body,
 			} );
-			await loadInvites();
 			setForm( EMPTY_FORM );
-			setNotice( {
+			const successNotice = {
 				status: 'success',
 				message: sprintf(
 					/* translators: %s: plaintext invite code shown once. */
@@ -205,14 +208,33 @@ export default function InvitesPanel() {
 					),
 					created?.plaintext || ''
 				),
-			} );
+			};
+			setNotices( [ successNotice ] );
+			try {
+				await loadInvites();
+			} catch ( refreshError ) {
+				setNotices( [
+					successNotice,
+					{
+						status: 'warning',
+						message:
+							refreshError?.message ||
+							__(
+								'Invite created, but the list could not be refreshed.',
+								'burbank-lms'
+							),
+					},
+				] );
+			}
 		} catch ( error ) {
-			setNotice( {
-				status: 'error',
-				message:
-					error?.message ||
-					__( 'Could not create the invite.', 'burbank-lms' ),
-			} );
+			setNotices( [
+				{
+					status: 'error',
+					message:
+						error?.message ||
+						__( 'Could not create the invite.', 'burbank-lms' ),
+				},
+			] );
 		} finally {
 			setBusy( false );
 		}
@@ -225,24 +247,28 @@ export default function InvitesPanel() {
 	 */
 	const revokeInvite = async ( inviteId ) => {
 		setBusy( true );
-		setNotice( null );
+		setNotices( [] );
 		try {
 			await apiFetch( {
 				path: `/${ config.restNamespace }/invites/${ inviteId }`,
 				method: 'DELETE',
 			} );
 			await loadInvites();
-			setNotice( {
-				status: 'success',
-				message: __( 'Invite revoked.', 'burbank-lms' ),
-			} );
+			setNotices( [
+				{
+					status: 'success',
+					message: __( 'Invite revoked.', 'burbank-lms' ),
+				},
+			] );
 		} catch ( error ) {
-			setNotice( {
-				status: 'error',
-				message:
-					error?.message ||
-					__( 'Could not revoke the invite.', 'burbank-lms' ),
-			} );
+			setNotices( [
+				{
+					status: 'error',
+					message:
+						error?.message ||
+						__( 'Could not revoke the invite.', 'burbank-lms' ),
+				},
+			] );
 		} finally {
 			setBusy( false );
 		}
@@ -272,15 +298,20 @@ export default function InvitesPanel() {
 
 	return (
 		<>
-			{ notice ? (
+			{ notices.map( ( item, index ) => (
 				<Notice
-					status={ notice.status }
+					key={ `${ item.status }-${ index }` }
+					status={ item.status }
 					isDismissible
-					onRemove={ () => setNotice( null ) }
+					onRemove={ () =>
+						setNotices( ( current ) =>
+							current.filter( ( _, i ) => i !== index )
+						)
+					}
 				>
-					{ notice.message }
+					{ item.message }
 				</Notice>
-			) : null }
+			) ) }
 
 			<TextControl
 				label={ __( 'Label', 'burbank-lms' ) }
