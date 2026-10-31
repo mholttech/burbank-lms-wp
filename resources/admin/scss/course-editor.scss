@@ -1,5 +1,19 @@
 /**
  * Course block-editor sidebar styles.
- *
- * Panel layout rules land with the React UI in a later task.
  */
+
+.burbank-lms-course-sidebar {
+	.burbank-lms-course-sidebar__panel {
+		.components-base-control {
+			margin-bottom: 16px;
+		}
+
+		.components-base-control:last-child {
+			margin-bottom: 0;
+		}
+
+		.components-base-control__help {
+			margin-bottom: 0;
+		}
+	}
+}
