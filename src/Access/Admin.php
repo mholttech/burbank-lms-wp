@@ -1,13 +1,13 @@
 <?php
 /**
- * Site/course invite and learner profile admin UI.
+ * Site invite and learner profile admin UI (course invites live in the Course sidebar).
  *
  * @package Burbank_LMS
  */
 
 namespace Burbank_LMS\Access;
 
-/** Server-rendered invite managers and training-access profile controls. */
+/** Server-rendered site invite managers and training-access profile controls. */
 class Admin {
 	private const NOTICE_KEY = 'burbank_access_admin_notice_';
 
@@ -193,37 +193,6 @@ class Admin {
 		$this->render_create_form( 'site', 0 );
 		$this->render_invite_table( ( new Invites() )->list( 'site' ), 'site', 0 );
 		echo '</div>';
-	}
-
-	/** Register the course invites meta box. */
-	public function register_meta_box(): void {
-		add_meta_box(
-			'bfc-course-invites',
-			__( 'Course Invites', 'burbank-lms' ),
-			array( $this, 'render_course_invites_box' ),
-			'bfc_course',
-			'side',
-			'default',
-			array( '__block_editor_compatible_meta_box' => true )
-		);
-	}
-
-	/**
-	 * Render course invite create/list/revoke controls.
-	 *
-	 * @param \WP_Post $post Current course.
-	 */
-	public function render_course_invites_box( \WP_Post $post ): void {
-		if ( ! current_user_can( 'enroll_bfc_courses' ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- enroll_bfc_courses from Capabilities VERSION 2.
-			echo '<p>' . esc_html__( 'You do not have permission to manage course invites.', 'burbank-lms' ) . '</p>';
-			return;
-		}
-		if ( 'auto-draft' === $post->post_status ) {
-			echo '<p>' . esc_html__( 'Save the course before issuing invites.', 'burbank-lms' ) . '</p>';
-			return;
-		}
-		$this->render_create_form( 'course', (int) $post->ID );
-		$this->render_invite_table( ( new Invites() )->list( 'course', (int) $post->ID ), 'course', (int) $post->ID );
 	}
 
 	/**

@@ -454,32 +454,29 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $wpdb->get_col( $wpdb->prepare( "SELECT meta_key FROM {$wpdb->postmeta} WHERE post_id = %d", $id ) ) ); // phpcs:ignore WordPress.DB -- Authoritative orphan check.
 	}
 
-	/** Implicit submission from the revision field must start a revision, never approve. */
-	public function test_enter_in_revision_field_submits_revision(): void {
-		$id              = $this->course();
-		$GLOBALS['post'] = get_post( $id ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Admin footer reads the edited post.
-		ob_start();
-		( new Admin() )->controls( get_post( $id ) );
-		( new Admin() )->action_form();
-		$html = ob_get_clean();
-		unset( $GLOBALS['post'] );
-		$dom      = new DOMDocument();
-		$internal = libxml_use_internal_errors( true );
-		$dom->loadHTML( '<!DOCTYPE html><html><body>' . $html . '</body></html>' );
-		libxml_use_internal_errors( $internal );
-		$xpath = new DOMXPath( $dom );
-		$form  = $xpath->query( '//input[@name="bfc_revision"]' )->item( 0 )->getAttribute( 'form' );
-		$owned = sprintf( '//*[@form="%1$s"] | //form[@id="%1$s"]//*[not(@form)]', $form );
-		$this->assertSame( 1, $xpath->query( sprintf( '//form[@id="%s"]', $form ) )->length );
-		$default = $xpath->query( sprintf( '(%s)[self::button][not(@type) or @type="submit"]', $owned ) )->item( 0 );
-		$this->assertSame( 'revision', $default->getAttribute( 'value' ) );
-		$fields = array();
-		foreach ( $xpath->query( sprintf( '(%s)[@name]', $owned ) ) as $node ) {
-			$fields[ $node->getAttribute( 'name' ) ] = $node->getAttribute( 'value' );
+	/** Course sidebar owns editorial UI; PHP no longer registers course-screen meta boxes or form posts. */
+	public function test_course_screen_php_meta_boxes_and_editorial_admin_post_are_gone(): void {
+		$id   = $this->course();
+		$post = get_post( $id );
+		do_action( 'add_meta_boxes', 'bfc_course', $post );
+		do_action( 'add_meta_boxes_bfc_course', $post );
+		global $wp_meta_boxes;
+		$box_ids = array();
+		foreach ( (array) ( $wp_meta_boxes['bfc_course'] ?? array() ) as $context ) {
+			foreach ( (array) $context as $priority ) {
+				foreach ( array_keys( (array) $priority ) as $box_id ) {
+					$box_ids[] = $box_id;
+				}
+			}
 		}
-		$this->assertSame( 'bfc_course_editorial', $fields['action'] );
-		$this->assertSame( (string) $id, $fields['bfc_course_id'] );
-		$this->assertNotFalse( wp_verify_nonce( $fields['bfc_nonce_revision'], 'bfc_course_revision_' . $id ) );
+		$this->assertNotContains( 'bfc-course-editorial', $box_ids );
+		$this->assertNotContains( 'bfc-course-invites', $box_ids );
+		$this->assertNotContains( 'bfc-course-enrollments', $box_ids );
+		$this->assertFalse( has_action( 'admin_post_bfc_course_editorial' ) );
+		$this->assertFalse( has_action( 'admin_post_bfc_enrollment_admin_enroll' ) );
+		$this->assertNotFalse( has_action( 'admin_post_bfc_invite_create' ) );
+		$this->assertNotFalse( has_action( 'admin_post_bfc_invite_revoke' ) );
+		$this->assertNotFalse( has_action( 'admin_post_bfc_learner_profile' ) );
 	}
 
 	/** Failed audit persistence must not leave a successful-looking historical approval. */
@@ -495,32 +492,6 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		$this->assertSame( '', get_post_meta( $id, 'approved_by', true ) );
 		$this->assertSame( '', get_post_meta( $id, 'approved_at', true ) );
 		$this->assertSame( array(), ( new Editorial() )->snapshots( $id ) );
-	}
-
-	/** The registered admin endpoint rejects a CSRF attempt before changing storage. */
-	public function test_registered_admin_handler_rejects_missing_nonce(): void {
-		$id          = $this->course();
-		$previous    = $_POST; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Preserve request fixture.
-		$_POST       = array(
-			'bfc_course_id' => $id,
-			'bfc_operation' => 'archive',
-		);
-		$die_handler = static function (): Closure {
-			return static function ( $message ): void {
-				throw new WPDieException( esc_html( $message ) );
-			};
-		};
-		add_filter( 'wp_die_handler', $die_handler );
-		try {
-			do_action( 'admin_post_bfc_course_editorial' );
-			$this->fail( 'Expected the registered handler to reject CSRF.' );
-		} catch ( WPDieException $error ) {
-			$this->assertStringContainsString( 'could not be verified', $error->getMessage() );
-		} finally {
-			$_POST = $previous;
-			remove_filter( 'wp_die_handler', $die_handler );
-		}
-		$this->assertSame( '', get_post_meta( $id, 'catalog_state', true ) );
 	}
 
 	/** Ordinary post edits and identical metadata writes preserve current approval and history. */
@@ -618,8 +589,8 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		}
 	}
 
-	/** Admin columns and controls expose status and CSRF-protected actions. */
-	public function test_admin_columns_controls_and_bounded_pods_fields(): void {
+	/** Admin list columns and Pods field bounds remain; editorial actions go through dispatch/REST. */
+	public function test_admin_columns_and_bounded_pods_fields(): void {
 		$id      = $this->course();
 		$columns = apply_filters( 'manage_bfc_course_posts_columns', array( 'title' => 'Title' ) );
 		foreach ( array( 'bfc_code', 'course_revision', 'catalog_state', 'bfc_approval' ) as $column ) {
@@ -631,12 +602,8 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		ob_start();
 		do_action( 'manage_bfc_course_posts_custom_column', 'catalog_state', $id );
 		$this->assertSame( '—', ob_get_clean() );
-		ob_start();
-		( new Admin() )->controls( get_post( $id ) );
-		$html = ob_get_clean();
-		$this->assertStringContainsString( wp_create_nonce( 'bfc_course_approve_' . $id ), $html );
-		$this->assertStringContainsString( 'Start material revision', $html );
-		$this->assertStringContainsString( 'Archive', $html );
+		$this->assertTrue( ( new Admin() )->dispatch( $id, 'archive', wp_create_nonce( 'bfc_course_archive_' . $id ) ) );
+		$this->assertSame( 'archived', get_post_meta( $id, 'catalog_state', true ) );
 		$field = pods_api()->load_field(
 			array(
 				'pod'  => 'bfc_course',
