@@ -62,7 +62,7 @@ export default function EnrollmentsPanel() {
 	const [ enrollments, setEnrollments ] = useState( [] );
 	const [ userId, setUserId ] = useState( '' );
 	const [ busy, setBusy ] = useState( false );
-	const [ notice, setNotice ] = useState( null );
+	const [ notices, setNotices ] = useState( [] );
 
 	const loadEnrollments = useCallback( async () => {
 		const data = await apiFetch( {
@@ -81,17 +81,22 @@ export default function EnrollmentsPanel() {
 
 		let cancelled = false;
 		setBusy( true );
-		setNotice( null );
+		setNotices( [] );
 
 		loadEnrollments()
 			.catch( ( error ) => {
 				if ( ! cancelled ) {
-					setNotice( {
-						status: 'error',
-						message:
-							error?.message ||
-							__( 'Could not load enrollments.', 'burbank-lms' ),
-					} );
+					setNotices( [
+						{
+							status: 'error',
+							message:
+								error?.message ||
+								__(
+									'Could not load enrollments.',
+									'burbank-lms'
+								),
+						},
+					] );
 				}
 			} )
 			.finally( () => {
@@ -107,19 +112,23 @@ export default function EnrollmentsPanel() {
 
 	/**
 	 * POST admin enroll then refresh the list.
+	 * Success is shown before list refresh so a refresh failure
+	 * cannot hide the enroll confirmation.
 	 */
 	const enrollUser = async () => {
 		const parsed = parseInt( userId, 10 );
 		if ( ! Number.isFinite( parsed ) || parsed < 1 ) {
-			setNotice( {
-				status: 'error',
-				message: __( 'Enter a valid user ID.', 'burbank-lms' ),
-			} );
+			setNotices( [
+				{
+					status: 'error',
+					message: __( 'Enter a valid user ID.', 'burbank-lms' ),
+				},
+			] );
 			return;
 		}
 
 		setBusy( true );
-		setNotice( null );
+		setNotices( [] );
 		try {
 			/* eslint-disable camelcase -- REST contract */
 			await apiFetch( {
@@ -131,19 +140,37 @@ export default function EnrollmentsPanel() {
 				},
 			} );
 			/* eslint-enable camelcase */
-			await loadEnrollments();
 			setUserId( '' );
-			setNotice( {
+			const successNotice = {
 				status: 'success',
 				message: __( 'Learner enrolled.', 'burbank-lms' ),
-			} );
+			};
+			setNotices( [ successNotice ] );
+			try {
+				await loadEnrollments();
+			} catch ( refreshError ) {
+				setNotices( [
+					successNotice,
+					{
+						status: 'warning',
+						message:
+							refreshError?.message ||
+							__(
+								'Learner enrolled, but the list could not be refreshed.',
+								'burbank-lms'
+							),
+					},
+				] );
+			}
 		} catch ( error ) {
-			setNotice( {
-				status: 'error',
-				message:
-					error?.message ||
-					__( 'Could not enroll the learner.', 'burbank-lms' ),
-			} );
+			setNotices( [
+				{
+					status: 'error',
+					message:
+						error?.message ||
+						__( 'Could not enroll the learner.', 'burbank-lms' ),
+				},
+			] );
 		} finally {
 			setBusy( false );
 		}
@@ -173,15 +200,20 @@ export default function EnrollmentsPanel() {
 
 	return (
 		<>
-			{ notice ? (
+			{ notices.map( ( item, index ) => (
 				<Notice
-					status={ notice.status }
+					key={ `${ item.status }-${ index }` }
+					status={ item.status }
 					isDismissible
-					onRemove={ () => setNotice( null ) }
+					onRemove={ () =>
+						setNotices( ( current ) =>
+							current.filter( ( _, i ) => i !== index )
+						)
+					}
 				>
-					{ notice.message }
+					{ item.message }
 				</Notice>
-			) : null }
+			) ) }
 
 			<TextControl
 				label={ __( 'User ID', 'burbank-lms' ) }

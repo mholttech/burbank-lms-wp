@@ -242,6 +242,8 @@ export default function InvitesPanel() {
 
 	/**
 	 * DELETE an invite and refresh the list.
+	 * Success is shown before list refresh so a refresh failure
+	 * cannot hide the revoke confirmation.
 	 *
 	 * @param {number} inviteId Invite row ID.
 	 */
@@ -253,13 +255,27 @@ export default function InvitesPanel() {
 				path: `/${ config.restNamespace }/invites/${ inviteId }`,
 				method: 'DELETE',
 			} );
-			await loadInvites();
-			setNotices( [
-				{
-					status: 'success',
-					message: __( 'Invite revoked.', 'burbank-lms' ),
-				},
-			] );
+			const successNotice = {
+				status: 'success',
+				message: __( 'Invite revoked.', 'burbank-lms' ),
+			};
+			setNotices( [ successNotice ] );
+			try {
+				await loadInvites();
+			} catch ( refreshError ) {
+				setNotices( [
+					successNotice,
+					{
+						status: 'warning',
+						message:
+							refreshError?.message ||
+							__(
+								'Invite revoked, but the list could not be refreshed.',
+								'burbank-lms'
+							),
+					},
+				] );
+			}
 		} catch ( error ) {
 			setNotices( [
 				{
