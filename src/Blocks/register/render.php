@@ -10,6 +10,7 @@
  */
 
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Block_Title;
 
 if ( is_user_logged_in() ) {
 	printf(
@@ -28,6 +29,9 @@ $wrapper = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<?php
+	echo ( new Block_Title() )->render( __( 'Create training account', 'burbank-lms' ), 'bfc-register__title' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
+	?>
 	<form class="bfc-register__form" novalidate>
 		<p class="bfc-register__field">
 			<label for="bfc-register-invite"><?php esc_html_e( 'Site invite code', 'burbank-lms' ); ?></label>

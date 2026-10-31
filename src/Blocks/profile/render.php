@@ -11,6 +11,7 @@
 
 use Burbank_LMS\Access\Profile;
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Block_Title;
 use Burbank_LMS\Learner\Shell;
 use Burbank_LMS\Learner\Soft_Gate;
 
@@ -43,6 +44,9 @@ $wrapper    = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<?php
+	echo ( new Block_Title() )->render( __( 'Profile', 'burbank-lms' ), 'bfc-profile__title' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
+	?>
 	<form class="bfc-profile__form" novalidate>
 		<p class="bfc-profile__field">
 			<label for="bfc-profile-legal-name"><?php esc_html_e( 'Legal / certificate name', 'burbank-lms' ); ?></label>

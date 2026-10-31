@@ -10,6 +10,7 @@
  */
 
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Block_Title;
 use Burbank_LMS\Learner\Shell;
 use Burbank_LMS\Learner\Soft_Gate;
 
@@ -41,6 +42,9 @@ $wrapper = get_block_wrapper_attributes(
 $archive = get_post_type_archive_link( 'bfc_course' );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<?php
+	echo ( new Block_Title() )->render( __( 'My courses', 'burbank-lms' ), 'bfc-my-courses__heading' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
+	?>
 	<p class="bfc-my-courses__loading" data-bfc-loading><?php esc_html_e( 'Loading your courses…', 'burbank-lms' ); ?></p>
 	<ul class="bfc-my-courses__list" data-bfc-list hidden></ul>
 	<p class="bfc-my-courses__empty" data-bfc-empty hidden><?php esc_html_e( 'You are not enrolled in any courses yet.', 'burbank-lms' ); ?></p>
