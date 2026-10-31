@@ -1,19 +1,22 @@
 <?php
 /**
- * Course editor admin REST coverage (editorial routes).
+ * Course editor admin REST coverage (editorial + invite/enrollment routes).
  *
  * @package Burbank_LMS
  */
 
+use Burbank_LMS\Access\Tables as AccessTables;
 use Burbank_LMS\Courses\Capabilities;
 use Burbank_LMS\Courses\Editorial;
 use Burbank_LMS\Courses\Registry;
 use Burbank_LMS\Courses\Schema;
 use Burbank_LMS\Courses\Validator;
+use Burbank_LMS\Enrollment\Service as EnrollmentService;
+use Burbank_LMS\Enrollment\Tables as EnrollmentTables;
 
 /** Exercises burbank-lms/v1 course editorial admin endpoints. */
 class CourseEditorRestTest extends WP_UnitTestCase {
-	/** Schema, registry, caps, and a fresh REST server before each case. */
+	/** Schema, registry, caps, tables, and a fresh REST server before each case. */
 	public function set_up(): void {
 		parent::set_up();
 		global $wpdb;
@@ -23,6 +26,12 @@ class CourseEditorRestTest extends WP_UnitTestCase {
 		( new Schema() )->register();
 		( new Registry() )->install();
 		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_course_registry" ); // phpcs:ignore WordPress.DB -- Isolated fixture.
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bfc_invite_codes" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bfc_enrollments" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
+		delete_option( AccessTables::VERSION_OPTION );
+		delete_option( EnrollmentTables::VERSION_OPTION );
+		$this->assertTrue( ( new AccessTables() )->install() );
+		$this->assertTrue( ( new EnrollmentTables() )->install() );
 		( new Capabilities() )->install();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
@@ -31,11 +40,13 @@ class CourseEditorRestTest extends WP_UnitTestCase {
 		do_action( 'rest_api_init' );
 	}
 
-	/** Clean fixtures committed by registry / approval transactions. */
+	/** Clean fixtures committed by registry / approval / invite transactions. */
 	public function tear_down(): void {
 		global $wpdb;
 		bfc_test_purge_courses();
 		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_course_registry" ); // phpcs:ignore WordPress.DB -- Isolated fixture.
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_invite_codes" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}bfc_enrollments" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
 		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB -- Registry transactions commit.
 		global $wp_rest_server;
 		$wp_rest_server = null;
@@ -191,5 +202,138 @@ class CourseEditorRestTest extends WP_UnitTestCase {
 		$data = $response->get_data();
 		$this->assertFalse( $data['can_approve'] );
 		$this->assertFalse( $data['approved'] );
+	}
+
+	/**
+	 * Publish a course for enrollment fixtures (bypasses publication gates).
+	 *
+	 * @param string $code Unique BFC code.
+	 */
+	private function published_course( string $code = 'BFC-220' ): int {
+		$id = $this->course( $code );
+		update_post_meta( $id, 'catalog_state', 'published' );
+		global $wpdb;
+		$wpdb->update( // phpcs:ignore WordPress.DB -- Bypass publication guards for enrollment fixtures.
+			$wpdb->posts,
+			array( 'post_status' => 'publish' ),
+			array( 'ID' => $id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+		clean_post_cache( $id );
+		$this->assertSame( 'publish', get_post_status( $id ) );
+		return $id;
+	}
+
+	/** Create returns plaintext once; list omits code_hash; revoke clears the invite. */
+	public function test_course_invite_create_list_and_revoke(): void {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+		$id = $this->course( 'BFC-221' );
+
+		$empty = $this->dispatch( 'GET', '/courses/' . $id . '/invites' );
+		$this->assertSame( 200, $empty->get_status() );
+		$empty_data = $empty->get_data();
+		$this->assertIsArray( $empty_data );
+		$this->assertArrayHasKey( 'invites', $empty_data );
+		$this->assertSame( array(), $empty_data['invites'] );
+
+		$create = $this->dispatch(
+			'POST',
+			'/courses/' . $id . '/invites',
+			array(
+				'label' => 'Sidebar batch',
+				'kind'  => 'multi',
+			)
+		);
+		$this->assertSame( 201, $create->get_status() );
+		$created = $create->get_data();
+		$this->assertIsArray( $created );
+		$this->assertArrayHasKey( 'id', $created );
+		$this->assertArrayHasKey( 'plaintext', $created );
+		$this->assertIsInt( $created['id'] );
+		$this->assertNotEmpty( $created['plaintext'] );
+		$this->assertArrayNotHasKey( 'code_hash', $created );
+
+		$list = $this->dispatch( 'GET', '/courses/' . $id . '/invites' );
+		$this->assertSame( 200, $list->get_status() );
+		$list_data = $list->get_data();
+		$this->assertCount( 1, $list_data['invites'] );
+		$row = $list_data['invites'][0];
+		$this->assertSame( $created['id'], (int) $row['id'] );
+		$this->assertSame( 'Sidebar batch', $row['label'] );
+		$this->assertSame( 'multi', $row['kind'] );
+		$this->assertArrayNotHasKey( 'code_hash', $row );
+		$this->assertArrayNotHasKey( 'plaintext', $row );
+
+		$revoke = $this->dispatch( 'DELETE', '/invites/' . $created['id'] );
+		$this->assertSame( 200, $revoke->get_status() );
+		$revoked = $revoke->get_data();
+		$this->assertTrue( $revoked['revoked'] );
+
+		$list_after = $this->dispatch( 'GET', '/courses/' . $id . '/invites' );
+		$this->assertSame( 200, $list_after->get_status() );
+		$after_row = $list_after->get_data()['invites'][0];
+		$this->assertNotEmpty( $after_row['revoked_at'] );
+	}
+
+	/** Course invite and enrollment routes require enroll_bfc_courses. */
+	public function test_invite_and_enrollment_routes_require_enroll_cap(): void {
+		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor );
+		$id = $this->course( 'BFC-222' );
+
+		foreach (
+			array(
+				array( 'GET', '/courses/' . $id . '/invites' ),
+				array( 'POST', '/courses/' . $id . '/invites' ),
+				array( 'GET', '/courses/' . $id . '/enrollments' ),
+			) as $call
+		) {
+			$body     = 'POST' === $call[0]
+				? array(
+					'label' => 'x',
+					'kind'  => 'once',
+				)
+				: array();
+			$response = $this->dispatch( $call[0], $call[1], $body );
+			$this->assertSame( 403, $response->get_status(), $call[0] . ' ' . $call[1] );
+		}
+	}
+
+	/** Enrollments list is empty then includes the learner after admin_enroll. */
+	public function test_enrollments_list_empty_then_after_admin_enroll(): void {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+		$course_id = $this->published_course( 'BFC-223' );
+		$learner   = self::factory()->user->create(
+			array(
+				'role'         => 'subscriber',
+				'display_name' => 'Sidebar Learner',
+			)
+		);
+
+		$empty = $this->dispatch( 'GET', '/courses/' . $course_id . '/enrollments' );
+		$this->assertSame( 200, $empty->get_status() );
+		$empty_data = $empty->get_data();
+		$this->assertIsArray( $empty_data );
+		$this->assertArrayHasKey( 'enrollments', $empty_data );
+		$this->assertSame( array(), $empty_data['enrollments'] );
+
+		$result = ( new EnrollmentService() )->admin_enroll( $admin, $learner, $course_id );
+		$this->assertTrue( $result );
+
+		$list = $this->dispatch( 'GET', '/courses/' . $course_id . '/enrollments' );
+		$this->assertSame( 200, $list->get_status() );
+		$rows = $list->get_data()['enrollments'];
+		$this->assertCount( 1, $rows );
+		$row = $rows[0];
+		$this->assertSame( $learner, (int) $row['user_id'] );
+		$this->assertSame( 'Sidebar Learner', $row['display_name'] );
+		$this->assertSame( 'active', $row['status'] );
+		$this->assertSame( 'admin', $row['source'] );
+		$this->assertNotEmpty( $row['enrolled_at'] );
+		$this->assertNull( $row['quiz_passed_at'] );
+		$this->assertNull( $row['completed_at'] );
 	}
 }
