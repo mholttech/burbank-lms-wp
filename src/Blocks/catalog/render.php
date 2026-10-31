@@ -15,6 +15,7 @@ use Burbank_LMS\Enrollment\Service as Enrollment_Service;
 use Burbank_LMS\Learner\Block_Context;
 use Burbank_LMS\Learner\Catalog;
 use Burbank_LMS\Learner\Presentation;
+use Burbank_LMS\Learner\Shell;
 use Burbank_LMS\Learner\Soft_Gate;
 
 $user_id = get_current_user_id();
@@ -27,6 +28,14 @@ if ( $gate->should_block( $user_id ) ) {
 	);
 	return;
 }
+
+$shell  = new Shell();
+$chrome = $shell->render_chrome(
+	array(
+		'current' => 'catalog',
+	)
+);
+echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
 $courses      = ( new Catalog() )->query();
 $can_learn    = $user_id > 0 && ( new Learner() )->can_learn( $user_id );

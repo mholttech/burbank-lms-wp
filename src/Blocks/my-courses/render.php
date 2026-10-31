@@ -10,6 +10,7 @@
  */
 
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Shell;
 use Burbank_LMS\Learner\Soft_Gate;
 
 $user_id = get_current_user_id();
@@ -22,6 +23,14 @@ if ( $gate->should_block( $user_id ) ) {
 	);
 	return;
 }
+
+$shell  = new Shell();
+$chrome = $shell->render_chrome(
+	array(
+		'current' => 'my-courses',
+	)
+);
+echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
 $wrapper = get_block_wrapper_attributes(
 	array(

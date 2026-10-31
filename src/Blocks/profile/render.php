@@ -11,6 +11,7 @@
 
 use Burbank_LMS\Access\Profile;
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Shell;
 use Burbank_LMS\Learner\Soft_Gate;
 
 $user_id = get_current_user_id();
@@ -23,6 +24,14 @@ if ( $gate->should_block( $user_id ) ) {
 	);
 	return;
 }
+
+$shell  = new Shell();
+$chrome = $shell->render_chrome(
+	array(
+		'current' => 'profile',
+	)
+);
+echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
 $user       = wp_get_current_user();
 $legal_name = ( new Profile() )->get_legal_name( (int) $user->ID );

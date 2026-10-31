@@ -188,4 +188,30 @@ class LearnerShellTest extends WP_UnitTestCase {
 		$this->assertIsArray( $continue );
 		$this->assertStringContainsString( '#bfc-course-quiz', $continue['url'] );
 	}
+
+	/** Catalog then course as learner yields exactly one shell when outputs are concatenated. */
+	public function test_learner_blocks_print_chrome_once_when_concatenated(): void {
+		$user_id   = $this->verified_learner( 'shell-blocks@example.com' );
+		$course_id = $this->published_course();
+		wp_set_current_user( $user_id );
+
+		$catalog  = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
+		$course   = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
+		$combined = $catalog . $course;
+
+		$this->assertSame( 1, substr_count( $combined, 'class="bfc-shell"' ) );
+		$this->assertStringContainsString( 'bfc-shell', $catalog );
+		$this->assertStringNotContainsString( 'bfc-shell', $course );
+	}
+
+	/** Soft-gated guests and the register block never receive shell chrome. */
+	public function test_soft_gate_and_register_omit_shell(): void {
+		wp_set_current_user( 0 );
+		$catalog = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
+		$this->assertStringContainsString( 'bfc-soft-gate', $catalog );
+		$this->assertStringNotContainsString( 'bfc-shell', $catalog );
+
+		$register = do_blocks( '<!-- wp:burbank-lms/register /-->' );
+		$this->assertStringNotContainsString( 'bfc-shell', $register );
+	}
 }

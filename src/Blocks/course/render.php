@@ -14,6 +14,7 @@ use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
 use Burbank_LMS\Learner\Block_Context;
 use Burbank_LMS\Learner\Presentation;
+use Burbank_LMS\Learner\Shell;
 use Burbank_LMS\Learner\Soft_Gate;
 
 $course_id = isset( $attributes['courseId'] ) ? absint( $attributes['courseId'] ) : 0;
@@ -40,6 +41,15 @@ if ( $gate->should_block( $user_id ) ) {
 	);
 	return;
 }
+
+$shell  = new Shell();
+$chrome = $shell->render_chrome(
+	array(
+		'current'   => 'course',
+		'course_id' => $course_id,
+	)
+);
+echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
 $can_learn    = $user_id > 0 && ( new Learner() )->can_learn( $user_id );
 $restricted   = ( new Invites() )->course_has_active_invites( $course_id );
@@ -95,7 +105,7 @@ $wrapper      = get_block_wrapper_attributes(
 			<?php endif; ?>
 		</div>
 	<?php elseif ( ! $active && $can_learn && $restricted ) : ?>
-		<form class="bfc-course__invite-form" novalidate>
+		<form id="bfc-course-enroll" class="bfc-course__invite-form" novalidate>
 			<p class="bfc-course__field">
 				<label for="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>"><?php esc_html_e( 'Course invite code', 'burbank-lms' ); ?></label>
 				<input id="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>" name="course_invite" type="text" required autocomplete="off">
@@ -105,7 +115,7 @@ $wrapper      = get_block_wrapper_attributes(
 			</p>
 		</form>
 	<?php elseif ( ! $active && $can_learn ) : ?>
-		<p class="bfc-course__actions">
+		<p id="bfc-course-enroll" class="bfc-course__actions">
 			<button type="button" class="bfc-course__enroll wp-element-button" data-bfc-enroll="<?php echo esc_attr( (string) $course_id ); ?>">
 				<?php esc_html_e( 'Enroll', 'burbank-lms' ); ?>
 			</button>
