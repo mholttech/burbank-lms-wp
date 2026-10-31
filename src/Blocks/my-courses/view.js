@@ -1,11 +1,14 @@
 /**
  * My Courses list + withdraw via burbank-lms/v1 enrollments REST.
+ * Catalog CTA and certificate history are server-rendered in render.php.
  */
 
 function parseConfig( root ) {
 	try {
-		return JSON.parse( root.getAttribute( 'data-bfc-rest-config' ) || '{}' );
-	} catch ( error ) {
+		return JSON.parse(
+			root.getAttribute( 'data-bfc-rest-config' ) || '{}'
+		);
+	} catch {
 		return {};
 	}
 }
@@ -33,14 +36,14 @@ function statusLabel( status ) {
 }
 
 document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
-	const config = parseConfig( root );
-	const loading = root.querySelector( '[data-bfc-loading]' );
 	const list = root.querySelector( '[data-bfc-list]' );
-	const empty = root.querySelector( '[data-bfc-empty]' );
-	const status = root.querySelector( '[data-bfc-status]' );
 	if ( ! list ) {
 		return;
 	}
+	const config = parseConfig( root );
+	const loading = root.querySelector( '[data-bfc-loading]' );
+	const empty = root.querySelector( '[data-bfc-empty]' );
+	const status = root.querySelector( '[data-bfc-status]' );
 
 	const render = ( enrollments ) => {
 		list.replaceChildren();
@@ -60,7 +63,9 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 			li.className = 'bfc-my-courses__item';
 			li.dataset.courseId = String( item.course_id );
 
-			const title = document.createElement( item.permalink ? 'a' : 'span' );
+			const title = document.createElement(
+				item.permalink ? 'a' : 'span'
+			);
 			title.className = 'bfc-my-courses__title';
 			title.textContent = item.title || `Course #${ item.course_id }`;
 			if ( item.permalink ) {
@@ -106,7 +111,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 						}
 						badge.textContent = 'Withdrawn';
 						withdraw.remove();
-					} catch ( error ) {
+					} catch {
 						setStatus(
 							status,
 							'Withdraw failed. Please try again.',
@@ -144,7 +149,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 				return;
 			}
 			render( payload.enrollments || [] );
-		} catch ( error ) {
+		} catch {
 			if ( loading ) {
 				loading.hidden = true;
 			}
