@@ -21,7 +21,8 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Learner REST register / enroll / withdraw | `REST\Controller` (`burbank-lms/v1`) |
 | Lifecycle emails | `Mail\Mailer` |
 | Optional PressPrimer chrome branding | `Branding\PressPrimer` |
-| Quiz / certificate adapters | `Integrations\PressPrimer_Quiz`, `Integrations\PressPrimer_Certificate` |
+| Quiz / certificate adapters and course chrome | `Integrations\PressPrimer_Quiz`, `Integrations\PressPrimer_Certificate` |
+| PressPrimer front-end skin (CSS enqueue) | `Integrations\PressPrimer_Assets` |
 
 All hooks register through `Loader` in `src/Burbank_LMS.php`. Invite and enrollment tables survive uninstall (Phase 1 `Uninstallor` remains a no-op).
 
@@ -153,22 +154,50 @@ Does not proxy PressPrimer attempt APIs. Service `WP_Error` codes map to REST re
 
 ## Blocks and FSE
 
+The `bfc_course` CPT is public with `has_archive` and archive slug **`courses`** (`Courses\Schema`), so the catalog lives at `/courses/` (pretty permalinks). My Courses and empty-state CTAs use `get_post_type_archive_link( 'bfc_course' )`.
+
+### Composition
+
+| Layer | Responsibility |
+| --- | --- |
+| **Plugin fallback** | `Learner\Templates` registers `burbank-lms//archive-bfc_course` and `burbank-lms//single-bfc_course` so any block theme gets working course routes without custom templates. |
+| **Theme (optional)** | Thin FSE shells (header/footer template parts, learner page patterns for `/register/`, `/my-courses/`, `/profile/`) compose the same blocks; the plugin does not create WordPress pages. |
+
+**Archive fallback:** constrained group → “Course catalog” heading → `burbank-lms/catalog`.
+
+**Single fallback:** post title (H1) → featured image → **post content** (course materials) → `burbank-lms/course` (meta, enrollment status, actions, in-page quiz region). Theme `single-bfc_course` templates should mirror that block order.
+
+Quiz taking stays in PressPrimer’s player; the course block embeds `[pressprimer_quiz]` in `#bfc-course-quiz` only when the learner is actively enrolled.
+
+### Blocks
+
 | Block | Role |
 | --- | --- |
-| `burbank-lms/register` | Site invite + legal name + email/password/display name |
+| `burbank-lms/register` | Site invite + legal name + email/password/display name; success copy tells the learner they can sign in (no email-verification step). |
 | `burbank-lms/profile` | Display name / email / password; read-only legal name |
-| `burbank-lms/catalog` | Published, non-archived courses; enroll CTAs when `can_learn` |
-| `burbank-lms/course` | Summary; open enroll or course-invite field; quiz link when enrolled |
+| `burbank-lms/catalog` | Published, non-archived courses; client-side **search** (title + BFC code) and **subject** filter from distinct `subject_category` on the rendered list; status chips and enroll CTAs when `can_learn` |
+| `burbank-lms/course` | BFC meta row, enrollment status, enroll / invite actions; primary quiz CTA scrolls to `#bfc-course-quiz` when enrolled |
 | `burbank-lms/enroll` | Standalone enroll / course-invite redeem |
-| `burbank-lms/my-courses` | Learner enrollments (`active` / `passed` / `completed`) |
+| `burbank-lms/my-courses` | REST-driven enrollments; catalog archive CTA; embeds `[ppcert_my_certificates]` when PressPrimer Certificate registers that shortcode |
 
-`Learner\Templates` registers `archive-bfc_course` and `single-bfc_course` so FSE works without hand-placing blocks. Quiz taking stays in PressPrimer’s player.
+### Quiz course chrome (mapped quizzes only)
+
+`Integrations\PressPrimer_Quiz` prints `.bfc-quiz-chrome` (back link to the mapped course + enrollment status label) on PressPrimer hooks:
+
+- `pressprimer_quiz_before_quiz_meta`
+- `pressprimer_quiz_before_results` / `pressprimer_quiz_after_results`
+
+Unmapped quizzes get no chrome. `demote_quiz_title` on `render_block_pressprimer-quiz/quiz` rewrites `.ppq-quiz-title` H1 → H2 so the course page keeps a single H1. Hook contracts: [pressprimer-compatibility.md](pressprimer-compatibility.md).
 
 ## Mail and branding
 
-`Mail\Mailer` sends filterable `wp_mail` messages for welcome (on `burbank_lms_access_granted`), enrollment confirmation (on `burbank_lms_enrolled`), and completion (on `burbank_lms_course_completed`). Subject/message/headers filters are namespaced `burbank_lms_*_email_*`.
+`Mail\Mailer` sends filterable `wp_mail` messages for welcome (on `burbank_lms_access_granted`), enrollment confirmation (on `burbank_lms_enrolled`), and completion (on `burbank_lms_course_completed`). Subject/message/headers filters are namespaced `burbank_lms_*_email_*`. Registration grants training access immediately; there is no verification email or “check your inbox” step in the Register block or welcome flow.
 
-Optional branding: set option `burbank_lms_brand_pressprimer` to a truthy value. `Branding\PressPrimer` then overrides PressPrimer `plugin_name` / dashboard logo (and quiz shell branding) filters with Burbank-facing labels. Certificate upsell and mascot filters are not implemented.
+### PressPrimer visual skin (plugin-owned)
+
+Token-mapped PressPrimer Quiz/Certificate CSS is compiled to `build/burbank-lms-pressprimer.css` and enqueued by `Integrations\PressPrimer_Assets` on learner surfaces: `bfc_course` singular/archive, pages containing `burbank-lms/course` or `burbank-lms/my-courses`, and (on singular views) when PressPrimer Quiz or Certificate plugins are present. Variables map to `--wp--preset--color-*` with optional CERT theme vars (`--bc-surface-*`, `html[data-bc-theme]`) when defined. **CERT and other block themes should not enqueue a separate PressPrimer skin** once this plugin build is deployed; the plugin remains usable without a custom theme.
+
+Optional **labels/branding:** set option `burbank_lms_brand_pressprimer` to a truthy value. `Branding\PressPrimer` then overrides PressPrimer `plugin_name` / dashboard logo (and quiz shell branding) filters with Burbank-facing labels. Certificate upsell and mascot filters are not implemented.
 
 ## Capabilities
 
