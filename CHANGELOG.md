@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.3...burbank-lms-v1.3.0) (2026-10-31)
+
+
+### Features
+
+* **learner:** FSE UI polish, quiz chrome, and PressPrimer skinning ([#20](https://github.com/mholttech/burbank-lms-wp/issues/20)) ([48b8998](https://github.com/mholttech/burbank-lms-wp/commit/48b8998377b22e6a5ea24454f661f2cbecb06aee))
+
 ## [1.2.3](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.2...burbank-lms-v1.2.3) (2026-10-31)
 
 
