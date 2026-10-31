@@ -8,6 +8,8 @@ import { __ } from '@wordpress/i18n';
 
 import ApprovalPanel from './panels/approval';
 import DetailsPanel from './panels/details';
+import EnrollmentsPanel from './panels/enrollments';
+import InvitesPanel from './panels/invites';
 
 export const PLUGIN_NAME = 'burbank-lms-course';
 export const SIDEBAR_NAME = 'course';
@@ -50,12 +52,16 @@ export default function CourseSidebar() {
 					title={ __( 'Invites', 'burbank-lms' ) }
 					initialOpen={ false }
 					className="burbank-lms-course-sidebar__panel"
-				/>
+				>
+					<InvitesPanel />
+				</PanelBody>
 				<PanelBody
 					title={ __( 'Enrollments', 'burbank-lms' ) }
 					initialOpen={ false }
 					className="burbank-lms-course-sidebar__panel"
-				/>
+				>
+					<EnrollmentsPanel />
+				</PanelBody>
 			</PluginSidebar>
 		</>
 	);
