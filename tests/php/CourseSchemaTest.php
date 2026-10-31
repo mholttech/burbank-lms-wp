@@ -27,6 +27,8 @@ class CourseSchemaTest extends WP_UnitTestCase {
 		$type = get_post_type_object( 'bfc_course' );
 		$this->assertNotNull( $type );
 		$this->assertTrue( $type->show_in_rest );
+		$this->assertNotFalse( $type->has_archive );
+		$this->assertIsString( get_post_type_archive_link( 'bfc_course' ) );
 		foreach ( array( 'title', 'editor', 'excerpt', 'thumbnail', 'revisions', 'custom-fields' ) as $feature ) {
 			$this->assertTrue( post_type_supports( 'bfc_course', $feature ), $feature );
 		}

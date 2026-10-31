@@ -13,10 +13,9 @@ class MyCoursesBlockTest extends WP_UnitTestCase {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $user_id );
 
-		// Pods-provisioned bfc_course may omit has_archive; enable it so the archive link resolves.
 		$type = get_post_type_object( 'bfc_course' );
 		$this->assertNotNull( $type );
-		$type->has_archive = true;
+		$this->assertNotFalse( $type->has_archive );
 
 		$archive = get_post_type_archive_link( 'bfc_course' );
 		$this->assertIsString( $archive );

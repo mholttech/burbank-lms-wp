@@ -10,7 +10,7 @@ namespace Burbank_LMS\Courses;
 /** Provisions the course definition through the required Pods API. */
 class Schema {
 	public const VERSION_OPTION = 'burbank_lms_course_schema_version';
-	private const VERSION       = 1;
+	private const VERSION       = 2;
 
 	/** UI-only Pods field presentation (pick sources, limits, help text). */
 	public const EDITORIAL_UI_OPTION   = 'burbank_lms_course_editorial_ui_version';
@@ -81,6 +81,8 @@ class Schema {
 				'public'                 => true,
 				'show_ui'                => true,
 				'rest_enable'            => true,
+				'has_archive'            => true,
+				'has_archive_slug'       => 'courses',
 				'capability_type'        => 'custom',
 				'capability_type_custom' => 'bfc_course',
 				'capability_type_extra'  => true,
