@@ -3,6 +3,92 @@
  * included in this file.
  */
 
+:root {
+	--bfc-control-bg: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--bfc-control-text: var(--wp--preset--color--content-text, #1c1f23);
+	--bfc-control-border: var(--wp--preset--color--content-border, #c3c4c7);
+	--bfc-radius: 6px;
+}
+
+html[data-bc-theme="dark"] {
+	--bfc-control-bg: var(--bc-surface-card, #292c2a);
+	--bfc-control-text: var(--wp--preset--color--content-text, #f6f8fc);
+	--bfc-control-border: var(--wp--preset--color--content-border, #414b45);
+}
+
+.bfc-catalog,
+.bfc-course,
+.bfc-profile,
+.bfc-register,
+.bfc-my-courses,
+.bfc-soft-gate,
+.bfc-shell {
+	input[type="text"],
+	input[type="email"],
+	input[type="password"],
+	input[type="search"],
+	select,
+	textarea {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 46px;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--bfc-control-border);
+		border-radius: var(--bfc-radius);
+		background: var(--bfc-control-bg);
+		color: var(--bfc-control-text);
+	}
+}
+
+.bfc-shell {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem 1.25rem;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0 0 1.25rem;
+	padding: 0.75rem 0;
+	border-bottom: 1px solid var(--bfc-control-border);
+
+	&__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem 1rem;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	&__link.is-current {
+		font-weight: 600;
+		text-decoration: underline;
+	}
+
+	&__mobile {
+		display: none;
+	}
+
+	@media (max-width: 781px) {
+		&__desktop {
+			display: none;
+		}
+		&__mobile {
+			display: block;
+			width: 100%;
+		}
+	}
+}
+
+.bfc-soft-gate {
+	display: grid;
+	gap: 0.75rem;
+	max-width: 36rem;
+	padding: clamp(1rem, 2vw, 1.5rem);
+	border: 1px solid var(--bfc-control-border);
+	border-radius: var(--bfc-radius);
+	background: var(--bfc-control-bg);
+}
+
 .bfc-quiz-chrome {
 	display: grid;
 	gap: 0.5rem;
