@@ -14,10 +14,12 @@ Phase 1 supplies authoring, approval and admin list controls only. It creates no
 | Field validation and write guards on every save path | `Burbank_LMS\Courses\Validator` |
 | Publication gates | `Burbank_LMS\Courses\Publication` |
 | Approval, material revisions, snapshots, archive, delete guard | `Burbank_LMS\Courses\Editorial` |
-| Meta box, admin actions, list columns, notices | `Burbank_LMS\Courses\Admin` |
+| Block-editor Course sidebar enqueue, localize, hide Pods field UI | `Burbank_LMS\Courses\Editor` |
+| List columns, editorial dispatch (tests / non-editor callers) | `Burbank_LMS\Courses\Admin` |
+| Admin REST: editorial, course invites, enrollments list | `Burbank_LMS\REST\Admin_Controller` |
 | PressPrimer contract checks | `Burbank_LMS\Integrations\PressPrimer` |
 
-All hooks are registered through `Loader` in `src/Burbank_LMS.php`.
+All hooks are registered through `Loader` in `src/Burbank_LMS.php`. Course authoring is **block editor only**; there is no classic-editor course panel.
 
 ## Pods provisioning and schema ownership
 
@@ -79,7 +81,7 @@ To make another user an approver, grant `approve_bfc_courses` to that user or ro
 | `approved_at` | text (audit) | 32 | set by approval | — |
 | `approval_notes` | paragraph (audit) | 2000 | no | — |
 
-Limits are `Validator::LIMITS` and count characters, not bytes. Pods enforces them in the field UI, and `Validator` enforces them on every write path.
+Limits are `Validator::LIMITS` and count characters, not bytes. The Course sidebar Details panel and Pods field definitions share the same limits; `Validator` enforces them on every write path.
 
 Value rules:
 
@@ -87,11 +89,11 @@ Value rules:
 - `subject_category`: must match the first digit of the code (`Validator::SUBJECTS`): 1 `program_administration_membership`, 2 `safety_field_awareness`, 3 `communications`, 4 `field_operations_documentation`, 5 `rehabilitation_logistics`, 6 `incident_management_coordination`, 7 `leadership_program_operations`, 8 `community_engagement_public_education`, 9 `reserved`.
 - `course_outcome`: only `independent_study`.
 - `catalog_state`: `draft`, `published` or `archived`. WordPress post status controls publication. This field controls catalog visibility (learner catalog and enroll CTAs honor it; see [learner-access.md](learner-access.md)).
-- `matrix_requirement_slug`: optional slug of a theme-owned `bc_requirement` post. When the `bc_requirement` post type exists and the slug is non-empty, **publication** soft-checks that a published requirement with that `post_name` exists (`Publication::validate` → `burbank_course_matrix_requirement`). When the type is absent, or the slug is empty, the check is skipped so a missing matrix never blocks drafts, enroll, quiz, or certificate paths. Pods exposes a pick of published requirements when the type exists, otherwise a plain text field. The slug is stored as text (never a post ID).
+- `matrix_requirement_slug`: optional slug of a theme-owned `bc_requirement` post. When the `bc_requirement` post type exists and the slug is non-empty, **publication** soft-checks that a published requirement with that `post_name` exists (`Publication::validate` → `burbank_course_matrix_requirement`). When the type is absent, or the slug is empty, the check is skipped so a missing matrix never blocks drafts, enroll, quiz, or certificate paths. The Course sidebar exposes a select of published requirements when the type exists, otherwise a text control. The slug is stored as text (never a post ID).
 
 **Assessed fields** are `Validator::PUBLISHED_GATES`: code, revision, subject, outcome, quiz and certificate template. Changing any of them invalidates approval. All other fields, plus the title, body, excerpt and image, are editorial and keep the current approval.
 
-**Audit fields** (`approved_by`, `approved_at`, `approval_notes`) are hidden in the Pods UI and blocked for Pods, `meta_input` and direct metadata writes. Over REST they are read-only: values submitted in `meta` are ignored rather than rejected, so clients can echo the course they fetched. Only the approval workflow writes them. `approval_notes` is reserved: nothing in Phase 1 writes or displays it.
+**Audit fields** (`approved_by`, `approved_at`, `approval_notes`) are not editable in the Course sidebar and are blocked for Pods, `meta_input` and direct metadata writes. Over REST they are read-only: values submitted in `meta` are ignored rather than rejected, so clients can echo the course they fetched. Only the approval workflow writes them. `approval_notes` is reserved: nothing in Phase 1 writes or displays it.
 
 ### Write paths covered
 
@@ -107,7 +109,7 @@ Drafts may be incomplete. Every value that is present must still be valid.
 
 ### 2. Approve
 
-A Training Administrator approves the **saved** course with **Approve saved course** in the *Course approval and history* meta box. Approval:
+A Training Administrator approves the **saved** course with **Approve saved course** in the Course sidebar Approval panel (or via `POST /burbank-lms/v1/courses/{id}/approve`). Approval:
 
 1. Requires `approve_bfc_courses` and `edit_post` on the course, and a saved course that is not an auto-draft or in the trash.
 2. Runs the full publication candidate check: complete valid metadata, identity availability, the PressPrimer mapping and a unique quiz assignment. Approval itself is not required for this check.
@@ -115,7 +117,7 @@ A Training Administrator approves the **saved** course with **Approve saved cour
 4. Does nothing (and succeeds) when the current configuration already matches the latest snapshot and its approver still holds `approve_bfc_courses`.
 5. Otherwise appends an immutable snapshot and writes `approved_by`/`approved_at` in one database transaction. If any step fails, the transaction is rolled back and the earlier approval stays in place.
 
-Save edits before approving. The meta box acts on the stored course, not on unsaved editor state.
+Save edits before approving. Approval and other action panels operate on the **stored** course, not on unsaved editor state.
 
 ### 3. Publish
 
@@ -157,7 +159,7 @@ Within a course, a revision label stands for exactly one assessed configuration 
 
 Snapshots are stored as repeated `_bfc_approval_snapshot` post meta rows, in append order. Each row records `title`, `bfc_code`, `course_revision`, `subject_category`, `course_outcome`, `pressprimer_quiz_id`, `certificate_template_id`, `approved_by` and `approved_at` (UTC). They describe the course configuration that was approved, not learner completions, so later title or mapping changes do not alter which configuration a past credential belongs to.
 
-Snapshot rows cannot be updated, deleted or renamed through any metadata API, including bulk and by-ID operations. Only `approve()` can append them. Read them with `( new Editorial() )->snapshots( $course_id )`. The meta box lists them under *Approval history*.
+Snapshot rows cannot be updated, deleted or renamed through any metadata API, including bulk and by-ID operations. Only `approve()` can append them. Read them with `( new Editorial() )->snapshots( $course_id )` or `GET /burbank-lms/v1/courses/{id}/editorial`. The Course sidebar Approval panel lists them under *Approval history*.
 
 ## Permanent BFC reservations
 
@@ -171,9 +173,9 @@ Snapshot rows cannot be updated, deleted or renamed through any metadata API, in
 
 ## Archive and retirement
 
-Archiving is the supported way to retire a course. **Archive** in the meta box, or setting `catalog_state` to `archived`, keeps the post status, BFC reservation, approval evidence and snapshots, and it works even when a PressPrimer dependency is unhealthy. Archived courses still count for quiz-assignment and code uniqueness. Learner catalog and new enrollments honor `catalog_state` (see [learner-access.md](learner-access.md)); existing active enrollments may finish unless withdrawn.
+Archiving is the supported way to retire a course. **Archive** in the Course sidebar Approval panel (`POST /burbank-lms/v1/courses/{id}/archive`), or setting `catalog_state` to `archived` in Details / post meta, keeps the post status, BFC reservation, approval evidence and snapshots, and it works even when a PressPrimer dependency is unhealthy. Archived courses still count for quiz-assignment and code uniqueness. Learner catalog and new enrollments honor `catalog_state` (see [learner-access.md](learner-access.md)); existing active enrollments may finish unless withdrawn.
 
-`catalog_state` is not assessed, so an editor can un-archive a course by setting it back to `published` or `draft` through the Pods field or REST. Doing so does not require re-approval.
+`catalog_state` is not assessed, so an editor can un-archive a course by setting it back to `published` or `draft` through the Course sidebar Details panel or REST meta. Doing so does not require re-approval.
 
 ### Deletion
 
@@ -201,17 +203,40 @@ How each surface reports a failure:
 
 Assessed-field edits to an already published course are checked against the candidate configuration before they are stored. Archiving and other non-assessed edits stay possible when dependencies fail.
 
-## Admin controls
+## Course editor (block editor)
 
-The *Course approval and history* side meta box (block editor compatible) shows:
+Course authoring uses the Gutenberg block editor only. On `bfc_course` screens, `Courses\Editor` enqueues the dedicated webpack entry `burbank-lms-course-editor` (not site-wide) and localizes picks, enums, and capability flags as `window.burbankLmsCourseEditor`. Pods still owns the CPT, field definitions, and meta storage, but its “More Fields” / course field meta boxes are removed from the editor (`pods-meta-more-fields`, defensive `pods-meta-bfc_course`) so authors do not fill fields that never reach the REST save path.
 
-- the current approval state;
-- **Approve saved course** (approvers only);
-- **New revision** text field and **Start material revision**;
-- **Archive**;
-- the approval history.
+A single Course `PluginSidebar` (`burbank-lms-course/course`) auto-opens on edit (the author may close it) with four panels:
 
-Actions post to `admin-post.php?action=bfc_course_editorial` through two separate forms printed in the admin footer, so they never nest inside the post form. Pressing Enter in the revision field starts a revision and cannot submit an approval. Each action carries its own nonce, `bfc_course_{approve|revision|archive}_{ID}`. An expired or missing nonce, or a missing capability, ends with HTTP 403. Other results redirect back to the editor with a one-time success or error notice. The services check permissions again regardless of which form submitted them.
+| Panel | Role |
+| --- | --- |
+| **Details** | Editable course meta via `useEntityProp( 'postType', 'bfc_course', 'meta' )`: `bfc_code`, `course_revision`, `subject_category`, `course_outcome`, `pressprimer_quiz_id`, `certificate_template_id`, `matrix_requirement_slug`, `catalog_state`, `source_revision`. Values save and publish with the normal block-editor post REST request. Server validation and publication gates remain authoritative. |
+| **Approval** | Approval status, **Approve saved course** (`approve_bfc_courses`), new revision label + **Start material revision**, **Archive**, collapsible approval history. Hydrates and mutates through admin REST against the **saved** course. |
+| **Invites** | Create / list / revoke course invites (`enroll_bfc_courses`). Plaintext token shown once on create. See [learner-access.md](learner-access.md). |
+| **Enrollments** | Admin enroll by user ID (existing `POST /enrollments/admin`) and a compact scrollable list of enrollments for the course. |
+
+Action panels show in-panel notices and a “Save a draft first” state when the post is an auto-draft or has no stable ID. They do not use `admin-post` redirects.
+
+### Admin REST (`burbank-lms/v1`)
+
+`REST\Admin_Controller` wraps `Editorial`, `Invites`, and the enrollment repository. Cookie + REST nonce auth; permission callbacks mirror edit / approve / enroll caps. Service `WP_Error` codes map to REST responses the same way as the learner controller.
+
+| Method / route | Behavior |
+| --- | --- |
+| `GET /courses/{id}/editorial` | Approval state + snapshots for panel hydrate |
+| `POST /courses/{id}/approve` | `Editorial::approve` |
+| `POST /courses/{id}/revision` | `Editorial::start_revision` (body: `revision`) |
+| `POST /courses/{id}/archive` | `Editorial::archive` |
+| `GET /courses/{id}/invites` | List course invites |
+| `POST /courses/{id}/invites` | Create course invite |
+| `DELETE /invites/{id}` | Revoke invite |
+| `GET /courses/{id}/enrollments` | List enrollments for the course |
+| `POST /enrollments/admin` | Admin enroll (learner `REST\Controller`; unchanged contract) |
+
+Design source for the sidebar: `docs/superpowers/specs/2026-10-30-course-editor-sidebar-design.md`.
+
+### List table
 
 The course list adds **BFC code**, **Revision**, **Catalog state** (an em dash when empty) and **Approval** columns. **Approval** shows *Approved* only when the stored evidence matches the latest snapshot and the approver still holds `approve_bfc_courses`.
 
@@ -223,4 +248,4 @@ The course list adds **BFC code**, **Revision**, **Catalog state** (an em dash w
 
 ## Tests
 
-`tests/php/CourseSchemaTest.php`, `CourseIdentityTest.php`, `CoursePublicationTest.php` and `CourseEditorialTest.php` run against real Pods 3.3.9.2 and the pinned PressPrimer releases in `.wp-env.test.json`. Run them with `npm run test:php`.
+`tests/php/CourseSchemaTest.php`, `CourseIdentityTest.php`, `CoursePublicationTest.php`, `CourseEditorialTest.php`, and `CourseEditorRestTest.php` run against real Pods 3.3.9.2 and the pinned PressPrimer releases in `.wp-env.test.json`. Run them with `npm run test:php`.
