@@ -34,10 +34,21 @@ class CourseSchemaTest extends WP_UnitTestCase {
 		$pod = pods_api()->load_pod( array( 'name' => 'bfc_course' ) );
 		$this->assertSame( 'meta', $pod['storage'] );
 		$registered = get_registered_meta_keys( 'post', 'bfc_course' );
-		foreach ( Schema::FIELDS as $field => $type ) {
+		foreach ( Schema::FIELDS as $field => $field_type ) {
 			$this->assertArrayHasKey( $field, $pod['fields'] );
 			$this->assertArrayHasKey( $field, $registered );
-			$this->assertTrue( $registered[ $field ]['show_in_rest'] );
+			if ( 'number' === $field_type ) {
+				$this->assertSame(
+					array(
+						'schema' => array(
+							'type' => array( 'integer', 'null' ),
+						),
+					),
+					$registered[ $field ]['show_in_rest']
+				);
+			} else {
+				$this->assertTrue( $registered[ $field ]['show_in_rest'] );
+			}
 		}
 	}
 
