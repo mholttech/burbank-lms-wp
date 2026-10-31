@@ -16,7 +16,7 @@
         "php-stubs/wp-cli-stubs": "^2.12",
         "yoast/phpunit-polyfills": "^4.0",
         "wp-coding-standards/wpcs": "^3.4",
-        "phpunit/phpunit": "^9.6"
+        "phpunit/phpunit": "^13.0"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
