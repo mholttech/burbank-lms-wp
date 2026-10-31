@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.1.0...burbank-lms-v1.2.0) (2026-10-31)
+
+
+### Features
+
+* Course editor Gutenberg sidebar for meta and admin panels ([#13](https://github.com/mholttech/burbank-lms-wp/issues/13)) ([7d7f07e](https://github.com/mholttech/burbank-lms-wp/commit/7d7f07e5151a6f74551a3b6e84634a7acb000ba8))
+
+
+### Bug Fixes
+
+* include Strauss vendor-prefixed autoload in release zips ([#12](https://github.com/mholttech/burbank-lms-wp/issues/12)) ([305925b](https://github.com/mholttech/burbank-lms-wp/commit/305925b9efc6b869eff80ea0312b7426b2caafb8))
+* remove Renovate pull request limits ([#9](https://github.com/mholttech/burbank-lms-wp/issues/9)) ([05df9e1](https://github.com/mholttech/burbank-lms-wp/commit/05df9e18de4176ec7c5525077a384620a4e81d7f))
+
 ## [1.1.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.0.0...burbank-lms-v1.1.0) (2026-10-30)
 
 
