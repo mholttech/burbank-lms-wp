@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.1...burbank-lms-v1.2.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* allow any subject category for BFC codes ([#16](https://github.com/mholttech/burbank-lms-wp/issues/16)) ([a2b03d2](https://github.com/mholttech/burbank-lms-wp/commit/a2b03d2385ca274b456d6370660f38b168855eba))
+
 ## [1.2.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.0...burbank-lms-v1.2.1) (2026-10-31)
 
 
