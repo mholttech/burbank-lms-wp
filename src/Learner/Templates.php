@@ -38,25 +38,29 @@ class Templates {
 
 	/** Block markup for the course archive. */
 	private function archive_content(): string {
-		return '<!-- wp:group {"layout":{"type":"constrained"}} -->
+		return '<!-- wp:burbank-lms/shell -->
+<!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group">
 	<!-- wp:heading {"level":1} -->
 	<h1 class="wp-block-heading">' . esc_html__( 'Course catalog', 'burbank-lms' ) . '</h1>
 	<!-- /wp:heading -->
 	<!-- wp:burbank-lms/catalog /-->
 </div>
-<!-- /wp:group -->';
+<!-- /wp:group -->
+<!-- /wp:burbank-lms/shell -->';
 	}
 
 	/** Block markup for a single course. */
 	private function single_content(): string {
-		return '<!-- wp:group {"layout":{"type":"constrained"}} -->
+		return '<!-- wp:burbank-lms/shell -->
+<!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group">
 	<!-- wp:post-title {"level":1} /-->
 	<!-- wp:post-featured-image /-->
 	<!-- wp:post-content /-->
 	<!-- wp:burbank-lms/course /-->
 </div>
-<!-- /wp:group -->';
+<!-- /wp:group -->
+<!-- /wp:burbank-lms/shell -->';
 	}
 }

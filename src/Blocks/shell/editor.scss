@@ -1,0 +1,10 @@
+.bfc-shell-block {
+	border: 1px dashed #949494;
+	padding: 1rem;
+
+	&__hint {
+		margin: 0 0 0.75rem;
+		font-size: 0.9em;
+		opacity: 0.85;
+	}
+}

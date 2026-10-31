@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "burbank-lms/shell",
+	"version": "1.0.0",
+	"title": "Learner Shell",
+	"category": "widgets",
+	"icon": "menu",
+	"description": "Optional training shell chrome for Site Editor composition. Prints once-per-request nav around InnerBlocks.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"]
+	},
+	"textdomain": "burbank-lms",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
