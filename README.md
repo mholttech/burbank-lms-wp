@@ -9,7 +9,7 @@ Burbank LMS provides the course authoring foundation for Burbank CERT Independen
 - A `bfc_course` post type, provisioned through [Pods](https://wordpress.org/plugins/pods/) (required) and edited in Gutenberg.
 - Permanent `BFC-###` course codes that are never reused, with subject ranges and a separate revision field.
 - Training Administrator approval (`approve_bfc_courses`) with immutable approval history, material revisions, and archiving.
-- Publication checks against PressPrimer Quiz 3.1.3 and PressPrimer Certificate 2.0.2. Grading and certificate issuance stay in PressPrimer.
+- Publication checks against PressPrimer Quiz 3.1.3+ and PressPrimer Certificate 2.0.2+. Grading and certificate issuance stay in PressPrimer.
 
 Learner catalog pages, registration and certificate history are not part of this foundation.
 

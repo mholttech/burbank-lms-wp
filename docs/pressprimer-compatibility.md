@@ -4,16 +4,16 @@ Burbank LMS checks a course's PressPrimer quiz and certificate configuration bef
 
 ## Supported releases
 
-| Plugin | Version | Version constant |
+| Plugin | Minimum version | Version constant |
 | --- | --- | --- |
 | PressPrimer Quiz | **3.1.3** | `PRESSPRIMER_QUIZ_VERSION` |
 | PressPrimer Certificate | **2.0.2** | `PPCERT_VERSION` |
 
-Support is exact. Any other version of either plugin, including newer ones such as Certificate 2.1.0, is treated as unsupported. These are the releases the Burbank CERT site pins. To support a new release, inspect its released artifact, update `PressPrimer::QUIZ_VERSION` / `CERTIFICATE_VERSION` and the contract notes in the class docblock, update `.wp-env.test.json`, and rerun the suite.
+Support is a floor, not a pin: installed versions must be at least these minima. Newer releases are allowed when the inspected public contracts still match. Older releases fail closed. If a newer release breaks a contract method (missing, non-static, or different arity), publication still fails until the adapter is updated. The test environment pins the minimum pair in `.wp-env.test.json`.
 
 ## Contracts used
 
-Before any lookup, the adapter checks that both version constants match and that each method below exists and is `public static` with exactly the parameter count shown in its signature:
+Before any lookup, the adapter checks that both version constants meet the minima and that each method below exists and is `public static` with exactly the parameter count shown in its signature:
 
 | Call | Expected behavior in the supported release |
 | --- | --- |
@@ -43,7 +43,7 @@ Each failure has its own code and an actionable message. REST returns them with 
 
 | Code | Cause |
 | --- | --- |
-| `burbank_course_dependencies` | Quiz or Certificate missing, inactive, a different version, or a changed contract. *Activate the supported PressPrimer Quiz 3.1.3 and PressPrimer Certificate 2.0.2 releases before publishing.* No further checks run. |
+| `burbank_course_dependencies` | Quiz or Certificate missing, inactive, older than the minimum versions, or a changed contract. *Activate PressPrimer Quiz 3.1.3 or newer and PressPrimer Certificate 2.0.2 or newer before publishing.* No further checks run. |
 | `burbank_course_quiz` | Quiz missing or not published. |
 | `burbank_course_certificate` | Template missing or not published. |
 | `burbank_course_any_quiz` | An active `ppq_quiz` trigger with `any`, `NULL`, or empty `source_ref` scope. |
