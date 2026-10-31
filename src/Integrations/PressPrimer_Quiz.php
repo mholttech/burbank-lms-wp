@@ -114,7 +114,7 @@ class PressPrimer_Quiz {
 		if ( $user_id < 1 || ! $this->learner()->can_learn( $user_id ) ) {
 			return new \WP_Error(
 				'burbank_quiz_access',
-				__( 'You must verify your email and have training access to take this quiz.', 'burbank-lms' )
+				__( 'You must have training access to take this quiz.', 'burbank-lms' )
 			);
 		}
 		if ( ! $this->enrollment()->get_active( $user_id, $course_id ) ) {

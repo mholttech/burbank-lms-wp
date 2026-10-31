@@ -10,43 +10,6 @@ namespace Burbank_LMS\Mail;
 /** Sends filterable transactional mail via wp_mail. */
 class Mailer {
 	/**
-	 * Send the email-verification message and fire a token action for consumers/tests.
-	 *
-	 * @param int    $user_id User ID.
-	 * @param string $email   Destination address.
-	 * @param string $token   Plaintext verification token.
-	 */
-	public function send_verification_email( int $user_id, string $email, string $token ): bool {
-		$verify_url = $this->verification_url( $user_id, $token );
-		$subject    = apply_filters(
-			'burbank_lms_verification_email_subject',
-			__( 'Verify your Burbank LMS email', 'burbank-lms' ),
-			$user_id
-		);
-		$message    = apply_filters(
-			'burbank_lms_verification_email_message',
-			sprintf(
-				/* translators: %s: clickable verification URL */
-				__( "Please verify your email for Burbank LMS.\n\nVerify your email:\n%s\n", 'burbank-lms' ),
-				$verify_url
-			),
-			$user_id,
-			$token,
-			$verify_url
-		);
-		$headers = apply_filters( 'burbank_lms_verification_email_headers', array(), $user_id );
-		$sent    = wp_mail( $email, $subject, $message, $headers );
-		/**
-		 * Fires after a verification email is attempted.
-		 *
-		 * @param int    $user_id User ID.
-		 * @param string $token   Plaintext verification token.
-		 */
-		do_action( 'burbank_lms_sent_verification_email', $user_id, $token );
-		return (bool) $sent;
-	}
-
-	/**
 	 * Welcome message after training access is granted.
 	 *
 	 * @param int $user_id User ID.
@@ -63,7 +26,7 @@ class Mailer {
 		);
 		$message = apply_filters(
 			'burbank_lms_welcome_email_message',
-			__( "Welcome to Burbank LMS.\n\nYour training access has been granted. Verify your email if prompted, then browse the course catalog to enroll.\n", 'burbank-lms' ),
+			__( "Welcome to Burbank LMS.\n\nYour training access has been granted. Browse the course catalog to enroll.\n", 'burbank-lms' ),
 			$user_id
 		);
 		$headers = apply_filters( 'burbank_lms_welcome_email_headers', array(), $user_id );
@@ -200,31 +163,6 @@ class Mailer {
 	 */
 	public function on_course_completed( int $user_id, int $course_id, $enrollment = null ): void {
 		$this->send_completion_email( $user_id, $course_id, $enrollment );
-	}
-
-	/**
-	 * Build the public email-verification URL (query-arg front entry).
-	 *
-	 * @param int    $user_id User ID.
-	 * @param string $token   Plaintext verification token.
-	 */
-	public function verification_url( int $user_id, string $token ): string {
-		$url = add_query_arg(
-			array(
-				'burbank_lms_verify' => '1',
-				'uid'                => $user_id,
-				'token'              => $token,
-			),
-			home_url( '/' )
-		);
-		/**
-		 * Filter the clickable verification URL included in the verification email.
-		 *
-		 * @param string $url     Absolute verification URL.
-		 * @param int    $user_id User ID.
-		 * @param string $token   Plaintext verification token.
-		 */
-		return (string) apply_filters( 'burbank_lms_verification_url', $url, $user_id, $token );
 	}
 
 	/**

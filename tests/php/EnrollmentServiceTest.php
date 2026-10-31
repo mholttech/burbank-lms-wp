@@ -46,20 +46,11 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Register and verify a learner; return user id.
+	 * Register a learner with training access; return user id.
 	 *
 	 * @param string $email Learner email address.
 	 */
 	private function verified_learner( string $email = 'enroll-learner@example.com' ): int {
-		$tokens = array();
-		add_action(
-			'burbank_lms_sent_verification_email',
-			static function ( int $uid, string $token ) use ( &$tokens ): void {
-				$tokens[ $uid ] = $token;
-			},
-			10,
-			2
-		);
 		$created = ( new Invites() )->create(
 			'site',
 			array(
@@ -68,8 +59,7 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsArray( $created );
-		$registration = new Registration();
-		$user_id      = $registration->register(
+		$user_id = ( new Registration() )->register(
 			array(
 				'invite'       => $created['plaintext'],
 				'email'        => $email,
@@ -79,8 +69,6 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
-		$this->assertArrayHasKey( $user_id, $tokens );
-		$this->assertSame( $user_id, $registration->verify_email( $tokens[ $user_id ] ) );
 		return $user_id;
 	}
 
@@ -381,15 +369,14 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 		$this->assertNull( $this->service()->get_active( $user_id, $course_id ) );
 	}
 
-	/** Unverified and suspended learners cannot self-enroll. */
-	public function test_unverified_and_suspended_fail_self_enroll(): void {
+	/** Learners without access or with suspension cannot self-enroll. */
+	public function test_without_access_and_suspended_fail_self_enroll(): void {
 		$course_id = $this->published_course();
 		$learner   = new Learner();
 
-		$unverified = self::factory()->user->create( array( 'role' => 'subscriber' ) );
-		$learner->grant_access( $unverified );
-		$this->assertFalse( $learner->can_learn( $unverified ) );
-		$this->assertWPError( $this->service()->self_enroll( $unverified, $course_id ) );
+		$without_access = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$this->assertFalse( $learner->can_learn( $without_access ) );
+		$this->assertWPError( $this->service()->self_enroll( $without_access, $course_id ) );
 
 		$suspended = $this->verified_learner( 'suspended@example.com' );
 		$learner->suspend( $suspended );

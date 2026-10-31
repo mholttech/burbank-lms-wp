@@ -54,11 +54,10 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 		$this->assertWPError( $result );
 	}
 
-	/** Unverified learner cannot start a mapped quiz even when enrolled. */
-	public function test_can_start_false_when_unverified(): void {
+	/** Learner without training access cannot start a mapped quiz even when enrolled. */
+	public function test_can_start_false_without_training_access(): void {
 		$fixture = $this->mapped_course_and_learner( true );
-		delete_user_meta( $fixture['user_id'], Learner::META_EMAIL_VERIFIED_AT );
-		( new Learner() )->sync_quiz_cap( $fixture['user_id'] );
+		( new Learner() )->revoke_access( $fixture['user_id'] );
 		wp_set_current_user( $fixture['user_id'] );
 
 		$result = ( new PressPrimer_Quiz() )->can_start( true, $fixture['quiz'] );
@@ -228,7 +227,7 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Register and verify a learner with a legal name.
+	 * Register a learner with training access and a legal name.
 	 *
 	 * @param string $email Learner email.
 	 */
@@ -236,15 +235,6 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 		if ( '' === $email ) {
 			$email = 'gate-learner-' . wp_generate_password( 8, false ) . '@example.com';
 		}
-		$tokens = array();
-		add_action(
-			'burbank_lms_sent_verification_email',
-			static function ( int $uid, string $token ) use ( &$tokens ): void {
-				$tokens[ $uid ] = $token;
-			},
-			10,
-			2
-		);
 		$created = ( new Invites() )->create(
 			'site',
 			array(
@@ -253,8 +243,7 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsArray( $created );
-		$registration = new Registration();
-		$user_id      = $registration->register(
+		$user_id = ( new Registration() )->register(
 			array(
 				'invite'       => $created['plaintext'],
 				'email'        => $email,
@@ -264,7 +253,6 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
-		$this->assertSame( $user_id, $registration->verify_email( $tokens[ $user_id ] ) );
 		return $user_id;
 	}
 
