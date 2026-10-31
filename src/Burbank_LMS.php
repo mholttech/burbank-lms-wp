@@ -79,6 +79,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'template_redirect', $registration, 'handle_verification_request' );
 		$rest = new REST\Controller( $registration );
 		$this->loader->add_action( 'rest_api_init', $rest, 'register_routes' );
+		$admin_rest = new REST\Admin_Controller();
+		$this->loader->add_action( 'rest_api_init', $admin_rest, 'register_routes' );
 		$profile = new Access\Profile();
 		$this->loader->add_filter( 'add_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
 		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
