@@ -11,12 +11,15 @@
 
 use Burbank_LMS\Access\Profile;
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Soft_Gate;
 
-if ( ! is_user_logged_in() ) {
+$user_id = get_current_user_id();
+$gate    = new Soft_Gate();
+if ( $gate->should_block( $user_id ) ) {
 	printf(
-		'<div %1$s><p>%2$s</p></div>',
+		'<div %1$s>%2$s</div>',
 		get_block_wrapper_attributes( array( 'class' => 'bfc-profile' ) ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper.
-		esc_html__( 'Sign in to manage your profile.', 'burbank-lms' )
+		$gate->render( $gate->audience( $user_id ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
 	);
 	return;
 }
