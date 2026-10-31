@@ -9,7 +9,7 @@ namespace Burbank_LMS\Courses;
 
 /** Validates metadata before Pods, REST, classic and core metadata writes. */
 class Validator {
-	/** Stable subject values correspond to the first digit of the BFC code. */
+	/** Stable supported subject values. */
 	public const SUBJECTS = array(
 		1 => 'program_administration_membership',
 		2 => 'safety_field_awareness',
@@ -128,10 +128,6 @@ class Validator {
 			if ( ! is_string( $code ) || ! preg_match( '/\ABFC-[1-9][0-9]{2}\z/', $code ) ) {
 				$error->add( 'burbank_course_code', __( 'Use a BFC code from BFC-100 through BFC-999 with no revision suffix.', 'burbank-lms' ), array( 'status' => 400 ) );
 			} else {
-				$subject = $fields['subject_category'] ?? '';
-				if ( '' !== $subject && self::SUBJECTS[ (int) $code[4] ] !== $subject ) {
-					$error->add( 'burbank_course_subject', __( 'Choose the subject category matching the BFC number range.', 'burbank-lms' ), array( 'status' => 400 ) );
-				}
 				if ( ! ( new Registry() )->available( $course_id, $code ) ) {
 					$error->add( 'burbank_course_identity', __( 'This BFC code is already reserved, or this course has a different permanent published code.', 'burbank-lms' ), array( 'status' => 400 ) );
 				}
