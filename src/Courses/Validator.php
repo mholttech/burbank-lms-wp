@@ -127,10 +127,8 @@ class Validator {
 		if ( '' !== $code ) {
 			if ( ! is_string( $code ) || ! preg_match( '/\ABFC-[1-9][0-9]{2}\z/', $code ) ) {
 				$error->add( 'burbank_course_code', __( 'Use a BFC code from BFC-100 through BFC-999 with no revision suffix.', 'burbank-lms' ), array( 'status' => 400 ) );
-			} else {
-				if ( ! ( new Registry() )->available( $course_id, $code ) ) {
-					$error->add( 'burbank_course_identity', __( 'This BFC code is already reserved, or this course has a different permanent published code.', 'burbank-lms' ), array( 'status' => 400 ) );
-				}
+			} elseif ( ! ( new Registry() )->available( $course_id, $code ) ) {
+				$error->add( 'burbank_course_identity', __( 'This BFC code is already reserved, or this course has a different permanent published code.', 'burbank-lms' ), array( 'status' => 400 ) );
 			}
 		}
 		if ( isset( $fields['subject_category'] ) && '' !== $fields['subject_category'] && ! in_array( $fields['subject_category'], self::SUBJECTS, true ) ) {

@@ -218,7 +218,7 @@ class LearnerRestTest extends WP_UnitTestCase {
 
 	/** Logged-in learner without training access gets 403. */
 	public function test_enroll_without_can_learn_returns_403(): void {
-		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		$course_id = $this->published_course();
 		wp_set_current_user( $user_id );
 
