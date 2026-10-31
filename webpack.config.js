@@ -12,6 +12,10 @@ const customEntries = {
 		path.resolve( __dirname, 'resources/admin/js/app.js' ),
 		path.resolve( __dirname, 'resources/admin/scss/app.scss' ),
 	],
+	'burbank-lms-course-editor': [
+		path.resolve( __dirname, 'resources/admin/js/course-editor/index.js' ),
+		path.resolve( __dirname, 'resources/admin/scss/course-editor.scss' ),
+	],
 };
 
 /**
