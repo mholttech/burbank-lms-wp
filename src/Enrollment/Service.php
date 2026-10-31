@@ -111,6 +111,16 @@ class Service {
 	}
 
 	/**
+	 * Return the enrollment row for a course/user pair (any status).
+	 *
+	 * @param int $user_id   User ID.
+	 * @param int $course_id Course post ID.
+	 */
+	public function get( int $user_id, int $course_id ): ?object {
+		return $this->repository()->get( $user_id, $course_id );
+	}
+
+	/**
 	 * List all enrollment rows for a learner.
 	 *
 	 * @param int $user_id User ID.
