@@ -50,7 +50,7 @@ $wrapper    = get_block_wrapper_attributes(
 			<input id="bfc-profile-password" name="password" type="password" autocomplete="new-password" placeholder="<?php esc_attr_e( 'Leave blank to keep current password', 'burbank-lms' ); ?>">
 		</p>
 		<p class="bfc-profile__actions">
-			<button type="submit"><?php esc_html_e( 'Save profile', 'burbank-lms' ); ?></button>
+			<button type="submit" class="wp-element-button"><?php esc_html_e( 'Save profile', 'burbank-lms' ); ?></button>
 		</p>
 		<p class="bfc-profile__status" hidden data-bfc-status></p>
 	</form>
