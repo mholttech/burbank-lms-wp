@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.2...burbank-lms-v1.2.3) (2026-10-31)
+
+
+### Bug Fixes
+
+* **access:** remove custom email verification gate ([#18](https://github.com/mholttech/burbank-lms-wp/issues/18)) ([0247e3a](https://github.com/mholttech/burbank-lms-wp/commit/0247e3a92f68f3f86f9ab0739351d313d6884f4d))
+
 ## [1.2.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.1...burbank-lms-v1.2.2) (2026-10-31)
 
 
