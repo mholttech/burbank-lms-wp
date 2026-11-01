@@ -164,6 +164,26 @@ class LearnerShellTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'bfc-shell', $forced );
 	}
 
+	/** Chrome always exposes the pill list; never a mobile details disclosure. */
+	public function test_render_chrome_has_no_mobile_disclosure(): void {
+		$user_id = $this->verified_learner( 'shell-nav@example.com' );
+		wp_set_current_user( $user_id );
+		$shell = new Shell();
+
+		$html = $shell->render_chrome(
+			array(
+				'current' => 'catalog',
+				'force'   => true,
+			)
+		);
+
+		$this->assertStringContainsString( 'bfc-shell__list', $html );
+		$this->assertStringContainsString( 'Catalog', $html );
+		$this->assertStringNotContainsString( 'bfc-shell__mobile', $html );
+		$this->assertStringNotContainsString( '<details', $html );
+		$this->assertStringNotContainsString( 'bfc-shell__desktop', $html );
+	}
+
 	/** Active enrollment with a quiz yields continue; open course yields enroll. */
 	public function test_contextual_actions_continue_and_enroll(): void {
 		$user_id   = $this->verified_learner( 'shell-actions@example.com' );

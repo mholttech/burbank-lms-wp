@@ -86,16 +86,11 @@ html[data-bc-theme="dark"] {
 }
 
 .bfc-shell {
-	display: grid;
-	gap: 0.75rem;
-
-	&__desktop {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem 1rem;
-	}
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem 1rem;
 
 	&__list,
 	&__actions {
@@ -187,50 +182,6 @@ html[data-bc-theme="dark"] {
 		border-color: transparent;
 		background: var(--bfc-pill-active-bg);
 		color: var(--bfc-pill-active-text);
-	}
-
-	&__mobile {
-		display: none;
-		width: 100%;
-		border: 1px solid var(--bfc-control-border);
-		border-radius: var(--bfc-radius);
-		background: var(--bfc-control-bg);
-		color: var(--bfc-control-text);
-
-		summary {
-			cursor: pointer;
-			list-style: none;
-			min-height: 44px;
-			padding: 0.75rem 1rem;
-			font-weight: 700;
-
-			&::-webkit-details-marker {
-				display: none;
-			}
-		}
-
-		.bfc-shell__list,
-		.bfc-shell__actions {
-			padding: 0 0.75rem 0.75rem;
-		}
-
-		.bfc-shell__list {
-			background: transparent;
-			border-radius: 0;
-			padding-left: 0;
-			padding-right: 0;
-		}
-	}
-
-	@media (max-width: 781px) {
-
-		&__desktop {
-			display: none;
-		}
-
-		&__mobile {
-			display: block;
-		}
 	}
 }
 

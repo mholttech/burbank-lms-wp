@@ -176,13 +176,12 @@ class Shell {
 			esc_html( $display ),
 			esc_html( $lede )
 		);
-		$aria      = esc_attr__( 'Training', 'burbank-lms' );
-		$nav       = sprintf(
-			'<nav class="bfc-shell" aria-label="%1$s"><div class="bfc-shell__desktop">%2$s%3$s</div><details class="bfc-shell__mobile"><summary>%4$s</summary>%2$s%3$s</details></nav>',
+		$aria = esc_attr__( 'Training', 'burbank-lms' );
+		$nav  = sprintf(
+			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav>',
 			$aria,
 			$nav_list,
-			$actions_html,
-			esc_html__( 'Training', 'burbank-lms' )
+			$actions_html
 		);
 
 		return sprintf(
