@@ -25,7 +25,7 @@ class PressPrimer {
 		}
 		return (string) apply_filters(
 			'burbank_lms_pressprimer_plugin_name',
-			__( 'Burbank LMS', 'burbank-lms' )
+			( new Site() )->product_name()
 		);
 	}
 
@@ -38,7 +38,7 @@ class PressPrimer {
 		if ( ! $this->enabled() ) {
 			return $url;
 		}
-		$custom = (string) apply_filters( 'burbank_lms_pressprimer_logo_url', $this->default_logo_url() );
+		$custom = ( new Site() )->logo_url();
 		return '' !== $custom ? $custom : $url;
 	}
 
@@ -65,10 +65,5 @@ class PressPrimer {
 	/** Whether Burbank branding overrides are enabled. */
 	private function enabled(): bool {
 		return (bool) get_option( self::OPTION );
-	}
-
-	/** Prefer the site icon when present. */
-	private function default_logo_url(): string {
-		return (string) get_site_icon_url( 128 );
 	}
 }

@@ -24,6 +24,10 @@ const customEntries = {
 		__dirname,
 		'resources/frontend/scss/pressprimer.scss'
 	),
+	'burbank-lms-login': path.resolve(
+		__dirname,
+		'resources/frontend/scss/login.scss'
+	),
 };
 
 /**
