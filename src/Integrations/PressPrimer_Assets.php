@@ -31,6 +31,8 @@ class PressPrimer_Assets {
 		}
 
 		// CSS-only entry: version from filemtime (avoid require of built *.asset.php for PHPStan).
+		// Inverse CTA rules also live in burbank-lms-frontend (priority 100) so they still win
+		// when this skin prints before PressPrimer plugin stylesheets.
 		wp_enqueue_style(
 			self::HANDLE,
 			BURBANK_LMS_URL . "build/{$entry}.css",
