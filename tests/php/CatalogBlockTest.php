@@ -203,18 +203,19 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		wp_set_current_user( $user_id );
 
 		$html = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
-		$this->assertMatchesRegularExpression(
-			'/data-bfc-code="BFC-777"[\s\S]*?bfc-catalog__chip--completed[\s\S]*?View course[\s\S]*?<\/li>/',
-			$html
+		$this->assertTrue(
+			(bool) preg_match(
+				'/<li\b[^>]*data-bfc-code="BFC-777"[^>]*>([\s\S]*?)<\/li>/',
+				$html,
+				$matches
+			),
+			'Expected a catalog item for BFC-777'
 		);
-		$this->assertDoesNotMatchRegularExpression(
-			'/data-bfc-code="BFC-777"[\s\S]*?bfc-catalog__enroll/',
-			$html
-		);
-		$this->assertDoesNotMatchRegularExpression(
-			'/data-bfc-code="BFC-777"[\s\S]*?Open enrollment/',
-			$html
-		);
+		$item = $matches[1];
+		$this->assertStringContainsString( 'bfc-catalog__chip--completed', $item );
+		$this->assertStringContainsString( 'View course', $item );
+		$this->assertStringNotContainsString( 'bfc-catalog__enroll', $item );
+		$this->assertStringNotContainsString( 'Open enrollment', $item );
 	}
 
 	/** Guests see soft-gate card instead of catalog course list. */
