@@ -48,7 +48,7 @@ class LoginBrandingTest extends WP_UnitTestCase {
 		$this->assertSame( ( new Site() )->product_name(), $login->header_text() );
 	}
 
-	/** Header and footer print shared audience copy and register CTA. */
+	/** Header and footer print shared audience copy, theme toggle, and register CTA. */
 	public function test_header_and_footer_markup(): void {
 		$login = new Login();
 		ob_start();
@@ -56,6 +56,7 @@ class LoginBrandingTest extends WP_UnitTestCase {
 		$header = ob_get_clean();
 		$this->assertStringContainsString( 'bfc-login__lede', $header );
 		$this->assertStringContainsString( 'Sign in to continue.', $header );
+		$this->assertStringContainsString( 'bfc-login__theme-toggle', $header );
 		$this->assertStringNotContainsString( 'bfc-login__caption', $header );
 		$this->assertStringNotContainsString( 'Training', $header );
 		$this->assertStringNotContainsString( 'training', $header );
@@ -69,6 +70,15 @@ class LoginBrandingTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'training', $footer );
 	}
 
+	/** Theme boot script writes the CERT appearance attribute. */
+	public function test_theme_boot_prints_storage_key(): void {
+		ob_start();
+		( new Login() )->print_theme_boot();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'burbankcert-appearance', $html );
+		$this->assertStringContainsString( 'data-bc-theme', $html );
+	}
+
 	/** Site branding exposes a product name and optional logo filter. */
 	public function test_site_branding_filters(): void {
 		$site = new Site();
@@ -80,5 +90,33 @@ class LoginBrandingTest extends WP_UnitTestCase {
 			static fn(): string => 'https://example.com/logo.png'
 		);
 		$this->assertSame( 'https://example.com/logo.png', $site->logo_url() );
+	}
+
+	/** Default logo prefers the site-icon attachment full file over square crops. */
+	public function test_default_logo_uses_site_icon_full_attachment(): void {
+		$attachment_id = self::factory()->attachment->create_object(
+			array(
+				'file'           => '2026/10/cert-logo.png',
+				'post_parent'    => 0,
+				'post_mime_type' => 'image/png',
+				'post_type'      => 'attachment',
+			)
+		);
+		$this->assertIsInt( $attachment_id );
+		update_option( 'site_icon', $attachment_id );
+
+		add_filter(
+			'wp_get_attachment_image_src',
+			static function ( $image, $attachment, $size ) use ( $attachment_id ) {
+				if ( (int) $attachment !== $attachment_id || 'full' !== $size ) {
+					return $image;
+				}
+				return array( 'https://example.com/full-cert-logo.png', 400, 229, false );
+			},
+			10,
+			3
+		);
+
+		$this->assertSame( 'https://example.com/full-cert-logo.png', ( new Site() )->logo_url() );
 	}
 }
