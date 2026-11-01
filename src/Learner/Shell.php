@@ -176,8 +176,8 @@ class Shell {
 			esc_html( $display ),
 			esc_html( $lede )
 		);
-		$aria = esc_attr__( 'Training', 'burbank-lms' );
-		$nav  = sprintf(
+		$aria      = esc_attr__( 'Training', 'burbank-lms' );
+		$nav       = sprintf(
 			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav>',
 			$aria,
 			$nav_list,
