@@ -50,7 +50,7 @@ $archive = get_post_type_archive_link( 'bfc_course' );
 	<p class="bfc-my-courses__empty" data-bfc-empty hidden><?php esc_html_e( 'You are not enrolled in any courses yet.', 'burbank-lms' ); ?></p>
 	<?php if ( is_string( $archive ) && $archive ) : ?>
 		<p class="bfc-my-courses__catalog-cta">
-			<a class="wp-element-button" href="<?php echo esc_url( $archive ); ?>"><?php esc_html_e( 'Browse course catalog', 'burbank-lms' ); ?></a>
+			<a class="wp-element-button is-secondary" href="<?php echo esc_url( $archive ); ?>"><?php esc_html_e( 'Browse course catalog', 'burbank-lms' ); ?></a>
 		</p>
 	<?php endif; ?>
 	<p class="bfc-my-courses__status" hidden data-bfc-status></p>
