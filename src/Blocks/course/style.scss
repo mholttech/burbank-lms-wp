@@ -2,10 +2,10 @@
 	display: grid;
 	gap: 1rem;
 	padding: clamp(1rem, 2vw, 1.5rem);
-	border: 1px solid var(--wp--preset--color--content-border, #c3c4c7);
-	border-radius: 6px;
-	background: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
-	color: var(--wp--preset--color--content-text, inherit);
+	border: 1px solid var(--bfc-control-border, var(--wp--preset--color--content-border, #c3c4c7));
+	border-radius: var(--bfc-radius-panel, 16px);
+	background: var(--bfc-control-bg, var(--bc-surface-card, var(--wp--preset--color--content-background, #fff)));
+	color: var(--bfc-control-text, var(--wp--preset--color--content-text, inherit));
 
 	&__meta {
 		display: grid;

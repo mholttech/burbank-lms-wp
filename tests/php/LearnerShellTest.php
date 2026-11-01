@@ -148,6 +148,7 @@ class LearnerShellTest extends WP_UnitTestCase {
 		$first = $shell->render_chrome( array( 'current' => 'catalog' ) );
 		$this->assertNotSame( '', $first );
 		$this->assertStringContainsString( 'bfc-shell', $first );
+		$this->assertStringContainsString( 'bfc-portal', $first );
 		$this->assertStringContainsString( 'Training', $first );
 
 		$second = $shell->render_chrome( array( 'current' => 'catalog' ) );

@@ -60,19 +60,23 @@ Domain rules above are unchanged. `Learner\Soft_Gate` and `Learner\Shell` only a
 
 | Audience | When | Markup |
 | --- | --- | --- |
-| `guest` | `$user_id < 1` | `.bfc-soft-gate` card: invite-only copy, **Log in** + **Register** (`/register/`) |
-| `no_access` | Logged in, `! can_learn` | Same title, administrator/reactivation copy; no Register CTA |
+| `guest` | `$user_id < 1` | `.bfc-soft-gate` panel: Training caption, **H1** title, invite-only copy, **Log in** + **Register** (`/register/`) |
+| `no_access` | Logged in, `! can_learn` | Same caption/title pattern, administrator/reactivation copy; no Register CTA |
 | `learner` | `can_learn` | No gate card (`should_block` is false) |
 
 When `should_block` is true, `burbank-lms/catalog`, `course`, `profile`, and `my-courses` render only the gate card—no catalog rows, filters, course meta, profile form, or my-courses list (no course-list leakage). The LMS subnav does not print on gated views.
 
-**Shell** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests). Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state.
+**Shell / portal chrome** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests) as a Duty Officer–style `.bfc-portal` workspace: uppercase **Training** kicker, learner display name as the document **H1** (or a `<p>` title on course singles so the course post title keeps H1), context lede, then `.bfc-shell` pill-track nav. Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state. Desktop uses the pill strip; mobile uses a **Training** `<details>` disclosure.
+
+**Heading ownership:** Plugin archive template does not print a competing “Course catalog” H1. `Learner\Portal_Headings` suppresses `core/heading` level-1 blocks on `/profile/` and `/my-courses/` so theme patterns do not duplicate the portal/soft-gate title. Course singles keep `core/post-title` as H1.
 
 Optional `burbank-lms/shell` block prints the same chrome then InnerBlocks; learner block renders also call `Shell::render_chrome`, so the once-flag prevents duplicate nav when both run.
 
 **Outside the shell:** `burbank-lms/register` stays public (site invite form; logged-in users see “already signed in”). No soft gate and no shell on register. Public certificate **verify** pages (PressPrimer) likewise stay outside the shell; they may still pick up shared control tokens from the frontend bundle. `burbank-lms/enroll` does not use `Soft_Gate` (short login/access messages only).
 
-**Shared LMS CSS:** control, shell, and soft-gate styles live in `resources/frontend/scss/app.scss`, compiled with the `burbank-lms-frontend` webpack entry to `build/burbank-lms-frontend.css` and enqueued on `wp_enqueue_scripts` (alongside block assets). PressPrimer quiz/certificate skin remains `build/burbank-lms-pressprimer.css` (see below).
+**Shared LMS CSS:** portal, pill tabs, panels, control, shell, and soft-gate styles live in `resources/frontend/scss/app.scss`, compiled with the `burbank-lms-frontend` webpack entry to `build/burbank-lms-frontend.css` and enqueued on `wp_enqueue_scripts` (alongside block assets). Tokens prefer CERT presets with **solid** `html[data-bc-theme="dark"]` overrides so controls stay readable when theme presets lag. PressPrimer quiz/certificate skin remains `build/burbank-lms-pressprimer.css` (see below).
+
+**Intentional differences from Duty Officer:** LMS keeps multi-page route nav (not in-page SPA tabs), soft-gate presentation (not hard login redirect), hybrid mobile disclosure, and PHP block rendering (not React). Visual language (kicker / title / lede / mint pill track / forest selected pill / 24px workspace / 16px panels) is shared.
 
 ## Invites
 

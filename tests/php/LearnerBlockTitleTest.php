@@ -109,11 +109,14 @@ class LearnerBlockTitleTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '<h1', strtolower( $html ) );
 	}
 
-	/** Archive template plus catalog block keeps one H1. */
-	public function test_archive_template_with_catalog_has_single_h1(): void {
+	/** Archive template without portal (guest) uses soft-gate H1 only. */
+	public function test_archive_template_guest_soft_gate_owns_h1(): void {
 		if ( ! function_exists( 'register_block_template' ) ) {
 			$this->markTestSkipped( 'register_block_template requires WordPress 6.7+.' );
 		}
+
+		wp_set_current_user( 0 );
+		\Burbank_LMS\Learner\Shell::reset_chrome_printed();
 
 		$templates = new \Burbank_LMS\Learner\Templates();
 		$ref       = new ReflectionClass( $templates );
@@ -123,6 +126,7 @@ class LearnerBlockTitleTest extends WP_UnitTestCase {
 
 		$html = do_blocks( $content );
 
+		$this->assertStringContainsString( 'bfc-soft-gate__title', $html );
 		$this->assertSame( 1, substr_count( strtolower( $html ), '<h1' ) );
 	}
 }

@@ -67,7 +67,8 @@ class Soft_Gate {
 		}
 
 		return sprintf(
-			'<div class="bfc-soft-gate"><h2 class="bfc-soft-gate__title">%1$s</h2><p class="bfc-soft-gate__body">%2$s</p>%3$s</div>',
+			'<div class="bfc-soft-gate"><p class="bfc-soft-gate__caption">%1$s</p><h1 class="bfc-soft-gate__title">%2$s</h1><p class="bfc-soft-gate__body">%3$s</p>%4$s</div>',
+			esc_html__( 'Training', 'burbank-lms' ),
 			esc_html( $title ),
 			esc_html( $body ),
 			$actions // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built with esc_url/esc_html above.
