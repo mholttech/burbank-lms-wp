@@ -141,9 +141,10 @@ html[data-bc-theme="dark"] {
 }
 
 /*
- * Theme.json paints `a:where(:not(.wp-element-button))` with content-link + underline.
- * Scope under .bfc-portal / .wp-site-blocks and target `a.` so idle/active pill text wins
- * (dark-on-dark active pills and underlined idle pills in light mode).
+ * Theme.json paints `a:where(:not(.wp-element-button))` with
+ * content-link + underline. Scope under .bfc-portal / .wp-site-blocks
+ * and target `a.` so idle/active pill text wins (dark-on-dark active
+ * pills and underlined idle pills in light mode).
  */
 .bfc-portal .bfc-shell,
 .wp-site-blocks .bfc-shell {
@@ -376,9 +377,10 @@ html[data-bc-theme="dark"] {
 }
 
 /*
- * Inverse text on filled LMS / PressPrimer CTAs. Theme link color + -webkit-text-fill-color
- * can otherwise paint content-link on action-red (Browse catalog, Download PDF, etc.).
- * Scoped under .wp-site-blocks main so specificity clears entry-content / main `a` rules.
+ * Inverse text on filled LMS / PressPrimer CTAs. Theme link color +
+ * -webkit-text-fill-color can otherwise paint content-link on
+ * action-red (Browse catalog, Download PDF, etc.). Scoped under
+ * .wp-site-blocks main so specificity clears main `a` rules.
  */
 .wp-site-blocks main {
 
