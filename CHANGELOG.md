@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.6.1...burbank-lms-v1.6.2) (2026-11-01)
+
+
+### Bug Fixes
+
+* **learner:** credential lock and course page chrome ([#43](https://github.com/mholttech/burbank-lms-wp/issues/43)) ([76e101a](https://github.com/mholttech/burbank-lms-wp/commit/76e101a31c30a4c36a862a166a317c9ee37d5e8e))
+
 ## [1.6.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.6.0...burbank-lms-v1.6.1) (2026-11-01)
 
 
