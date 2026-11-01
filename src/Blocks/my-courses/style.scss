@@ -1,4 +1,5 @@
 .bfc-my-courses {
+
 	&__list {
 		list-style: none;
 		margin: 0;
@@ -7,55 +8,166 @@
 		gap: 0.75rem;
 	}
 
+	/* Enrolled course = bordered card (like the certificate card below it),
+	   not a bare list row: full padding + visible border edge, since the
+	   card background matches the page background. */
 	&__item {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem 1rem;
 		align-items: center;
-		padding-block: 0.35rem;
-		border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+		padding: 1rem 1.25rem;
+		border: 1px solid var(--bfc-control-border, #d0ddd4);
+		border-radius: var(--bfc-radius-panel, 16px);
+		background: var(--bfc-control-bg, #f2f6f3);
+		color: var(--bfc-control-text, inherit);
+	}
 
-		&:last-child {
-			border-bottom: none;
+	/* Theme paints plain links content-link green + underline; the course
+	   title is a card heading, so keep it in the card text color and only
+	   underline on hover/focus. `a.` + wrapper scope clears theme rules. */
+	a.bfc-my-courses__title,
+	span.bfc-my-courses__title {
+		flex: 1 1 12rem;
+		color: var(--bfc-control-text, inherit);
+		-webkit-text-fill-color: var(--bfc-control-text, inherit);
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1.3;
+		text-decoration: none;
+	}
+
+	a.bfc-my-courses__title {
+
+		&:link,
+		&:visited {
+			color: var(--bfc-control-text, inherit);
+			-webkit-text-fill-color: var(--bfc-control-text, inherit);
+			text-decoration: none;
+		}
+
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-pill-idle-text, #1b6540);
+			-webkit-text-fill-color: var(--bfc-pill-idle-text, #1b6540);
+			text-decoration: underline;
+			text-underline-offset: 0.15em;
 		}
 	}
 
-	&__title {
-		font-weight: 600;
-		flex: 1 1 12rem;
-	}
-
+	/* Status as a filled pill (cf. certificate VALID chip), not a hollow
+	   outline floating at the card edge. */
 	&__badge {
-		display: inline-block;
-		font-size: 0.8125em;
-		font-weight: 600;
-		letter-spacing: 0.02em;
+		display: inline-flex;
+		align-items: center;
+		flex: none;
+		padding: 0.3rem 0.7rem;
+		border-radius: var(--bfc-radius-pill, 999px);
+		background: color-mix(in srgb, var(--bfc-control-text, #1c1f23) 10%, transparent);
+		color: var(--bfc-control-text, inherit);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		line-height: 1.2;
 		text-transform: uppercase;
-		opacity: 0.9;
-		padding: 0.15em 0.55em;
-		border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
-		border-radius: 0.25rem;
+		white-space: nowrap;
+
+		&[data-status="active"] {
+			background: color-mix(in srgb, var(--bfc-pill-active-bg, #1b6540) 16%, transparent);
+			color: var(--bfc-pill-idle-text, #1b6540);
+		}
+
+		&[data-status="passed"],
+		&[data-status="completed"] {
+			background: var(--bfc-pill-active-bg, #1b6540);
+			color: var(--bfc-pill-active-text, #fff);
+		}
+
+		&[data-status="withdrawn"] {
+			background: transparent;
+			color: var(--bfc-control-muted, #556b60);
+			box-shadow: inset 0 0 0 1px var(--bfc-control-border, #d0ddd4);
+		}
 	}
 
 	&__withdraw {
-		font-size: 0.875em;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		min-height: 40px;
+		padding: 0.45rem 0.9rem;
+		border: 1px solid var(--bfc-control-border, #d0ddd4);
+		border-radius: var(--bfc-radius-pill, 999px);
+		background: transparent;
+		color: var(--bfc-control-text, inherit);
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.2;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			border-color: var(--bfc-pill-active-bg, #1b6540);
+			color: var(--bfc-pill-idle-text, #1b6540);
+		}
+
+		&:disabled {
+			cursor: wait;
+			opacity: 0.6;
+		}
 	}
 
 	&__empty {
 		margin-block-end: 0.75rem;
 	}
 
+	/* Catalog is a secondary next step once enrolled, not the page's
+	   primary red CTA (app.scss `is-secondary` paints the colors). */
 	&__catalog-cta {
-		margin-block: 0.75rem 1rem;
+		margin-block: 1rem 0;
+
+		.wp-element-button {
+			border-radius: var(--bfc-radius-pill, 999px);
+		}
 	}
 
 	&__certificates {
 		margin-block-start: 1.5rem;
 		padding-block-start: 1.25rem;
-		border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+		border-top: 1px solid color-mix(in srgb, currentcolor 12%, transparent);
 	}
 
 	&__status.is-error {
 		color: #b32d2e;
+	}
+}
+
+/*
+ * The CERT theme paints plain links via
+ * `.wp-site-blocks main a:not(.wp-block-button__link):not(.has-text-color)`
+ * (specificity 0,3,2), which outranks the title rule above. Scope under
+ * `.wp-site-blocks main` (0,4,2 with :link/:visited) so the card title
+ * keeps the card text color instead of content-link green + underline —
+ * same pattern as the CTA rules in resources/frontend/scss/app.scss.
+ */
+.wp-site-blocks main .bfc-my-courses {
+
+	a.bfc-my-courses__title {
+
+		&:link,
+		&:visited {
+			color: var(--bfc-control-text, inherit);
+			-webkit-text-fill-color: var(--bfc-control-text, inherit);
+			text-decoration: none;
+		}
+
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-pill-idle-text, #1b6540);
+			-webkit-text-fill-color: var(--bfc-pill-idle-text, #1b6540);
+			text-decoration: underline;
+			text-underline-offset: 0.15em;
+		}
 	}
 }

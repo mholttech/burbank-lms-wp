@@ -74,6 +74,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 
 			const badge = document.createElement( 'span' );
 			badge.className = 'bfc-my-courses__badge';
+			badge.dataset.status = item.status || 'active';
 			badge.textContent = statusLabel( item.status );
 
 			li.append( title, badge );
@@ -110,6 +111,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 							return;
 						}
 						badge.textContent = 'Withdrawn';
+						badge.dataset.status = 'withdrawn';
 						withdraw.remove();
 					} catch {
 						setStatus(

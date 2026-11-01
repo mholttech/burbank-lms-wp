@@ -27,6 +27,7 @@ class MyCoursesBlockTest extends WP_UnitTestCase {
 		$html = do_blocks( '<!-- wp:burbank-lms/my-courses /-->' );
 
 		$this->assertStringContainsString( 'bfc-my-courses__catalog-cta', $html );
+		$this->assertStringContainsString( 'wp-element-button is-secondary', $html );
 		$this->assertStringContainsString( 'Browse course catalog', $html );
 		$this->assertStringContainsString( esc_url( $archive ), $html );
 	}
