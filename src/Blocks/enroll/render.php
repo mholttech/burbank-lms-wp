@@ -38,11 +38,16 @@ if ( ! $can_learn ) {
 }
 
 $restricted = $course_id > 0 && ( new Invites() )->course_has_active_invites( $course_id );
+$row        = $course_id > 0 ? ( new Enrollment_Service() )->get( $user_id, $course_id ) : null;
+$completed  = $row && 'completed' === $row->status;
 $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_id, $course_id ) : null;
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
 	<div class="bfc-enroll__foot">
-	<?php if ( $active ) : ?>
+	<?php if ( $completed ) : ?>
+		<p class="bfc-enroll__badge"><?php esc_html_e( 'Completed', 'burbank-lms' ); ?></p>
+		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
+	<?php elseif ( $active ) : ?>
 		<p><?php esc_html_e( 'You are already enrolled in this course.', 'burbank-lms' ); ?></p>
 		<a class="bfc-enroll__action wp-element-button" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'Continue course', 'burbank-lms' ); ?></a>
 	<?php elseif ( $restricted ) : ?>
@@ -73,8 +78,8 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 			<p class="bfc-enroll__actions">
 				<button type="submit" class="wp-element-button"><?php esc_html_e( 'Enroll', 'burbank-lms' ); ?></button>
 			</p>
-			<p class="bfc-enroll__status" hidden data-bfc-status></p>
 		</form>
 	<?php endif; ?>
 	</div>
+	<p class="bfc-enroll__status" role="status" aria-live="polite" hidden data-bfc-status></p>
 </div>

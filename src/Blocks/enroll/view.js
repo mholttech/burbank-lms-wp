@@ -44,6 +44,7 @@ document.querySelectorAll( '.bfc-enroll' ).forEach( ( root ) => {
 
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
+		const submittedUrl = select?.selectedOptions[ 0 ]?.dataset.courseUrl;
 		setStatus( status, '' );
 		const data = Object.fromEntries( new FormData( form ).entries() );
 		/* eslint-disable camelcase -- REST contract field names. */
@@ -74,10 +75,13 @@ document.querySelectorAll( '.bfc-enroll' ).forEach( ( root ) => {
 				return;
 			}
 			setStatus( status, 'Enrolled successfully.', false );
-			const url = select?.selectedOptions[ 0 ]?.dataset.courseUrl;
-			if ( url ) {
+			const badge = root.querySelector( '.bfc-enroll__badge' );
+			if ( badge ) {
+				badge.textContent = 'Enrolled';
+			}
+			if ( submittedUrl ) {
 				const link = document.createElement( 'a' );
-				link.href = url;
+				link.href = submittedUrl;
 				link.className = 'bfc-enroll__action wp-element-button';
 				link.textContent = 'Continue course';
 				form.replaceWith( link );

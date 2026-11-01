@@ -108,7 +108,9 @@ $wrapper      = get_block_wrapper_attributes(
 		<p class="bfc-course__status"><?php echo esc_html( $status_text ); ?></p>
 	<?php endif; ?>
 
-	<?php if ( $active && $quiz_id > 0 ) : ?>
+	<?php if ( 'completed' === $status_key ) : ?>
+		<a class="bfc-course__action wp-element-button is-secondary" href="<?php echo esc_url( home_url( '/my-courses/' ) ); ?>"><?php esc_html_e( 'View certificates', 'burbank-lms' ); ?></a>
+	<?php elseif ( $active && $quiz_id > 0 ) : ?>
 		<p class="bfc-course__actions">
 			<a class="bfc-course__quiz-cta wp-element-button" href="#bfc-course-quiz"><?php echo esc_html( $quiz_cta ); ?></a>
 		</p>
@@ -135,7 +137,7 @@ $wrapper      = get_block_wrapper_attributes(
 		<p><?php esc_html_e( 'Ask a training administrator to grant training access before enrolling.', 'burbank-lms' ); ?></p>
 	<?php endif; ?>
 	<?php if ( $active && 'completed' !== $status_key ) : ?>
-		<button type="button" class="bfc-course__action is-secondary" data-bfc-withdraw><?php esc_html_e( 'Withdraw', 'burbank-lms' ); ?></button>
+		<button type="button" class="bfc-course__action wp-element-button is-secondary" data-bfc-withdraw><?php esc_html_e( 'Withdraw', 'burbank-lms' ); ?></button>
 	<?php endif; ?>
 	</div>
 	<p class="bfc-course__notice" hidden data-bfc-status></p>

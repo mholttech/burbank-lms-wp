@@ -156,6 +156,28 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'type="submit"', $html );
 	}
 
+	/** Completed enrollment cards preserve credentials and never offer enrollment. */
+	public function test_completed_blocks_preserve_credential_and_hide_enrollment(): void {
+		$course_id = $this->published_course( 'Completed course', 'BFC-306', 'safety' );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		$service = new Enrollment_Service();
+		$this->assertTrue( $service->self_enroll( $user_id, $course_id ) );
+		$row = $service->get( $user_id, $course_id );
+		$this->assertTrue( ( new \Burbank_LMS\Enrollment\Repository() )->complete( (int) $row->id, 731, '2026-10-31 12:00:00' ) );
+		wp_set_current_user( $user_id );
+		foreach ( array( 'course', 'enroll' ) as $block_name ) {
+			$html = do_blocks( '<!-- wp:burbank-lms/' . $block_name . ' {"courseId":' . $course_id . '} /-->' );
+			$this->assertStringNotContainsString( 'data-bfc-enroll=', $html );
+			$this->assertStringNotContainsString( 'type="submit"', $html );
+			$this->assertStringNotContainsString( 'data-bfc-withdraw', $html );
+			$this->assertStringContainsString( 'View ', $html );
+		}
+		$after = $service->get( $user_id, $course_id );
+		$this->assertSame( 'completed', $after->status );
+		$this->assertSame( 731, (int) $after->credential_id );
+	}
+
 	/** Guests see soft-gate card instead of catalog course list. */
 	public function test_catalog_render_soft_gates_guest(): void {
 		$this->published_course( 'Gated Course', 'BFC-901', 'communications' );
