@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.6.0...burbank-lms-v1.6.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **learner:** catalog completed state and block credential wipe ([#41](https://github.com/mholttech/burbank-lms-wp/issues/41)) ([06d8632](https://github.com/mholttech/burbank-lms-wp/commit/06d86326f08c5fa12d1f4f4e459f313ff9ced8e2))
+
 ## [1.6.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.5.2...burbank-lms-v1.6.0) (2026-11-01)
 
 
