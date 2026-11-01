@@ -84,6 +84,7 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'registration_errors', $registration, 'block_default_registration' );
 		$login = new Access\Login();
 		$this->loader->add_action( 'login_enqueue_scripts', $login, 'enqueue_assets' );
+		$this->loader->add_action( 'login_head', $login, 'print_theme_boot', 1 );
 		$this->loader->add_filter( 'login_body_class', $login, 'body_class' );
 		$this->loader->add_filter( 'login_headerurl', $login, 'header_url' );
 		$this->loader->add_filter( 'login_headertext', $login, 'header_text' );
