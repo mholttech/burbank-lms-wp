@@ -163,6 +163,10 @@
 		background: color-mix(in srgb, var(--wp--preset--color--vivid-green-cyan, #00d084) 25%, transparent);
 	}
 
+	&__chip--completed {
+		background: color-mix(in srgb, var(--wp--preset--color--vivid-green-cyan, #00d084) 25%, transparent);
+	}
+
 	&__chip--invite {
 		background: color-mix(in srgb, var(--wp--preset--color--luminous-vivid-orange, #ff6900) 22%, transparent);
 	}

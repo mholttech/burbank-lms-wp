@@ -191,6 +191,32 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertSame( 731, (int) $after->credential_id );
 	}
 
+	/** Completed enrollments show a Completed chip, not an Enroll button. */
+	public function test_catalog_completed_course_shows_view_not_enroll(): void {
+		$course_id = $this->published_course( 'Done Course', 'BFC-777', 'safety' );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		$this->assertTrue( ( new Enrollment_Service() )->self_enroll( $user_id, $course_id ) );
+		$row = ( new Enrollment_Service() )->get_active( $user_id, $course_id );
+		$this->assertNotNull( $row );
+		$this->assertTrue( ( new \Burbank_LMS\Enrollment\Repository() )->complete( (int) $row->id, 99, gmdate( 'Y-m-d H:i:s' ) ) );
+		wp_set_current_user( $user_id );
+
+		$html = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
+		$this->assertMatchesRegularExpression(
+			'/data-bfc-code="BFC-777"[\s\S]*?bfc-catalog__chip--completed[\s\S]*?View course[\s\S]*?<\/li>/',
+			$html
+		);
+		$this->assertDoesNotMatchRegularExpression(
+			'/data-bfc-code="BFC-777"[\s\S]*?bfc-catalog__enroll/',
+			$html
+		);
+		$this->assertDoesNotMatchRegularExpression(
+			'/data-bfc-code="BFC-777"[\s\S]*?Open enrollment/',
+			$html
+		);
+	}
+
 	/** Guests see soft-gate card instead of catalog course list. */
 	public function test_catalog_render_soft_gates_guest(): void {
 		$this->published_course( 'Gated Course', 'BFC-901', 'communications' );

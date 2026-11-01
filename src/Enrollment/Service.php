@@ -167,6 +167,9 @@ class Service {
 		if ( $existing && 'active' === $existing->status ) {
 			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
 		}
+		if ( $existing && 'completed' === $existing->status ) {
+			return new \WP_Error( 'burbank_enrollment_already_completed', __( 'This course is already completed.', 'burbank-lms' ) );
+		}
 
 		global $wpdb;
 		// phpcs:disable WordPress.DB -- Shared enrollment + invite redemption transaction.
@@ -224,6 +227,10 @@ class Service {
 		if ( $existing && 'active' === $existing->status ) {
 			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
 		}
+		// Self/invite enroll must not wipe a completed credential; withdrawn may reactivate.
+		if ( $existing && 'completed' === $existing->status && 'admin' !== $source ) {
+			return new \WP_Error( 'burbank_enrollment_already_completed', __( 'This course is already completed.', 'burbank-lms' ) );
+		}
 		$written = $this->write_enrollment_row( $user_id, $course_id, $source, $invite_id, $existing );
 		if ( true === $written ) {
 			$this->fire_enrolled( $user_id, $course_id, $source, $invite_id );
@@ -252,7 +259,7 @@ class Service {
 	}
 
 	/**
-	 * Insert a new active row or reactivate a withdrawn/completed pair.
+	 * Insert a new active row or reactivate a withdrawn (or admin-retaken completed) pair.
 	 *
 	 * @param int         $user_id   User ID.
 	 * @param int         $course_id Course post ID.

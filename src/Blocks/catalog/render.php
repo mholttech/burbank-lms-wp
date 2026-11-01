@@ -116,8 +116,9 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 				$code         = (string) get_post_meta( $course_id, 'bfc_code', true );
 				$subject      = (string) get_post_meta( $course_id, 'subject_category', true );
 				$outcome      = (string) get_post_meta( $course_id, 'course_outcome', true );
-				$restricted   = $invites->course_has_active_invites( $course_id );
-				$active       = $can_learn ? $enroll->get_active( $user_id, $course_id ) : null;
+				$restricted = $invites->course_has_active_invites( $course_id );
+				$row        = $can_learn ? $enroll->get( $user_id, $course_id ) : null;
+				$status     = $presentation->enrollment_status( $row );
 				?>
 				<li
 					class="bfc-catalog__item"
@@ -144,10 +145,15 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 						<p class="bfc-catalog__excerpt"><?php echo esc_html( wp_strip_all_tags( $course->post_excerpt ) ); ?></p>
 					<?php endif; ?>
 					<div class="bfc-catalog__foot">
-						<?php if ( $active ) : ?>
+						<?php if ( in_array( $status, array( 'enrolled', 'passed' ), true ) ) : ?>
 							<span class="bfc-catalog__chip bfc-catalog__chip--enrolled"><?php esc_html_e( 'Enrolled', 'burbank-lms' ); ?></span>
 							<a class="bfc-catalog__cta bfc-catalog__cta--continue" href="<?php echo esc_url( $permalink ); ?>">
 								<?php esc_html_e( 'Continue course', 'burbank-lms' ); ?>
+							</a>
+						<?php elseif ( 'completed' === $status ) : ?>
+							<span class="bfc-catalog__chip bfc-catalog__chip--completed"><?php esc_html_e( 'Completed', 'burbank-lms' ); ?></span>
+							<a class="bfc-catalog__cta bfc-catalog__cta--continue" href="<?php echo esc_url( $permalink ); ?>">
+								<?php esc_html_e( 'View course', 'burbank-lms' ); ?>
 							</a>
 						<?php elseif ( $can_learn && $restricted ) : ?>
 							<span class="bfc-catalog__chip bfc-catalog__chip--invite"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></span>
