@@ -66,6 +66,16 @@ class Controller {
 						'required'          => false,
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'first_name'   => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'last_name'    => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
 					'display_name' => array(
 						'type'              => 'string',
 						'required'          => false,
@@ -194,6 +204,8 @@ class Controller {
 				'email'        => (string) $request->get_param( 'email' ),
 				'password'     => (string) $request->get_param( 'password' ),
 				'legal_name'   => (string) $request->get_param( 'legal_name' ),
+				'first_name'   => (string) $request->get_param( 'first_name' ),
+				'last_name'    => (string) $request->get_param( 'last_name' ),
 				'display_name' => (string) $request->get_param( 'display_name' ),
 			)
 		);
