@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.3.0...burbank-lms-v1.4.0) (2026-11-01)
+
+
+### Features
+
+* **learner:** LMS learner shell and soft gates ([#26](https://github.com/mholttech/burbank-lms-wp/issues/26)) ([5799a4c](https://github.com/mholttech/burbank-lms-wp/commit/5799a4c9f314a1964ace9c5861f24f4f0142de5f))
+
 ## [1.3.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.2.3...burbank-lms-v1.3.0) (2026-10-31)
 
 
