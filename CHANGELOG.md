@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.6.2...burbank-lms-v1.7.0) (2026-11-01)
+
+
+### Features
+
+* **access:** branded WordPress login for training ([#45](https://github.com/mholttech/burbank-lms-wp/issues/45)) ([149b3ac](https://github.com/mholttech/burbank-lms-wp/commit/149b3ac153fe8fcc61c99fc2a43b9766b985e17f))
+
 ## [1.6.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.6.1...burbank-lms-v1.6.2) (2026-11-01)
 
 
