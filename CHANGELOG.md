@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.4.0...burbank-lms-v1.5.0) (2026-11-01)
+
+
+### Features
+
+* **learner:** restyle LMS shell as Duty Officer–style portal chrome ([#28](https://github.com/mholttech/burbank-lms-wp/issues/28)) ([8fce4c1](https://github.com/mholttech/burbank-lms-wp/commit/8fce4c18b4e8cd91185ff59873f320ab1053a4cc))
+
 ## [1.4.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.3.0...burbank-lms-v1.4.0) (2026-11-01)
 
 
