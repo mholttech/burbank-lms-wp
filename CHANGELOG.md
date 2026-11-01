@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.5.0...burbank-lms-v1.5.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **learner:** portal UI contrast, mobile nav, and headings ([#30](https://github.com/mholttech/burbank-lms-wp/issues/30)) ([f33200f](https://github.com/mholttech/burbank-lms-wp/commit/f33200f59852f91205c7fe0cdc0129579f87a499))
+
 ## [1.5.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.4.0...burbank-lms-v1.5.0) (2026-11-01)
 
 
