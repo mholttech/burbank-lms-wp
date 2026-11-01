@@ -27,7 +27,7 @@ Live QA on `cert.responseforge.app/my-courses/` found the enrolled-course area r
 | WordPress integration | Details save through core `wp/v2/users/me` (existing) extended with core fields `first_name`, `last_name`, `nickname`; "Display name publicly as" is the wp-admin-style option list built from username/first/last/nickname and rebuilt in JS as those fields change. Username is shown read-only (WordPress cannot change it). Avatar is `get_avatar()`. Password form adds a confirm field and core `wp.passwordStrength` meter (graceful fallback if unavailable). "Sign out other sessions" uses `WP_Session_Tokens::destroy_others()` via `POST burbank-lms/v1/profile/sign-out-others`. Not recreated: account deletion, data export/erasure, application passwords (wp-admin / Privacy tools keep those). |
 | My Courses tile order | Client-side sort: active, then passed, then completed (newest `completed_at` first), then withdrawn. Stats unaffected. |
 | Progress percentages | **None, anywhere.** Stats are counts only; no bars or percentages on any redesigned surface. |
-| Program scope | **Everything**: this spec is Phase 1 of four. Phase 2 (single course page, quiz chrome/skin, certificate view/verify, standalone Enroll block), Phase 3 (register + verification flow, soft gates, shell consistency), Phase 4 (admin UI, transactional emails) each get their own brainstorm/mock/spec cycle in the same design language (admin/emails follow their own conventions). Phases 2–4 are listed in the roadmap, not designed here. |
+| Program scope | **Everything**: this spec is Phase 1 of four. Phases 2–4 are designed in `docs/superpowers/specs/2026-10-31-learner-phases-2-4-design.md` and ship in the **same PR** as Phase 1 (PR 34). |
 
 ## Approaches
 
@@ -163,11 +163,11 @@ From the existing single `GET /enrollments` response:
 
 ## Roadmap (program of work — "everything")
 
-This spec is **Phase 1**. Each later phase gets its own brainstorm → HTML mocks → spec → plan cycle before implementation; they are recorded here so the program scope is explicit, not designed here.
+This spec is **Phase 1**. Phases 2–4 are specified in [`2026-10-31-learner-phases-2-4-design.md`](./2026-10-31-learner-phases-2-4-design.md) and land in **PR 34** with Phase 1 (not separate PRs).
 
 | Phase | Surfaces | Notes |
 | --- | --- | --- |
-| 1 — this spec | My Courses, Catalog, Profile, names/legal-name, registration name fields | Designed via HTML mocks in this session |
-| 2 — taking a course | Single course page (`burbank-lms/course`), quiz chrome + ppq skin QA, certificate view + public verify states, standalone `burbank-lms/enroll` block as a state-aware mini-card | One journey: course → quiz → certificate |
-| 3 — getting in | Register + email-verification flow states (beyond the Phase 1 name fields), soft-gate panels, Shell block consistency pass | Guests and no-access users |
-| 4 — back office | Course editor sidebar + site-invite/Training-Access admin UI, transactional emails (one branded template + text fallbacks) | wp-admin and email-client conventions, not the portal's |
+| 1 — this spec | My Courses, Catalog, Profile, names/legal-name, registration name fields | Implemented on branch; PR 34 |
+| 2 — taking a course | Course stack, quiz chrome/skin, cert view/verify, enroll mini-card | See phases 2–4 mega-spec |
+| 3 — getting in | Register + email verify (shell + verify soft-gate; access at register), soft gates, shell consistency | See mega-spec |
+| 4 — back office | React site invites + Training Access; Course sidebar kit; one branded mail template | See mega-spec |
