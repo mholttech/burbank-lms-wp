@@ -7,7 +7,7 @@ export default function Edit() {
 		<div { ...useBlockProps( { className: 'bfc-profile' } ) }>
 			<p>
 				{ __(
-					'Learner profile: display name, email, password; legal name read-only.',
+					'Learner profile: editable first/last certificate name, display name select, email; separate security form for password and sessions.',
 					'burbank-lms'
 				) }
 			</p>

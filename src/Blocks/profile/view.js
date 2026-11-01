@@ -107,8 +107,13 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 		} );
 	} );
 
+	let personalBusy = false;
+	const personalSubmit = form.querySelector( 'button[type="submit"]' );
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
+		if ( personalBusy ) {
+			return;
+		}
 		setStatus( status, '' );
 		const first = firstInput ? firstInput.value.trim() : '';
 		const last = lastInput ? lastInput.value.trim() : '';
@@ -125,6 +130,10 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 			name: displaySelect ? displaySelect.value : '',
 			email: emailInput ? emailInput.value.trim() : '',
 		};
+		personalBusy = true;
+		if ( personalSubmit ) {
+			personalSubmit.disabled = true;
+		}
 		try {
 			const response = await fetch( config.userUrl, {
 				method: 'POST',
@@ -184,6 +193,11 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 				'Profile update failed. Please try again.',
 				true
 			);
+		} finally {
+			personalBusy = false;
+			if ( personalSubmit ) {
+				personalSubmit.disabled = false;
+			}
 		}
 	} );
 
@@ -253,8 +267,15 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 		passwordInput.addEventListener( 'input', updateMeter );
 	}
 
+	let securityBusy = false;
+	const securitySubmit = securityForm.querySelector(
+		'button[type="submit"]'
+	);
 	securityForm.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
+		if ( securityBusy ) {
+			return;
+		}
 		setStatus( securityStatus, '' );
 		const password = passwordInput ? passwordInput.value : '';
 		const confirm = confirmInput ? confirmInput.value : '';
@@ -265,6 +286,10 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 		if ( password !== confirm ) {
 			setStatus( securityStatus, 'Passwords do not match.', true );
 			return;
+		}
+		securityBusy = true;
+		if ( securitySubmit ) {
+			securitySubmit.disabled = true;
 		}
 		try {
 			const response = await fetch( config.userUrl, {
@@ -299,6 +324,11 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 				'Password change failed. Please try again.',
 				true
 			);
+		} finally {
+			securityBusy = false;
+			if ( securitySubmit ) {
+				securitySubmit.disabled = false;
+			}
 		}
 	} );
 
