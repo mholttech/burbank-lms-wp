@@ -47,6 +47,26 @@ class LearnerPortalHeadingsTest extends WP_UnitTestCase {
 		);
 	}
 
+	/** core/post-title output is suppressed on my-courses so portal owns the H1. */
+	public function test_suppresses_my_courses_post_title(): void {
+		$page_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => 'my-courses',
+				'post_status' => 'publish',
+				'post_title'  => 'My Courses',
+			)
+		);
+		$this->go_to( get_permalink( $page_id ) );
+
+		$headings = new Portal_Headings();
+		$block    = array(
+			'blockName' => 'core/post-title',
+			'attrs'     => array(),
+		);
+		$this->assertSame( '', $headings->suppress_page_h1( '<h1 class="wp-block-post-title">My Courses</h1>', $block ) );
+	}
+
 	/** Learner catalog chrome uses an H1 portal title. */
 	public function test_catalog_portal_title_is_h1(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );

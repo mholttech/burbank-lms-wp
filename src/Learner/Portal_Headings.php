@@ -20,7 +20,7 @@ class Portal_Headings {
 	);
 
 	/**
-	 * Drop core/heading level-1 output on profile and my-courses.
+	 * Drop core/post-title and core/heading level-1 output on profile and my-courses.
 	 *
 	 * @param string               $block_content Block HTML.
 	 * @param array<string, mixed> $block         Parsed block.
@@ -32,10 +32,18 @@ class Portal_Headings {
 		if ( ! is_page( self::PAGE_SLUGS ) ) {
 			return $block_content;
 		}
-		$level = isset( $block['attrs']['level'] ) ? (int) $block['attrs']['level'] : 2;
-		if ( 1 !== $level ) {
-			return $block_content;
+
+		$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+		if ( 'core/post-title' === $name ) {
+			return '';
 		}
-		return '';
+		if ( 'core/heading' === $name || '' === $name ) {
+			$level = isset( $block['attrs']['level'] ) ? (int) $block['attrs']['level'] : 2;
+			if ( 1 === $level ) {
+				return '';
+			}
+		}
+
+		return $block_content;
 	}
 }
