@@ -7,6 +7,7 @@
 
 use Burbank_LMS\Access\Invites;
 use Burbank_LMS\Access\Learner;
+use Burbank_LMS\Access\Profile;
 use Burbank_LMS\Access\Registration;
 use Burbank_LMS\Access\Tables as AccessTables;
 use Burbank_LMS\Courses\Capabilities;
@@ -416,5 +417,47 @@ class LearnerRestTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( 401, $response->get_status() );
+	}
+
+	/** Legal-name route changes own name, rejects guests and empty names. */
+	public function test_legal_name_route_self_service(): void {
+		$user_id = $this->verified_learner( 'route-name@example.com' );
+		wp_set_current_user( $user_id );
+
+		$response = $this->dispatch(
+			'POST',
+			'/profile/legal-name',
+			array( 'legal_name' => 'Route Renamed' )
+		);
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'Route Renamed', ( new Profile() )->get_legal_name( $user_id ) );
+
+		$empty = $this->dispatch(
+			'POST',
+			'/profile/legal-name',
+			array( 'legal_name' => '  ' )
+		);
+		$this->assertSame( 400, $empty->get_status() );
+
+		wp_set_current_user( 0 );
+		$guest = $this->dispatch(
+			'POST',
+			'/profile/legal-name',
+			array( 'legal_name' => 'Guest Name' )
+		);
+		$this->assertSame( 401, $guest->get_status() );
+	}
+
+	/** Sign-out-others route returns 200 for a learner and 401 for a guest. */
+	public function test_sign_out_others_route(): void {
+		$user_id = $this->verified_learner( 'route-signout@example.com' );
+		wp_set_current_user( $user_id );
+
+		$response = $this->dispatch( 'POST', '/profile/sign-out-others' );
+		$this->assertSame( 200, $response->get_status() );
+
+		wp_set_current_user( 0 );
+		$guest = $this->dispatch( 'POST', '/profile/sign-out-others' );
+		$this->assertSame( 401, $guest->get_status() );
 	}
 }
