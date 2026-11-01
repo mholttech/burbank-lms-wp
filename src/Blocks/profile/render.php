@@ -38,9 +38,9 @@ echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -
 
 wp_enqueue_script( 'password-strength-meter' );
 $view_handle = 'burbank-lms-profile-view-script';
-$wp_scripts  = wp_scripts();
-if ( isset( $wp_scripts->registered[ $view_handle ] ) ) {
-	$wp_scripts->registered[ $view_handle ]->deps[] = 'password-strength-meter';
+$scripts     = wp_scripts();
+if ( isset( $scripts->registered[ $view_handle ] ) ) {
+	$scripts->registered[ $view_handle ]->deps[] = 'password-strength-meter';
 }
 
 $user       = wp_get_current_user();

@@ -440,7 +440,7 @@ class Controller {
 		$user_id = get_current_user_id();
 		$tokens  = \WP_Session_Tokens::get_instance( $user_id );
 		$current = wp_get_session_token();
-		if ( is_string( $current ) && '' !== $current ) {
+		if ( '' !== $current ) {
 			$tokens->destroy_others( $current );
 		} else {
 			$tokens->destroy_all();
