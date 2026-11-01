@@ -8,8 +8,16 @@
 		margin: 0 0 1.5rem;
 		padding: 0;
 
+		&--no-certs {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
 		@media (max-width: 599px) {
 			grid-template-columns: repeat(2, 1fr);
+
+			&--no-certs {
+				grid-template-columns: repeat(2, 1fr);
+			}
 		}
 	}
 
@@ -286,20 +294,6 @@
 
 	&__certificates {
 		margin-block-start: 2rem;
-
-		.ppcert-my-certificates {
-			max-width: none;
-			margin-inline: 0;
-		}
-
-		.ppcert-my-certificates__list {
-			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
-			gap: 0.9rem;
-			list-style: none;
-			margin: 0;
-			padding: 0;
-		}
 	}
 
 	&__status.is-error {
@@ -362,6 +356,27 @@
 				color: var(--bfc-pill-idle-text, #1b6540);
 				-webkit-text-fill-color: var(--bfc-pill-idle-text, #1b6540);
 			}
+		}
+	}
+
+	/*
+	 * PressPrimer centers `.ppcert-my-certificates` with max-width; win with
+	 * the same `.wp-site-blocks main` specificity pattern as title/action.
+	 */
+	.bfc-my-courses__certificates {
+
+		.ppcert-my-certificates {
+			max-width: none;
+			margin-inline: 0;
+		}
+
+		.ppcert-my-certificates__list {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+			gap: 0.9rem;
+			list-style: none;
+			margin: 0;
+			padding: 0;
 		}
 	}
 }

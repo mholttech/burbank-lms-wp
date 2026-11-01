@@ -72,10 +72,13 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 	const empty = root.querySelector( '[data-bfc-empty]' );
 	const status = root.querySelector( '[data-bfc-status]' );
 
+	/** @type {Array<Record<string, unknown>>} */
+	let enrollments = [];
+
 	const STATUS_ORDER = { active: 0, passed: 1, completed: 2, withdrawn: 3 };
 
-	const sortEnrollments = ( enrollments ) =>
-		[ ...enrollments ].sort( ( a, b ) => {
+	const sortEnrollments = ( items ) =>
+		[ ...items ].sort( ( a, b ) => {
 			const rankA = STATUS_ORDER[ a.status ] ?? 0;
 			const rankB = STATUS_ORDER[ b.status ] ?? 0;
 			if ( rankA !== rankB ) {
@@ -96,38 +99,47 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 		}
 	};
 
-	const renderStats = ( enrollments ) => {
+	const renderStats = ( items ) => {
 		const stats = root.querySelector( '[data-bfc-stats]' );
 		if ( ! stats ) {
 			return;
 		}
 		const count = ( ...statuses ) =>
-			enrollments.filter( ( item ) => statuses.includes( item.status ) )
-				.length;
+			items.filter( ( item ) => statuses.includes( item.status ) ).length;
 		setStat( 'enrolled', count( 'active', 'passed', 'completed' ) );
 		setStat( 'in-progress', count( 'active', 'passed' ) );
 		setStat( 'completed', count( 'completed' ) );
 
+		const certStat = root.querySelector( '[data-bfc-stat="certificates"]' );
+		const certStatLi = certStat?.closest( 'li' );
 		const certRoot = root.querySelector( '.ppcert-my-certificates' );
-		if ( certRoot ) {
-			const items = certRoot.querySelectorAll(
-				'.ppcert-my-certificates__item'
-			);
-			setStat( 'certificates', items.length );
-			const valid = certRoot.querySelectorAll(
-				'.ppcert-my-certificates__item .ppcert-pill--valid'
-			).length;
-			const validEl = root.querySelector( '[data-bfc-cert-valid]' );
-			if ( validEl && items.length > 0 ) {
-				validEl.textContent =
-					valid === 1 ? '1 valid' : `${ valid } valid`;
-				validEl.hidden = false;
+		if ( certStatLi ) {
+			if ( ! certRoot ) {
+				certStatLi.hidden = true;
+				stats.classList.add( 'bfc-my-courses__stats--no-certs' );
+			} else {
+				certStatLi.hidden = false;
+				stats.classList.remove( 'bfc-my-courses__stats--no-certs' );
+				const certItems = certRoot.querySelectorAll(
+					'.ppcert-my-certificates__item'
+				);
+				setStat( 'certificates', certItems.length );
+				const valid = certRoot.querySelectorAll(
+					'.ppcert-my-certificates__item .ppcert-pill--valid'
+				).length;
+				const validEl = root.querySelector( '[data-bfc-cert-valid]' );
+				if ( validEl && certItems.length > 0 ) {
+					validEl.textContent =
+						valid === 1 ? '1 valid' : `${ valid } valid`;
+					validEl.hidden = false;
+				}
 			}
 		}
 		stats.hidden = false;
 	};
 
-	const render = ( enrollments ) => {
+	const render = ( items ) => {
+		enrollments = items;
 		list.replaceChildren();
 		renderStats( enrollments );
 		if ( ! enrollments.length ) {
@@ -179,6 +191,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 
 			const footStatus = document.createElement( 'span' );
 			footStatus.className = 'bfc-my-courses__foot-status';
+			footStatus.setAttribute( 'aria-hidden', 'true' );
 			footStatus.textContent = statusLabel( item.status );
 			left.append( footStatus );
 
@@ -226,6 +239,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 							withdraw.disabled = false;
 							return;
 						}
+						item.status = 'withdrawn';
 						badge.textContent = 'Withdrawn';
 						badge.dataset.status = 'withdrawn';
 						footStatus.textContent = 'Withdrawn';
@@ -235,6 +249,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 							action.classList.add( 'is-secondary' );
 						}
 						withdraw.remove();
+						renderStats( enrollments );
 					} catch {
 						setStatus(
 							status,
