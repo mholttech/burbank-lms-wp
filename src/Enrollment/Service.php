@@ -156,6 +156,33 @@ class Service {
 	}
 
 	/**
+	 * Whether a completed enrollment may be retaken because the live course revision changed.
+	 *
+	 * @param object|null $row       Enrollment row from Repository::get.
+	 * @param int         $course_id Course post ID.
+	 */
+	public function retake_available( ?object $row, int $course_id ): bool {
+		if ( ! $row || 'completed' !== (string) ( $row->status ?? '' ) || $course_id < 1 ) {
+			return false;
+		}
+		$current = (string) get_post_meta( $course_id, 'course_revision', true );
+		$snap    = (string) ( $row->course_revision_snapshot ?? '' );
+		return $current !== $snap;
+	}
+
+	/**
+	 * Whether a certificate completion still locks enroll/withdraw for this course version.
+	 *
+	 * @param object|null $row       Enrollment row from Repository::get.
+	 * @param int         $course_id Course post ID.
+	 */
+	public function credential_locks_actions( ?object $row, int $course_id ): bool {
+		return (bool) $row
+			&& 'completed' === (string) ( $row->status ?? '' )
+			&& ! $this->retake_available( $row, $course_id );
+	}
+
+	/**
 	 * Restricted self-enroll: find invite, insert/reactivate, and redeem in one transaction.
 	 *
 	 * @param int    $user_id       User ID.
@@ -167,7 +194,7 @@ class Service {
 		if ( $existing && 'active' === $existing->status ) {
 			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
 		}
-		if ( $existing && 'completed' === $existing->status ) {
+		if ( $existing && 'completed' === $existing->status && ! $this->retake_available( $existing, $course_id ) ) {
 			return new \WP_Error( 'burbank_enrollment_already_completed', __( 'This course is already completed.', 'burbank-lms' ) );
 		}
 
@@ -227,8 +254,8 @@ class Service {
 		if ( $existing && 'active' === $existing->status ) {
 			return new \WP_Error( 'burbank_enrollment_already_active', __( 'Already enrolled in this course.', 'burbank-lms' ) );
 		}
-		// Self/invite enroll must not wipe a completed credential; withdrawn may reactivate.
-		if ( $existing && 'completed' === $existing->status && 'admin' !== $source ) {
+		// Same-revision completed credentials stay locked for self/invite; a new course_revision may retake.
+		if ( $existing && 'completed' === $existing->status && 'admin' !== $source && ! $this->retake_available( $existing, $course_id ) ) {
 			return new \WP_Error( 'burbank_enrollment_already_completed', __( 'This course is already completed.', 'burbank-lms' ) );
 		}
 		$written = $this->write_enrollment_row( $user_id, $course_id, $source, $invite_id, $existing );

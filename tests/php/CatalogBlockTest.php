@@ -218,6 +218,45 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Open enrollment', $item );
 	}
 
+	/** New course revision after completion offers catalog retake enroll. */
+	public function test_catalog_retake_after_new_revision_shows_enroll(): void {
+		$course_id = $this->published_course( 'Retake Course', 'BFC-778', 'safety' );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		$service = new Enrollment_Service();
+		$this->assertTrue( $service->self_enroll( $user_id, $course_id ) );
+		$row = $service->get_active( $user_id, $course_id );
+		$this->assertNotNull( $row );
+		$this->assertTrue( ( new \Burbank_LMS\Enrollment\Repository() )->complete( (int) $row->id, 100, gmdate( 'Y-m-d H:i:s' ) ) );
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB -- Bypass published assessed-field guards for revision fixture.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->postmeta} SET meta_value = %s WHERE post_id = %d AND meta_key = %s",
+				'rev-next',
+				$course_id,
+				'course_revision'
+			)
+		);
+		clean_post_cache( $course_id );
+		wp_set_current_user( $user_id );
+
+		$html = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
+		$this->assertTrue(
+			(bool) preg_match(
+				'/<li\b[^>]*data-bfc-code="BFC-778"[^>]*>([\s\S]*?)<\/li>/',
+				$html,
+				$matches
+			),
+			'Expected a catalog item for BFC-778'
+		);
+		$item = $matches[1];
+		$this->assertStringContainsString( 'New version', $item );
+		$this->assertStringContainsString( 'bfc-catalog__enroll', $item );
+		$this->assertStringContainsString( 'Enroll in new version', $item );
+	}
+
 	/** Guests see soft-gate card instead of catalog course list. */
 	public function test_catalog_render_soft_gates_guest(): void {
 		$this->published_course( 'Gated Course', 'BFC-901', 'communications' );

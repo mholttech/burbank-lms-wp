@@ -313,6 +313,44 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 		$this->assertNotNull( $kept );
 		$this->assertSame( 'completed', $kept->status );
 		$this->assertSame( 55, (int) $kept->credential_id );
+		$this->assertTrue( $this->service()->credential_locks_actions( $kept, $course_id ) );
+		$this->assertFalse( $this->service()->retake_available( $kept, $course_id ) );
+	}
+
+	/** A new course_revision after completion allows learner retake via reactivate. */
+	public function test_self_enroll_allows_retake_after_new_revision(): void {
+		$user_id   = $this->verified_learner( 'retake-revision@example.com' );
+		$course_id = $this->published_course( 'rev-1' );
+		$this->assertTrue( $this->service()->self_enroll( $user_id, $course_id ) );
+		$row = $this->service()->get_active( $user_id, $course_id );
+		$this->assertNotNull( $row );
+		$row_id = (int) $row->id;
+		$this->assertTrue( ( new Repository() )->complete( $row_id, 88, gmdate( 'Y-m-d H:i:s' ) ) );
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB -- Bypass published assessed-field guards for revision fixture.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->postmeta} SET meta_value = %s WHERE post_id = %d AND meta_key = %s",
+				'rev-2',
+				$course_id,
+				'course_revision'
+			)
+		);
+		clean_post_cache( $course_id );
+
+		$completed = $this->service()->get( $user_id, $course_id );
+		$this->assertTrue( $this->service()->retake_available( $completed, $course_id ) );
+		$this->assertFalse( $this->service()->credential_locks_actions( $completed, $course_id ) );
+
+		$this->assertTrue( $this->service()->self_enroll( $user_id, $course_id ) );
+		$active = $this->service()->get_active( $user_id, $course_id );
+		$this->assertNotNull( $active );
+		$this->assertSame( $row_id, (int) $active->id );
+		$this->assertSame( 'active', $active->status );
+		$this->assertSame( 'rev-2', $active->course_revision_snapshot );
+		$this->assertNull( $active->credential_id );
+		$this->assertNull( $active->completed_at );
 	}
 
 	/** Withdrawn learners may re-enroll by reactivating the unique course/user row. */

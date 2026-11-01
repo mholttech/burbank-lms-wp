@@ -212,7 +212,30 @@ class PressPrimer_Quiz {
 	}
 
 	/**
+	 * Course post ID while the course block embeds a mapped quiz shortcode (0 = not embedding).
+	 *
+	 * @var int
+	 */
+	private static int $course_embed_id = 0;
+
+	/**
+	 * Mark the start of an in-page course quiz embed (skips duplicate chrome).
+	 *
+	 * @param int $course_id Course post ID.
+	 */
+	public static function begin_course_embed( int $course_id ): void {
+		self::$course_embed_id = max( 0, $course_id );
+	}
+
+	/** Clear the in-page course quiz embed marker. */
+	public static function end_course_embed(): void {
+		self::$course_embed_id = 0;
+	}
+
+	/**
 	 * Print back-link + enrollment status for a mapped quiz; no-op when unmapped.
+	 *
+	 * Skips while the course block embeds the same mapped course quiz.
 	 *
 	 * @param mixed $quiz PressPrimer quiz object.
 	 */
@@ -223,6 +246,12 @@ class PressPrimer_Quiz {
 		}
 		$course_id = $this->published_course_id_for_quiz( $quiz_id );
 		if ( null === $course_id ) {
+			return;
+		}
+		if ( self::$course_embed_id === $course_id ) {
+			return;
+		}
+		if ( is_singular( 'bfc_course' ) && (int) get_queried_object_id() === $course_id ) {
 			return;
 		}
 

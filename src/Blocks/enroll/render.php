@@ -41,24 +41,29 @@ if ( ! $can_learn ) {
 	return;
 }
 
+$enroll_svc = new Enrollment_Service();
 $restricted = $course_id > 0 && ( new Invites() )->course_has_active_invites( $course_id );
-$row        = $course_id > 0 ? ( new Enrollment_Service() )->get( $user_id, $course_id ) : null;
-$completed  = $row && 'completed' === $row->status;
-$active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_id, $course_id ) : null;
+$row        = $course_id > 0 ? $enroll_svc->get( $user_id, $course_id ) : null;
+$locked     = $course_id > 0 && $enroll_svc->credential_locks_actions( $row, $course_id );
+$retake     = $course_id > 0 && $enroll_svc->retake_available( $row, $course_id );
+$active     = $course_id > 0 ? $enroll_svc->get_active( $user_id, $course_id ) : null;
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
 	<div class="bfc-enroll__foot">
-	<?php if ( $completed ) : ?>
+	<?php if ( $locked ) : ?>
 		<span class="bfc-enroll__badge"><?php esc_html_e( 'Completed', 'burbank-lms' ); ?></span>
 		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
 	<?php elseif ( $active ) : ?>
 		<span class="bfc-enroll__badge bfc-enroll__badge--enrolled"><?php esc_html_e( 'Enrolled', 'burbank-lms' ); ?></span>
 		<a class="bfc-enroll__action wp-element-button" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'Continue course', 'burbank-lms' ); ?></a>
+	<?php elseif ( $retake && $restricted ) : ?>
+		<span class="bfc-enroll__badge"><?php esc_html_e( 'New version', 'burbank-lms' ); ?></span>
+		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
 	<?php elseif ( $restricted ) : ?>
 		<span class="bfc-enroll__badge bfc-enroll__badge--invite"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></span>
 		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
 	<?php else : ?>
-		<span class="bfc-enroll__badge bfc-enroll__badge--open"><?php esc_html_e( 'Open enrollment', 'burbank-lms' ); ?></span>
+		<span class="bfc-enroll__badge bfc-enroll__badge--open"><?php echo esc_html( $retake ? __( 'New version', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ); ?></span>
 		<form class="bfc-enroll__form" novalidate>
 			<p class="bfc-enroll__field">
 				<label for="bfc-enroll-course"><?php esc_html_e( 'Course', 'burbank-lms' ); ?></label>
@@ -80,7 +85,7 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 				<input id="bfc-enroll-invite" name="course_invite" type="text" autocomplete="off">
 			</p>
 			<p class="bfc-enroll__actions">
-				<button type="submit" class="wp-element-button"><?php esc_html_e( 'Enroll', 'burbank-lms' ); ?></button>
+				<button type="submit" class="wp-element-button"><?php echo esc_html( $retake ? __( 'Enroll in new version', 'burbank-lms' ) : __( 'Enroll', 'burbank-lms' ) ); ?></button>
 			</p>
 		</form>
 	<?php endif; ?>

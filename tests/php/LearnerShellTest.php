@@ -199,6 +199,7 @@ class LearnerShellTest extends WP_UnitTestCase {
 		$continue_kinds = wp_list_pluck( $shell->contextual_actions( $course_id, $user_id ), 'kind' );
 		$this->assertContains( 'continue', $continue_kinds );
 		$this->assertNotContains( 'enroll', $continue_kinds );
+		$this->assertContains( 'withdraw', $continue_kinds );
 
 		$continue = null;
 		foreach ( $shell->contextual_actions( $course_id, $user_id ) as $action ) {
@@ -209,6 +210,39 @@ class LearnerShellTest extends WP_UnitTestCase {
 		}
 		$this->assertIsArray( $continue );
 		$this->assertStringContainsString( '#bfc-course-quiz', $continue['url'] );
+	}
+
+	/** Completed same-revision credentials offer certificates only; new revision offers enroll. */
+	public function test_contextual_actions_completed_lock_and_retake(): void {
+		$user_id   = $this->verified_learner( 'shell-completed@example.com' );
+		$course_id = $this->published_course( 42 );
+		$shell     = new Shell();
+		$service   = new Enrollment_Service();
+
+		$this->assertTrue( $service->self_enroll( $user_id, $course_id ) );
+		$row = $service->get_active( $user_id, $course_id );
+		$this->assertNotNull( $row );
+		$this->assertTrue( ( new \Burbank_LMS\Enrollment\Repository() )->complete( (int) $row->id, 44, gmdate( 'Y-m-d H:i:s' ) ) );
+
+		$locked = wp_list_pluck( $shell->contextual_actions( $course_id, $user_id ), 'id' );
+		$this->assertSame( array( 'certificates' ), $locked );
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB -- Bypass published assessed-field guards for revision fixture.
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->postmeta} SET meta_value = %s WHERE post_id = %d AND meta_key = %s",
+				'rev-retake',
+				$course_id,
+				'course_revision'
+			)
+		);
+		clean_post_cache( $course_id );
+
+		$retake = $shell->contextual_actions( $course_id, $user_id );
+		$this->assertCount( 1, $retake );
+		$this->assertSame( 'enroll', $retake[0]['kind'] );
+		$this->assertSame( 'Enroll in new version', $retake[0]['label'] );
 	}
 
 	/** Catalog then course as learner yields exactly one shell when outputs are concatenated. */

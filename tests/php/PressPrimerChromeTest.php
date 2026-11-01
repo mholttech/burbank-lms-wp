@@ -57,6 +57,20 @@ class PressPrimerChromeTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '%', $html );
 	}
 
+	/** Mapped quiz embedded via the course block skips chrome (course block owns UX). */
+	public function test_mapped_quiz_skips_chrome_on_course_embed(): void {
+		$fixture = $this->mapped_course_and_learner( true );
+		wp_set_current_user( $fixture['user_id'] );
+
+		PressPrimer_Quiz::begin_course_embed( $fixture['course_id'] );
+		ob_start();
+		( new PressPrimer_Quiz() )->before_quiz_meta( $fixture['quiz'] );
+		$html = ob_get_clean();
+		PressPrimer_Quiz::end_course_embed();
+
+		$this->assertSame( '', $html );
+	}
+
 	/** Unmapped quiz prints no chrome. */
 	public function test_unmapped_quiz_echoes_nothing(): void {
 		PressPrimer_Quiz_Activator::activate();

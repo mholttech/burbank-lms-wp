@@ -68,7 +68,7 @@ When `should_block` is true, `burbank-lms/catalog`, `course`, `profile`, and `my
 
 **Shell / portal chrome** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests) as a Duty Officer–style `.bfc-portal` workspace: uppercase **Training** kicker, learner display name as the document **H1** (or a `<p>` title on course singles so the course post title keeps H1), context lede, then `.bfc-shell` pill-track nav. Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state. Pill-track nav (Catalog · My Courses · Profile) stays expanded at all breakpoints; course contextual actions wrap onto a second row when needed.
 
-**Heading ownership:** The catalog block owns the course-archive H1 (“Course catalog”). `Learner\Portal_Headings` suppresses `core/query-title` on the `bfc_course` archive and suppresses `core/heading` level-1 **and** `core/post-title` on `/profile/` and `/my-courses/` so theme patterns do not duplicate the portal/soft-gate title. Course singles keep `core/post-title` as H1.
+**Heading ownership:** The catalog block owns the course-archive H1 (“Course catalog”). `Learner\Portal_Headings` suppresses `core/query-title` on the `bfc_course` archive and suppresses `core/heading` level-1 **and** `core/post-title` on `/profile/` and `/my-courses/` so theme patterns do not duplicate the portal/soft-gate title. On course singles, `burbank-lms/course` owns the document H1 (`.bfc-course__title`); `suppress_course_singular_title` drops theme `core/post-title`, and embedded PressPrimer quiz titles are demoted H1→H2.
 
 Optional `burbank-lms/shell` block prints the same chrome then InnerBlocks; learner block renders also call `Shell::render_chrome`, so the once-flag prevents duplicate nav when both run.
 
@@ -131,7 +131,7 @@ Stored in `{prefix}bfc_enrollments` with unique `(course_id, user_id)`.
 | `invite_code_id` | Course invite used, if any |
 | `quiz_passed_at` | First successful pass while enrolled |
 | `credential_id` | PressPrimer certificate id after issuance |
-| `course_revision_snapshot` | Revision string at enroll (audit only) |
+| `course_revision_snapshot` | Revision string at enroll; compared to live `course_revision` for retake gating |
 
 Course policy is implicit:
 
@@ -155,6 +155,8 @@ Successful enroll fires `burbank_lms_enrolled` (Mailer sends confirmation). The 
 2. PressPrimer Certificate issues via its existing `ppq_quiz` trigger (Phase 1 mapping still required).
 3. `ppcert_issue_validation` requires active enrollment + `quiz_passed_at` for the mapped course.
 4. `ppcert_certificate_issued` stores `credential_id`, sets `status=completed` / `completed_at`, fires `burbank_lms_course_completed` (Mailer sends completion mail).
+
+After a certificate completes the enrollment, learner surfaces hide Enroll/Withdraw for that course version (`Enrollment\Service::credential_locks_actions`). Self/invite enroll is refused with `burbank_enrollment_already_completed` while live `course_revision` matches `course_revision_snapshot`. When editors start a new material revision (different `course_revision`), `retake_available` opens Enroll again; re-enroll reactivates the row and clears progress fields for the new attempt. Admins may still force a retake on the same revision.
 
 Unmapped quizzes (no published `bfc_course` with that `pressprimer_quiz_id`) are not gated by Burbank.
 
@@ -197,7 +199,7 @@ The `bfc_course` CPT is public with `has_archive` and archive slug **`courses`**
 
 **Archive fallback:** constrained group → “Course catalog” heading → `burbank-lms/catalog`.
 
-**Single fallback:** post title (H1) → featured image → **post content** (course materials) → `burbank-lms/course` (meta, enrollment status, actions, in-page quiz region). Theme `single-bfc_course` templates should mirror that block order.
+**Single fallback:** featured image → **post content** (course materials) → `burbank-lms/course` (H1 title, meta, enrollment status, actions, in-page quiz region). Theme `single-bfc_course` templates should mirror that block order (no competing `core/post-title`).
 
 Quiz taking stays in PressPrimer’s player; the course block embeds `[pressprimer_quiz]` in `#bfc-course-quiz` only when the learner is actively enrolled.
 
@@ -220,7 +222,7 @@ Quiz taking stays in PressPrimer’s player; the course block embeds `[pressprim
 - `pressprimer_quiz_before_quiz_meta`
 - `pressprimer_quiz_before_results` / `pressprimer_quiz_after_results`
 
-Unmapped quizzes get no chrome. `demote_quiz_title` on `render_block_pressprimer-quiz/quiz` rewrites `.ppq-quiz-title` H1 → H2 so the course page keeps a single H1. Hook contracts: [pressprimer-compatibility.md](pressprimer-compatibility.md).
+Unmapped quizzes get no chrome. On the mapped course single, chrome is skipped (the course block owns enrollment UX). `demote_quiz_title` on `render_block_pressprimer-quiz/quiz` and on shortcode embed output rewrites `.ppq-quiz-title` H1 → H2 so the course page keeps a single H1. Hook contracts: [pressprimer-compatibility.md](pressprimer-compatibility.md).
 
 ## Mail and branding
 
