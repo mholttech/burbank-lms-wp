@@ -164,6 +164,9 @@ class PressPrimer_Quiz {
 	 * @param int $course_id Course post ID.
 	 */
 	private function assert_may_take( int $user_id, int $course_id ): true|\WP_Error {
+		if ( $this->learner()->needs_email_verification( $user_id ) ) {
+			return new \WP_Error( 'burbank_email_unverified', __( 'Verify your email before taking this quiz.', 'burbank-lms' ) );
+		}
 		if ( $user_id < 1 || ! $this->learner()->can_learn( $user_id ) ) {
 			return new \WP_Error(
 				'burbank_quiz_access',

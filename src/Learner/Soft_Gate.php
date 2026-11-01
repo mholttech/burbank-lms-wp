@@ -11,6 +11,16 @@ use Burbank_LMS\Access\Learner;
 
 /** Builds invite-only / no-access cards without leaking catalog content. */
 class Soft_Gate {
+	/**
+	 * Render the verification panel beneath the portal heading.
+	 *
+	 * @param int $user_id User ID.
+	 */
+	public function render_verify( int $user_id ): string {
+		$user = get_userdata( $user_id );
+		return '<section class="bfc-soft-gate" data-bfc-verify data-bfc-rest-config="' . esc_attr( Block_Context::rest_config_json() ) . '"><p class="bfc-soft-gate__caption">' . esc_html__( 'Training', 'burbank-lms' ) . '</p><h2 class="bfc-soft-gate__title">' . esc_html__( 'Verify your email', 'burbank-lms' ) . '</h2><p class="bfc-soft-gate__body" data-bfc-verify-email>' . esc_html( $user ? $user->user_email : '' ) . '</p><button class="wp-element-button" type="button" data-bfc-resend-verify>' . esc_html__( 'Resend verification email', 'burbank-lms' ) . '</button><form data-bfc-change-email><label>' . esc_html__( 'Change email', 'burbank-lms' ) . ' <input type="email" name="email" required autocomplete="email"></label><button class="wp-element-button" type="submit">' . esc_html__( 'Send verification', 'burbank-lms' ) . '</button></form><p role="status" aria-live="polite"></p></section>';
+	}
+
 	public const AUDIENCE_LEARNER   = 'learner';
 	public const AUDIENCE_GUEST     = 'guest';
 	public const AUDIENCE_NO_ACCESS = 'no_access';

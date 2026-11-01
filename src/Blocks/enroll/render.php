@@ -17,6 +17,10 @@ use Burbank_LMS\Learner\Catalog;
 
 $course_id = isset( $attributes['courseId'] ) ? absint( $attributes['courseId'] ) : 0;
 $user_id   = get_current_user_id();
+if ( ( new Learner() )->needs_email_verification( $user_id ) ) {
+	echo ( new \Burbank_LMS\Learner\Soft_Gate() )->render_verify( $user_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
+	return;
+}
 $can_learn = $user_id > 0 && ( new Learner() )->can_learn( $user_id );
 $courses   = ( new Catalog() )->query();
 $wrapper   = get_block_wrapper_attributes(

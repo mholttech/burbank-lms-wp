@@ -90,6 +90,7 @@ class Registration {
 			return $named;
 		}
 
+		update_user_meta( $user_id, Learner::META_EMAIL_VERIFIED, '0' );
 		$this->learner()->grant_access( $user_id, (int) $invite->id );
 
 		if ( ! $this->invites()->redeem( (int) $invite->id ) ) {
@@ -98,6 +99,7 @@ class Registration {
 			return new \WP_Error( 'burbank_register_invite_redeem_failed', __( 'Registration could not be completed.', 'burbank-lms' ) );
 		}
 
+		( new Email_Verification() )->send( $user_id );
 		return $user_id;
 	}
 

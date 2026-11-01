@@ -256,3 +256,13 @@ learners back to the course, send invite-only learners to the course invite form
 replace successful enrollment forms with Continue course. These surfaces show status
 labels rather than progress percentages. Public `[ppcert_verify]` pages explicitly load
 the PressPrimer skin and remain outside the learner shell.
+
+### Email verification
+
+Invite registration grants training access immediately and explicitly marks the email unverified. Existing accounts with no verification flag retain their prior access; no bulk migration is required. Unverified learners can sign in and see portal navigation, but catalog, course, profile and my-courses bodies show a verification panel. Standalone enrollment also shows that panel. The panel uses an H2 beneath the portal H1.
+
+Self-enrollment (including direct service calls), mapped quiz start/submission and the effective PressPrimer quiz capability require a verified email. Administrator enrollment remains available. Unmapped quiz behavior is unchanged.
+
+Authenticated `POST /burbank-lms/v1/profile/resend-verification` and `POST /burbank-lms/v1/profile/email` support resend and changing the address. Both require training access. Email changes clear verification; the UI updates its address hint after success. Requests are limited to one verification email per minute. The public `?burbank_lms_verify=TOKEN` landing is outside the portal shell and supplies success/expired-link recovery links. Tokens expire after 24 hours, are bound to the current email, stored only as SHA-256 hashes, and consumed once. Registration remains successful if mail fails; the verification panel offers another attempt and send results fire `burbank_lms_sent_verification_email` for monitoring.
+
+Course materials rendered by `core/post-content` are guarded before child blocks or shortcodes execute, including the plugin single-course template. Guests, accounts without access, and unverified learners receive no materials; the course block presents their gate. Editor screens and unrelated post content remain available. Change-email responses include the persisted address even when mail delivery fails, so the panel can show the saved address while reporting the delivery failure.

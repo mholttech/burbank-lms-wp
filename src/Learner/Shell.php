@@ -91,7 +91,7 @@ class Shell {
 	 * @return array<int, array{id:string,label:string,url:string,kind:string}>
 	 */
 	public function contextual_actions( int $course_id, int $user_id ): array {
-		if ( $course_id < 1 || $user_id < 1 || ! ( new Learner() )->can_learn( $user_id ) ) {
+		if ( ( new Learner() )->needs_email_verification( $user_id ) || $course_id < 1 || $user_id < 1 || ! ( new Learner() )->can_learn( $user_id ) ) {
 			return array();
 		}
 		$post = get_post( $course_id );

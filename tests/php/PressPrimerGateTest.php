@@ -76,6 +76,15 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 		$this->assertWPError( $result );
 	}
 
+	/** Even an active enrollment cannot bypass email verification. */
+	public function test_unverified_enrolled_learner_cannot_start(): void {
+		$fixture = $this->mapped_course_and_learner( true );
+		update_user_meta( $fixture['user_id'], Learner::META_EMAIL_VERIFIED, '0' );
+		wp_set_current_user( $fixture['user_id'] );
+		$this->assertWPError( ( new PressPrimer_Quiz() )->can_start( true, $fixture['quiz'] ) );
+		$this->assertFalse( user_can( $fixture['user_id'], Learner::CAP_TAKE_QUIZ ) );
+	}
+
 	/** Active enrollment on a mapped quiz allows start. */
 	public function test_can_start_true_with_active_enrollment(): void {
 		$fixture = $this->mapped_course_and_learner( true );
@@ -253,6 +262,7 @@ class PressPrimerGateTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
+		( new \Burbank_LMS\Access\Learner() )->mark_email_verified( $user_id );
 		return $user_id;
 	}
 
