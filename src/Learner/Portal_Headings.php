@@ -46,4 +46,21 @@ class Portal_Headings {
 
 		return $block_content;
 	}
+
+	/**
+	 * Drop core/query-title output on the course archive (portal owns the H1).
+	 *
+	 * @param string               $block_content Block HTML.
+	 * @param array<string, mixed> $block         Parsed block.
+	 */
+	public function suppress_archive_title( string $block_content, array $block ): string {
+		if ( '' === $block_content || is_admin() ) {
+			return $block_content;
+		}
+		if ( ! is_post_type_archive( 'bfc_course' ) ) {
+			return $block_content;
+		}
+		$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+		return 'core/query-title' === $name ? '' : $block_content;
+	}
 }

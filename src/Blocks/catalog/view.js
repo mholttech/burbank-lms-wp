@@ -5,8 +5,10 @@
 
 function parseConfig( root ) {
 	try {
-		return JSON.parse( root.getAttribute( 'data-bfc-rest-config' ) || '{}' );
-	} catch ( error ) {
+		return JSON.parse(
+			root.getAttribute( 'data-bfc-rest-config' ) || '{}'
+		);
+	} catch {
 		return {};
 	}
 }
@@ -21,9 +23,7 @@ function setStatus( el, message, isError ) {
 }
 
 function applyFilters( root ) {
-	const q = (
-		root.querySelector( '[data-bfc-catalog-search]' )?.value || ''
-	)
+	const q = ( root.querySelector( '[data-bfc-catalog-search]' )?.value || '' )
 		.toLowerCase()
 		.trim();
 	const subject =
@@ -66,15 +66,18 @@ document.querySelectorAll( '.bfc-catalog' ).forEach( ( root ) => {
 			setStatus( status, '' );
 			button.disabled = true;
 			try {
-				const response = await fetch( `${ config.restUrl }/enrollments`, {
-					method: 'POST',
-					credentials: 'same-origin',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': config.nonce || '',
-					},
-					body: JSON.stringify( { course_id: courseId } ),
-				} );
+				const response = await fetch(
+					`${ config.restUrl }/enrollments`,
+					{
+						method: 'POST',
+						credentials: 'same-origin',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-WP-Nonce': config.nonce || '',
+						},
+						body: JSON.stringify( { course_id: courseId } ),
+					}
+				);
 				const payload = await response.json().catch( () => ( {} ) );
 				if ( ! response.ok ) {
 					setStatus(
@@ -85,14 +88,34 @@ document.querySelectorAll( '.bfc-catalog' ).forEach( ( root ) => {
 					button.disabled = false;
 					return;
 				}
+				const foot = button.closest( '.bfc-catalog__foot' );
+				const item = button.closest( '.bfc-catalog__item' );
 				const chip = document.createElement( 'span' );
 				chip.className =
 					'bfc-catalog__chip bfc-catalog__chip--enrolled';
 				chip.textContent = 'Enrolled';
 				button.replaceWith( chip );
+				const open = foot?.querySelector( '.bfc-catalog__open' );
+				if ( open ) {
+					open.remove();
+				}
+				const titleLink = item?.querySelector( '.bfc-catalog__title' );
+				const href = titleLink?.getAttribute( 'href' );
+				if ( foot && href ) {
+					const continueLink = document.createElement( 'a' );
+					continueLink.className =
+						'bfc-catalog__cta bfc-catalog__cta--continue';
+					continueLink.href = href;
+					continueLink.textContent = 'Continue course';
+					foot.append( continueLink );
+				}
 				setStatus( status, 'Enrolled successfully.', false );
-			} catch ( error ) {
-				setStatus( status, 'Enrollment failed. Please try again.', true );
+			} catch {
+				setStatus(
+					status,
+					'Enrollment failed. Please try again.',
+					true
+				);
 				button.disabled = false;
 			}
 		} );

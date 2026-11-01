@@ -66,6 +66,20 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 		$search_id  = wp_unique_id( 'bfc-catalog-search-' );
 		$subject_id = wp_unique_id( 'bfc-catalog-subject-' );
 		?>
+		<div class="bfc-catalog__head">
+			<h2 class="bfc-catalog__heading"><?php esc_html_e( 'Course catalog', 'burbank-lms' ); ?></h2>
+			<span class="bfc-catalog__count">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of courses in the catalog. */
+						_n( '%d course available', '%d courses available', count( $courses ), 'burbank-lms' ),
+						count( $courses )
+					)
+				);
+				?>
+			</span>
+		</div>
 		<div class="bfc-catalog__filters">
 			<p class="bfc-catalog__field">
 				<label for="<?php echo esc_attr( $search_id ); ?>"><?php esc_html_e( 'Search courses', 'burbank-lms' ); ?></label>
@@ -107,15 +121,15 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 					data-bfc-code="<?php echo esc_attr( $code ); ?>"
 					data-bfc-subject="<?php echo esc_attr( $subject ); ?>"
 				>
+					<?php if ( $subject ) : ?>
+						<span class="bfc-catalog__badge"><?php echo esc_html( $presentation->label( $subject ) ); ?></span>
+					<?php endif; ?>
 					<a class="bfc-catalog__title" href="<?php echo esc_url( $permalink ); ?>">
 						<?php echo esc_html( $course_title ); ?>
 					</a>
 					<div class="bfc-catalog__meta">
 						<?php if ( $code ) : ?>
 							<span class="bfc-catalog__code"><?php echo esc_html( $code ); ?></span>
-						<?php endif; ?>
-						<?php if ( $subject ) : ?>
-							<span class="bfc-catalog__subject-label"><?php echo esc_html( $presentation->label( $subject ) ); ?></span>
 						<?php endif; ?>
 						<?php if ( $outcome ) : ?>
 							<span class="bfc-catalog__outcome"><?php echo esc_html( $presentation->label( $outcome ) ); ?></span>
@@ -124,15 +138,19 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 					<?php if ( $course->post_excerpt ) : ?>
 						<p class="bfc-catalog__excerpt"><?php echo esc_html( wp_strip_all_tags( $course->post_excerpt ) ); ?></p>
 					<?php endif; ?>
-					<div class="bfc-catalog__actions">
+					<div class="bfc-catalog__foot">
 						<?php if ( $active ) : ?>
 							<span class="bfc-catalog__chip bfc-catalog__chip--enrolled"><?php esc_html_e( 'Enrolled', 'burbank-lms' ); ?></span>
+							<a class="bfc-catalog__cta bfc-catalog__cta--continue" href="<?php echo esc_url( $permalink ); ?>">
+								<?php esc_html_e( 'Continue course', 'burbank-lms' ); ?>
+							</a>
 						<?php elseif ( $can_learn && $restricted ) : ?>
 							<span class="bfc-catalog__chip bfc-catalog__chip--invite"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></span>
-							<a class="bfc-catalog__cta wp-element-button" href="<?php echo esc_url( $permalink ); ?>">
+							<a class="bfc-catalog__cta wp-element-button is-secondary" href="<?php echo esc_url( $permalink ); ?>">
 								<?php esc_html_e( 'View course', 'burbank-lms' ); ?>
 							</a>
 						<?php elseif ( $can_learn ) : ?>
+							<span class="bfc-catalog__open"><?php esc_html_e( 'Open enrollment', 'burbank-lms' ); ?></span>
 							<button type="button" class="bfc-catalog__enroll wp-element-button" data-bfc-enroll="<?php echo esc_attr( (string) $course_id ); ?>">
 								<?php esc_html_e( 'Enroll', 'burbank-lms' ); ?>
 							</button>
