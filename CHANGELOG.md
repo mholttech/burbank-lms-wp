@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.5.1...burbank-lms-v1.5.2) (2026-11-01)
+
+
+### Bug Fixes
+
+* **learner:** restore light-mode pill and CTA contrast ([#32](https://github.com/mholttech/burbank-lms-wp/issues/32)) ([0658d9d](https://github.com/mholttech/burbank-lms-wp/commit/0658d9da1d24d87459dfa4e15516b3fe7bcf2437))
+
 ## [1.5.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.5.0...burbank-lms-v1.5.1) (2026-11-01)
 
 
