@@ -108,7 +108,7 @@ class CatalogBlockTest extends WP_UnitTestCase {
 	/** Course details use the shared tile stack without percentage progress. */
 	public function test_course_stack_has_badge_title_and_action_footer(): void {
 		$course_id = $this->published_course( 'Stack course', 'BFC-303', 'safety' );
-		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
 		$html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
@@ -122,13 +122,38 @@ class CatalogBlockTest extends WP_UnitTestCase {
 	/** Enrolled mini-cards offer a direct return to the course. */
 	public function test_enroll_card_offers_continue_for_active_enrollment(): void {
 		$course_id = $this->published_course( 'Continue course', 'BFC-304', 'safety' );
-		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		( new Learner() )->grant_access( $user_id );
 		$this->assertTrue( ( new Enrollment_Service() )->self_enroll( $user_id, $course_id ) );
 		wp_set_current_user( $user_id );
 		$html = do_blocks( '<!-- wp:burbank-lms/enroll {"courseId":' . $course_id . '} /-->' );
 		$this->assertStringContainsString( 'bfc-enroll__foot', $html );
 		$this->assertStringContainsString( 'Continue course', $html );
+		$course_html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'data-bfc-withdraw', $course_html );
+	}
+
+	/** Invite-only mini-cards link to the course redemption form. */
+	public function test_invite_mini_card_links_to_course(): void {
+		$course_id = $this->published_course( 'Invite course', 'BFC-305', 'safety' );
+		( new \Burbank_LMS\Access\Tables() )->install();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$invite = ( new \Burbank_LMS\Access\Invites() )->create(
+			'course',
+			array(
+				'course_id' => $course_id,
+				'label'     => 'Card',
+				'kind'      => 'multi',
+			)
+		);
+		$this->assertIsArray( $invite );
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$html = do_blocks( '<!-- wp:burbank-lms/enroll {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'Invite required', $html );
+		$this->assertStringContainsString( 'View course', $html );
+		$this->assertStringNotContainsString( 'type="submit"', $html );
 	}
 
 	/** Guests see soft-gate card instead of catalog course list. */

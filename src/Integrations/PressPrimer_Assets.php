@@ -57,6 +57,11 @@ class PressPrimer_Assets {
 			return false;
 		}
 
+		$post = get_post();
+		if ( $post instanceof \WP_Post && has_shortcode( $post->post_content, 'ppcert_verify' ) ) {
+			return true;
+		}
+
 		return file_exists( WP_PLUGIN_DIR . '/pressprimer-quiz/pressprimer-quiz.php' )
 			|| file_exists( WP_PLUGIN_DIR . '/pressprimer-certificate/pressprimer-certificate.php' );
 	}

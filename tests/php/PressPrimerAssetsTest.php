@@ -36,6 +36,20 @@ class PressPrimerAssetsTest extends WP_UnitTestCase {
 		$this->assertTrue( wp_style_is( 'burbank-lms-pressprimer', 'enqueued' ) );
 	}
 
+	/** Public verification shortcode pages receive the skin without learner chrome. */
+	public function test_public_verify_page_enqueues_skin(): void {
+		$page_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_content' => '[ppcert_verify]',
+			)
+		);
+		$this->go_to( get_permalink( $page_id ) );
+		( new PressPrimer_Assets() )->enqueue();
+		$this->assertTrue( wp_style_is( PressPrimer_Assets::HANDLE, 'enqueued' ) );
+	}
+
 	/** Non-course, non-singular requests do not enqueue the PressPrimer skin. */
 	public function test_skips_enqueue_off_course_context(): void {
 		// Search is never singular; avoids static-front-page + installed PP plugins

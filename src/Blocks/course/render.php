@@ -134,6 +134,9 @@ $wrapper      = get_block_wrapper_attributes(
 	<?php elseif ( ! $active ) : ?>
 		<p><?php esc_html_e( 'Ask a training administrator to grant training access before enrolling.', 'burbank-lms' ); ?></p>
 	<?php endif; ?>
+	<?php if ( $active && 'completed' !== $status_key ) : ?>
+		<button type="button" class="bfc-course__action is-secondary" data-bfc-withdraw><?php esc_html_e( 'Withdraw', 'burbank-lms' ); ?></button>
+	<?php endif; ?>
 	</div>
 	<p class="bfc-course__notice" hidden data-bfc-status></p>
 </div>

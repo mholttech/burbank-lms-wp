@@ -4,8 +4,10 @@
 
 function parseConfig( root ) {
 	try {
-		return JSON.parse( root.getAttribute( 'data-bfc-rest-config' ) || '{}' );
-	} catch ( error ) {
+		return JSON.parse(
+			root.getAttribute( 'data-bfc-rest-config' ) || '{}'
+		);
+	} catch {
 		return {};
 	}
 }
@@ -21,13 +23,13 @@ function setStatus( el, message, isError ) {
 
 document.querySelectorAll( '.bfc-enroll' ).forEach( ( root ) => {
 	const form = root.querySelector( '.bfc-enroll__form' );
-	const status = root.querySelector( '[data-bfc-status]' );
-	const select = root.querySelector( '[data-bfc-course-select]' );
-	const inviteWrap = root.querySelector( '[data-bfc-invite-wrap]' );
 	if ( ! form ) {
 		return;
 	}
 	const config = parseConfig( root );
+	const status = root.querySelector( '[data-bfc-status]' );
+	const select = root.querySelector( '[data-bfc-course-select]' );
+	const inviteWrap = root.querySelector( '[data-bfc-invite-wrap]' );
 
 	const syncInvite = () => {
 		if ( ! select || ! inviteWrap ) {
@@ -44,12 +46,14 @@ document.querySelectorAll( '.bfc-enroll' ).forEach( ( root ) => {
 		event.preventDefault();
 		setStatus( status, '' );
 		const data = Object.fromEntries( new FormData( form ).entries() );
+		/* eslint-disable camelcase -- REST contract field names. */
 		const body = {
 			course_id: Number( data.course_id ),
 		};
 		if ( data.course_invite ) {
 			body.course_invite = data.course_invite;
 		}
+		/* eslint-enable camelcase */
 		try {
 			const response = await fetch( `${ config.restUrl }/enrollments`, {
 				method: 'POST',
@@ -70,9 +74,15 @@ document.querySelectorAll( '.bfc-enroll' ).forEach( ( root ) => {
 				return;
 			}
 			setStatus( status, 'Enrolled successfully.', false );
-			form.reset();
-			syncInvite();
-		} catch ( error ) {
+			const url = select?.selectedOptions[ 0 ]?.dataset.courseUrl;
+			if ( url ) {
+				const link = document.createElement( 'a' );
+				link.href = url;
+				link.className = 'bfc-enroll__action wp-element-button';
+				link.textContent = 'Continue course';
+				form.replaceWith( link );
+			}
+		} catch {
 			setStatus( status, 'Enrollment failed. Please try again.', true );
 		}
 	} );

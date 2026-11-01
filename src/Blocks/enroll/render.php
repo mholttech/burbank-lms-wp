@@ -45,8 +45,11 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 	<?php if ( $active ) : ?>
 		<p><?php esc_html_e( 'You are already enrolled in this course.', 'burbank-lms' ); ?></p>
 		<a class="bfc-enroll__action wp-element-button" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'Continue course', 'burbank-lms' ); ?></a>
+	<?php elseif ( $restricted ) : ?>
+		<p class="bfc-enroll__badge"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></p>
+		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
 	<?php else : ?>
-		<p class="bfc-enroll__badge"><?php echo esc_html( $restricted ? __( 'Invite required', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ); ?></p>
+		<p class="bfc-enroll__badge"><?php esc_html_e( 'Open enrollment', 'burbank-lms' ); ?></p>
 		<form class="bfc-enroll__form" novalidate>
 			<p class="bfc-enroll__field">
 				<label for="bfc-enroll-course"><?php esc_html_e( 'Course', 'burbank-lms' ); ?></label>
@@ -56,14 +59,14 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 						<option
 							value="<?php echo esc_attr( (string) $course->ID ); ?>"
 							<?php selected( $course_id, (int) $course->ID ); ?>
-							data-restricted="<?php echo ( new Invites() )->course_has_active_invites( (int) $course->ID ) ? '1' : '0'; ?>"
+							data-course-url="<?php echo esc_url( get_permalink( $course ) ); ?>" data-restricted="<?php echo ( new Invites() )->course_has_active_invites( (int) $course->ID ) ? '1' : '0'; ?>"
 						>
 							<?php echo esc_html( get_the_title( $course ) ); ?>
 						</option>
 					<?php endforeach; ?>
 				</select>
 			</p>
-			<p class="bfc-enroll__field bfc-enroll__invite" <?php echo $restricted ? '' : 'hidden'; ?> data-bfc-invite-wrap>
+			<p class="bfc-enroll__field bfc-enroll__invite" hidden data-bfc-invite-wrap>
 				<label for="bfc-enroll-invite"><?php esc_html_e( 'Course invite code', 'burbank-lms' ); ?></label>
 				<input id="bfc-enroll-invite" name="course_invite" type="text" autocomplete="off">
 			</p>
