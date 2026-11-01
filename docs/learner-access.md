@@ -9,6 +9,7 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Invite table install | `Access\Tables` |
 | Site and course invite CRUD / redeem | `Access\Invites` |
 | Site-invite registration, alternate-path block | `Access\Registration` |
+| Branded `wp-login.php` skin + register link | `Access\Login` |
 | Training access, suspend, `can_learn`, quiz-cap sync | `Access\Learner` |
 | Legal name guards and admin correction audit | `Access\Profile` |
 | Site invite admin + user profile Training Access | `Access\Admin` |
@@ -22,6 +23,7 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Training shell subnav and contextual actions | `Learner\Shell` |
 | Learner REST register / enroll / withdraw | `REST\Controller` (`burbank-lms/v1`) |
 | Lifecycle emails | `Mail\Mailer` |
+| Shared product name / logo | `Branding\Site` |
 | Optional PressPrimer chrome branding | `Branding\PressPrimer` |
 | Quiz / certificate adapters and course chrome | `Integrations\PressPrimer_Quiz`, `Integrations\PressPrimer_Certificate` |
 | PressPrimer front-end skin (CSS enqueue) | `Integrations\PressPrimer_Assets` |
@@ -74,7 +76,7 @@ Optional `burbank-lms/shell` block prints the same chrome then InnerBlocks; lear
 
 **Outside the shell:** `burbank-lms/register` stays public (site invite form; logged-in users see “already signed in”). No soft gate and no shell on register. Public certificate **verify** pages (PressPrimer) likewise stay outside the shell; they may still pick up shared control tokens from the frontend bundle. `burbank-lms/enroll` does not use `Soft_Gate` (short login/access messages only).
 
-**Shared LMS CSS:** portal, pill tabs, panels, control, shell, and soft-gate styles live in `resources/frontend/scss/app.scss`, compiled with the `burbank-lms-frontend` webpack entry to `build/burbank-lms-frontend.css` and enqueued on `wp_enqueue_scripts` (alongside block assets). Tokens prefer CERT presets with **solid** `html[data-bc-theme="dark"]` overrides so controls stay readable when theme presets lag. Pill nav and contextual action links are scoped as `.bfc-portal .bfc-shell a.bfc-shell__*` (with `:link` / `:visited` and `-webkit-text-fill-color`) so the CERT theme rule `.wp-site-blocks main a:not(.wp-block-button__link):not(.has-text-color)` cannot paint content-link + underline on active forest pills or LMS/PressPrimer filled CTAs. Primary quiz/cert CTAs, LMS `a.wp-element-button`, and active certificate filter pills use `--bfc-cta-text` (white) on `--bfc-cta-bg` (action-red); the same inverse rules ship on the late frontend entry so they still win when the PressPrimer skin prints early. Portal adds narrow-viewport padding so content clears typical WP Accessibility / GTranslate floats. PressPrimer quiz/certificate skin remains `build/burbank-lms-pressprimer.css` (see below).
+**Shared LMS CSS:** design tokens live in `resources/frontend/scss/_bfc-tokens.scss`. Portal, pill tabs, panels, control, shell, and soft-gate styles live in `resources/frontend/scss/app.scss`, compiled with the `burbank-lms-frontend` webpack entry to `build/burbank-lms-frontend.css` and enqueued on `wp_enqueue_scripts` (alongside block assets). Login uses a separate `burbank-lms-login` entry (`resources/frontend/scss/login.scss` → `build/burbank-lms-login.css`) on `login_enqueue_scripts`. Tokens prefer CERT presets with **solid** `html[data-bc-theme="dark"]` overrides so controls stay readable when theme presets lag. Pill nav and contextual action links are scoped as `.bfc-portal .bfc-shell a.bfc-shell__*` (with `:link` / `:visited` and `-webkit-text-fill-color`) so the CERT theme rule `.wp-site-blocks main a:not(.wp-block-button__link):not(.has-text-color)` cannot paint content-link + underline on active forest pills or LMS/PressPrimer filled CTAs. Primary quiz/cert CTAs, LMS `a.wp-element-button`, and active certificate filter pills use `--bfc-cta-text` (white) on `--bfc-cta-bg` (action-red); the same inverse rules ship on the late frontend entry so they still win when the PressPrimer skin prints early. Portal adds narrow-viewport padding so content clears typical WP Accessibility / GTranslate floats. PressPrimer quiz/certificate skin remains `build/burbank-lms-pressprimer.css` (see below).
 
 **Intentional differences from Duty Officer:** LMS keeps multi-page route nav (not in-page SPA tabs), soft-gate presentation (not hard login redirect), always-expanded pill nav on mobile (no disclosure), and PHP block rendering (not React). Visual language (kicker / title / lede / mint pill track / forest selected pill / 24px workspace / 16px panels) is shared.
 
@@ -113,6 +115,8 @@ Flow: validate active **site** invite → create user (with WP `first_name` / `l
 **Compensating transaction (not a single DB transaction):** `wp_insert_user` cannot share a MySQL transaction with invite redeem across WordPress’s user tables reliably. On failure after user create, `Registration::register` compensates by revoking training access (when granted) and deleting the user before returning a `WP_Error`. Course restricted enroll uses a real shared transaction for enrollment insert + invite redeem.
 
 Default `wp-login.php?action=register` for learners is rejected (`registration_errors`). Admin `create_users` stays intact; staff may grant training access without a code.
+
+**Branded login:** `Access\Login` skins core `wp-login.php` with portal tokens (dark soft-gate panel, Training kicker, site-icon logo, red primary submit) via `build/burbank-lms-login.css`. Core Register links and the login footer CTA point at `/register/`. Shared identity helpers live in `Branding\Site` (`burbank_lms_product_name`, `burbank_lms_logo_url`).
 
 **Certificate (legal) name:** WordPress first + last name is the single source; the composed string is stored in `burbank_lms_legal_name` for certificates. Learners may change it via the Profile block (`Profile::set_legal_name_self_service` / `POST /profile/legal-name`); changes are audited (`by` = the learner). Admins with `enroll_bfc_courses` may still correct it (audited). Direct usermeta writes stay blocked by the legal-name guards. Certificate merge fields use legal name and never email.
 

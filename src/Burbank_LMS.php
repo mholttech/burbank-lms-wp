@@ -82,6 +82,14 @@ class Burbank_LMS {
 		$this->loader->add_action( 'init', $enrollment_tables, 'install', 12 );
 		$registration = new Access\Registration();
 		$this->loader->add_filter( 'registration_errors', $registration, 'block_default_registration' );
+		$login = new Access\Login();
+		$this->loader->add_action( 'login_enqueue_scripts', $login, 'enqueue_assets' );
+		$this->loader->add_filter( 'login_body_class', $login, 'body_class' );
+		$this->loader->add_filter( 'login_headerurl', $login, 'header_url' );
+		$this->loader->add_filter( 'login_headertext', $login, 'header_text' );
+		$this->loader->add_filter( 'register_url', $login, 'register_url' );
+		$this->loader->add_action( 'login_header', $login, 'render_header' );
+		$this->loader->add_action( 'login_footer', $login, 'render_footer' );
 		$rest = new REST\Controller( $registration );
 		$this->loader->add_action( 'rest_api_init', $rest, 'register_routes' );
 		$admin_rest = new REST\Admin_Controller();

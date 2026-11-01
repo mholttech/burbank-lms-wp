@@ -1,0 +1,206 @@
+/**
+ * Branded wp-login.php skin (Duty Officer / soft-gate language).
+ */
+
+@use "bfc-tokens";
+
+body.login.bfc-login {
+	--bfc-control-bg: #292c2a;
+	--bfc-control-text: #f6f8fc;
+	--bfc-control-border: #414b45;
+	--bfc-control-muted: #a8b8af;
+	--bfc-pill-track: #2f3833;
+	--bfc-kicker: #8fbf9f;
+	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.25);
+	--bfc-shell-bg: #1c1e1d;
+	--bfc-cta-bg: var(--wp--preset--color--action-red, #c8102e);
+	--bfc-cta-text: #fff;
+	--bfc-radius-panel: 16px;
+	--bfc-radius-pill: 999px;
+
+	background: var(--bfc-shell-bg);
+	color: var(--bfc-control-text);
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+	#login {
+		width: min(100% - 2rem, 24rem);
+		padding: 2.5rem 0 1.5rem;
+	}
+
+	.bfc-login__caption {
+		margin: 0 0 0.35rem;
+		color: var(--bfc-kicker);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		line-height: 1.15;
+		text-transform: uppercase;
+		text-align: center;
+	}
+
+	.bfc-login__lede {
+		margin: 0 0 1.25rem;
+		color: var(--bfc-control-muted);
+		font-size: 0.95rem;
+		line-height: 1.45;
+		text-align: center;
+	}
+
+	h1 {
+		margin: 0 0 1rem;
+
+		a {
+			display: block;
+			width: 84px;
+			height: 84px;
+			margin: 0 auto;
+			background-size: contain;
+			background-position: center;
+			background-repeat: no-repeat;
+
+			/* Fallback when no site icon: solid brand mark. */
+			background-color: var(--bfc-pill-track);
+			border-radius: 20px;
+			text-indent: -9999px;
+			overflow: hidden;
+		}
+	}
+
+	#loginform,
+	#lostpasswordform,
+	#resetpassform,
+	#registerform {
+		margin-top: 0;
+		padding: 1.35rem 1.25rem 1.15rem;
+		border: 0;
+		border-radius: var(--bfc-radius-panel);
+		background: var(--bfc-control-bg);
+		box-shadow: var(--bfc-panel-shadow);
+		color: var(--bfc-control-text);
+	}
+
+	label {
+		color: var(--bfc-control-muted);
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	input[type="text"],
+	input[type="email"],
+	input[type="password"],
+	input[type="checkbox"] {
+		background: var(--bfc-shell-bg);
+		border: 1px solid var(--bfc-control-border);
+		border-radius: 10px;
+		box-shadow: none;
+		color: var(--bfc-control-text);
+	}
+
+	input[type="text"],
+	input[type="email"],
+	input[type="password"] {
+		padding: 0.55rem 0.75rem;
+		font-size: 1rem;
+		line-height: 1.4;
+	}
+
+	input[type="text"]:focus,
+	input[type="email"]:focus,
+	input[type="password"]:focus {
+		border-color: var(--bfc-kicker);
+		box-shadow: 0 0 0 1px var(--bfc-kicker);
+	}
+
+	.forgetmenot {
+		margin-top: 0.75rem;
+	}
+
+	.button-primary,
+	#wp-submit {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		float: none;
+		width: 100%;
+		min-height: 44px;
+		margin-top: 1rem;
+		padding: 0.55rem 1rem;
+		border: 0;
+		border-radius: var(--bfc-radius-pill);
+		background: var(--bfc-cta-bg) !important;
+		color: var(--bfc-cta-text) !important;
+		font-weight: 700;
+		text-shadow: none;
+		box-shadow: none !important;
+	}
+
+	.button-primary:hover,
+	.button-primary:focus,
+	#wp-submit:hover,
+	#wp-submit:focus {
+		background: #a50d26 !important;
+		color: var(--bfc-cta-text) !important;
+	}
+
+	.submit {
+		display: block;
+		margin: 0;
+		padding: 0;
+	}
+
+	#nav,
+	#backtoblog {
+		margin: 1rem 0 0;
+		padding: 0;
+		text-align: center;
+		font-size: 0.9rem;
+
+		a {
+			color: var(--bfc-kicker);
+			text-decoration: none;
+
+			&:hover,
+			&:focus {
+				color: var(--bfc-control-text);
+				text-decoration: underline;
+			}
+		}
+	}
+
+	.bfc-login__register {
+		margin: 1.25rem 0 0;
+		text-align: center;
+		font-size: 0.95rem;
+		font-weight: 600;
+
+		a {
+			color: var(--bfc-control-text);
+			text-decoration: underline;
+			text-underline-offset: 0.15em;
+
+			&:hover,
+			&:focus {
+				color: var(--bfc-kicker);
+			}
+		}
+	}
+
+	.language-switcher {
+		margin-top: 1.5rem;
+
+		label,
+		select {
+			color: var(--bfc-control-muted);
+		}
+	}
+
+	/* stylelint-disable-next-line selector-id-pattern -- WP core notice id. */
+	#login_error,
+	.message {
+		border-radius: var(--bfc-radius-panel);
+		border-left-width: 4px;
+		background: var(--bfc-control-bg);
+		box-shadow: var(--bfc-panel-shadow);
+		color: var(--bfc-control-text);
+	}
+}

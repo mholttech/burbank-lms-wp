@@ -1,0 +1,42 @@
+/**
+ * Shared LMS design tokens for portal, soft-gate, and login.
+ */
+
+:root {
+	--bfc-control-bg: var(--bc-surface-card, var(--wp--preset--color--content-background, #f2f6f3));
+	--bfc-control-text: var(--wp--preset--color--content-text, #1c1f23);
+	--bfc-control-border: var(--wp--preset--color--content-border, #d0ddd4);
+	--bfc-control-muted: var(--wp--preset--color--content-muted, #556b60);
+	--bfc-pill-track: var(--wp--preset--color--brand-muted, #c5d4cb);
+	--bfc-pill-idle-text: var(--wp--preset--color--callout-green, #1b6540);
+	--bfc-pill-active-bg: var(--wp--preset--color--callout-green, #1b6540);
+	--bfc-pill-active-text: #fff;
+	--bfc-kicker: var(--wp--preset--color--callout-green, #1b6540);
+	--bfc-radius: 12px;
+	--bfc-radius-shell: 24px;
+	--bfc-radius-panel: 16px;
+	--bfc-radius-pill: 999px;
+	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.12);
+	--bfc-shell-bg: var(--wp--preset--color--content-background, #f3f6f3);
+	--bfc-cta-bg: var(--wp--preset--color--action-red, #c8102e);
+	--bfc-cta-text: #fff;
+}
+
+html[data-bc-theme="dark"] {
+
+	/* Prefer solid LMS dark tokens so controls stay readable even when
+	   theme presets lag behind data-bc-theme. */
+	--bfc-control-bg: #292c2a;
+	--bfc-control-text: #f6f8fc;
+	--bfc-control-border: #414b45;
+	--bfc-control-muted: #a8b8af;
+	--bfc-pill-track: #2f3833;
+	--bfc-pill-idle-text: #d5e8da;
+	--bfc-pill-active-bg: var(--wp--preset--color--callout-green, #1b6540);
+	--bfc-pill-active-text: #fff;
+	--bfc-kicker: #8fbf9f;
+	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.25);
+	--bfc-shell-bg: #1c1e1d;
+	--bfc-cta-bg: var(--wp--preset--color--action-red, #c8102e);
+	--bfc-cta-text: #fff;
+}
