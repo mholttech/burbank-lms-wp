@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.6.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.5.2...burbank-lms-v1.6.0) (2026-11-01)
+
+
+### Features
+
+* **access:** email verification gate for enroll and quizzes ([#37](https://github.com/mholttech/burbank-lms-wp/issues/37)) ([24c9f3a](https://github.com/mholttech/burbank-lms-wp/commit/24c9f3a1de529cf9acb5dcdbb2d81fe43a40fe73))
+* **admin:** React Training screens and branded transactional mail ([#38](https://github.com/mholttech/burbank-lms-wp/issues/38)) ([6f1f180](https://github.com/mholttech/burbank-lms-wp/commit/6f1f180f9bb2f8f2dda07f22d9b6909dfc2a07fc))
+* **learner:** course stack, enroll card, quiz chrome, and cert verify ([#36](https://github.com/mholttech/burbank-lms-wp/issues/36)) ([eb0c997](https://github.com/mholttech/burbank-lms-wp/commit/eb0c997092f58becbd202edc250ba228ce99096a))
+* **learner:** redesign My Courses, Catalog, and Profile ([#34](https://github.com/mholttech/burbank-lms-wp/issues/34)) ([fea127b](https://github.com/mholttech/burbank-lms-wp/commit/fea127b75e4a6b355746e15b6196a9068d2c3366))
+
 ## [1.5.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.5.1...burbank-lms-v1.5.2) (2026-11-01)
 
 
