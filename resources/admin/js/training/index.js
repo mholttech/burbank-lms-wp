@@ -78,7 +78,7 @@ function App() {
 				? '/invites'
 				: `/learners?page=${ page }&search=${ encodeURIComponent(
 						query
-				  ) }`
+					) }`
 		)
 			.then( ( data ) => {
 				if ( active ) {
@@ -449,11 +449,11 @@ function App() {
 														? __(
 																'Revoke access',
 																'burbank-lms'
-														  )
+															)
 														: __(
 																'Grant access',
 																'burbank-lms'
-														  ) }
+															) }
 												</Button>
 												<Button
 													disabled={ busy }
@@ -474,11 +474,11 @@ function App() {
 														? __(
 																'Reactivate',
 																'burbank-lms'
-														  )
+															)
 														: __(
 																'Suspend',
 																'burbank-lms'
-														  ) }
+															) }
 												</Button>
 												{ ! row.verified &&
 													row.access &&
