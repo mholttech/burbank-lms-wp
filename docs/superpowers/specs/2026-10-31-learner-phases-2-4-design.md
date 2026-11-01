@@ -8,6 +8,8 @@ Domain rules in `docs/learner-access.md` remain authoritative except where this 
 
 HTML mocks in design sessions must use **theme CSS variables** (T3 `html_render` tokens) so light/dark thread appearance stays readable — do not hard-code light-only greys.
 
+**Mock coverage (approved compositions + gap states):** course stack (open / invite / enrolled / completed / withdrawn / unverified); public cert verify (valid / invalid / expired); enroll mini-card feet; register + success; guest + no-access soft-gates; verify-link landing success/error; React Learners admin; Course sidebar Invites kit; branded verify email + text fallback note. Site-invites table was mocked in the Journey 3 overview.
+
 ## Accepted decisions
 
 | Topic | Decision |
