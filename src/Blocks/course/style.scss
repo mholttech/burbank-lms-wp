@@ -7,10 +7,6 @@
 	background: var(--bfc-control-bg, var(--bc-surface-card, var(--wp--preset--color--content-background, #fff)));
 	color: var(--bfc-control-text, var(--wp--preset--color--content-text, inherit));
 
-	&__meta {
-		display: grid;
-		gap: 0.35rem;
-	}
 
 	&__status {
 		display: inline-block;
@@ -33,5 +29,37 @@
 
 	&__notice.is-error {
 		color: var(--wp--preset--color--action-red, #b32d2e);
+	}
+	box-shadow: none;
+
+	&__badge {
+		justify-self: start;
+		margin: 0;
+		padding: 0.3rem 0.7rem;
+		border: 1px solid var(--bfc-control-border, #c3c4c7);
+		border-radius: 999px;
+		font-size: 0.85em;
+	}
+
+	&__title,
+	&__lede {
+		margin: 0;
+	}
+
+	&__meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+
+		p {
+			margin: 0;
+		}
+	}
+
+	&__foot {
+		display: grid;
+		gap: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--bfc-control-border, #c3c4c7);
 	}
 }

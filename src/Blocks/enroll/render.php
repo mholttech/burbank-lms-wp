@@ -41,9 +41,12 @@ $restricted = $course_id > 0 && ( new Invites() )->course_has_active_invites( $c
 $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_id, $course_id ) : null;
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<div class="bfc-enroll__foot">
 	<?php if ( $active ) : ?>
 		<p><?php esc_html_e( 'You are already enrolled in this course.', 'burbank-lms' ); ?></p>
+		<a class="bfc-enroll__action wp-element-button" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'Continue course', 'burbank-lms' ); ?></a>
 	<?php else : ?>
+		<p class="bfc-enroll__badge"><?php echo esc_html( $restricted ? __( 'Invite required', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ); ?></p>
 		<form class="bfc-enroll__form" novalidate>
 			<p class="bfc-enroll__field">
 				<label for="bfc-enroll-course"><?php esc_html_e( 'Course', 'burbank-lms' ); ?></label>
@@ -70,4 +73,5 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 			<p class="bfc-enroll__status" hidden data-bfc-status></p>
 		</form>
 	<?php endif; ?>
+	</div>
 </div>

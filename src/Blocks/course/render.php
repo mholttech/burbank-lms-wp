@@ -76,6 +76,8 @@ $wrapper      = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<p class="bfc-course__badge"><?php echo esc_html( 'none' === $status_key ? ( $restricted ? __( 'Invite required', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ) : $presentation->label( $status_key ) ); ?></p>
+	<h2 class="bfc-course__title"><?php echo esc_html( get_the_title( $course_id ) ); ?></h2>
 	<div class="bfc-course__meta">
 		<?php if ( $code ) : ?>
 			<p class="bfc-course__code"><strong><?php esc_html_e( 'Code:', 'burbank-lms' ); ?></strong> <?php echo esc_html( $code ); ?></p>
@@ -91,6 +93,17 @@ $wrapper      = get_block_wrapper_attributes(
 		<?php endif; ?>
 	</div>
 
+	<?php if ( has_excerpt( $course_id ) ) : ?>
+		<p class="bfc-course__lede"><?php echo esc_html( get_the_excerpt( $course_id ) ); ?></p>
+	<?php endif; ?>
+	<?php if ( $active && $quiz_id > 0 ) : ?>
+		<div id="bfc-course-quiz" class="bfc-course__quiz-embed">
+			<?php if ( shortcode_exists( 'pressprimer_quiz' ) ) : ?>
+				<?php echo do_shortcode( '[pressprimer_quiz id="' . absint( $quiz_id ) . '"]' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PressPrimer shortcode HTML. ?>
+			<?php endif; ?>
+		</div>
+	<?php endif; ?>
+	<div class="bfc-course__foot">
 	<?php if ( 'none' !== $status_key && '' !== $status_text ) : ?>
 		<p class="bfc-course__status"><?php echo esc_html( $status_text ); ?></p>
 	<?php endif; ?>
@@ -99,11 +112,7 @@ $wrapper      = get_block_wrapper_attributes(
 		<p class="bfc-course__actions">
 			<a class="bfc-course__quiz-cta wp-element-button" href="#bfc-course-quiz"><?php echo esc_html( $quiz_cta ); ?></a>
 		</p>
-		<div id="bfc-course-quiz" class="bfc-course__quiz-embed">
-			<?php if ( shortcode_exists( 'pressprimer_quiz' ) ) : ?>
-				<?php echo do_shortcode( '[pressprimer_quiz id="' . absint( $quiz_id ) . '"]' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PressPrimer shortcode HTML. ?>
-			<?php endif; ?>
-		</div>
+
 	<?php elseif ( ! $active && $can_learn && $restricted ) : ?>
 		<form id="bfc-course-enroll" class="bfc-course__invite-form" novalidate>
 			<p class="bfc-course__field">
@@ -125,5 +134,6 @@ $wrapper      = get_block_wrapper_attributes(
 	<?php elseif ( ! $active ) : ?>
 		<p><?php esc_html_e( 'Ask a training administrator to grant training access before enrolling.', 'burbank-lms' ); ?></p>
 	<?php endif; ?>
+	</div>
 	<p class="bfc-course__notice" hidden data-bfc-status></p>
 </div>
