@@ -89,6 +89,22 @@ class PressPrimerChromeTest extends WP_UnitTestCase {
 		$this->assertSame( $input, $output );
 	}
 
+	/** Demotion still works when ppq-quiz-title shares the class attribute. */
+	public function test_demote_quiz_title_with_extra_classes(): void {
+		$input  = '<h1 class="ppq-quiz-title ppq-heading">Safety Quiz</h1>';
+		$output = ( new PressPrimer_Quiz() )->demote_quiz_title( $input );
+
+		$this->assertSame( '<h2 class="ppq-quiz-title ppq-heading">Safety Quiz</h2>', $output );
+	}
+
+	/** Demotion accepts single-quoted class attributes. */
+	public function test_demote_quiz_title_single_quoted_class(): void {
+		$input  = "<h1 class='ppq-quiz-title'>Safety Quiz</h1>";
+		$output = ( new PressPrimer_Quiz() )->demote_quiz_title( $input );
+
+		$this->assertSame( "<h2 class='ppq-quiz-title'>Safety Quiz</h2>", $output );
+	}
+
 	/**
 	 * Build a published mapped course and optional active enrollment.
 	 *
