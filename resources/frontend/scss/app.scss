@@ -53,6 +53,7 @@ html[data-bc-theme="dark"] {
 	max-width: var(--wp--style--global--wide-size, 1280px);
 	margin: 0 0 1.5rem;
 	padding: 1.5rem 1.25rem 1.25rem;
+
 	/* Clear WP Accessibility left toolbar + GTranslate bottom float (approx.). */
 	padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
 	padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));

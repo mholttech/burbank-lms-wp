@@ -47,7 +47,7 @@ class LearnerPortalHeadingsTest extends WP_UnitTestCase {
 		);
 	}
 
-	/** core/post-title output is suppressed on my-courses so portal owns the H1. */
+	/** Suppresses core/post-title output on my-courses so portal owns the H1. */
 	public function test_suppresses_my_courses_post_title(): void {
 		$page_id = self::factory()->post->create(
 			array(
