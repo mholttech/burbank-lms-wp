@@ -35,6 +35,33 @@ function statusLabel( status ) {
 	}
 }
 
+/* REST timestamps are UTC MySQL datetimes ("Y-m-d H:i:s"). */
+function formatDate( value ) {
+	if ( ! value ) {
+		return '';
+	}
+	const date = new Date( String( value ).replace( ' ', 'T' ) + 'Z' );
+	if ( Number.isNaN( date.getTime() ) ) {
+		return '';
+	}
+	return date.toLocaleDateString( 'en-US', {
+		month: 'long',
+		day: 'numeric',
+		year: 'numeric',
+	} );
+}
+
+function metaText( item ) {
+	const enrolled = formatDate( item.enrolled_at );
+	const completed = formatDate( item.completed_at );
+	if ( item.status === 'completed' && completed ) {
+		return enrolled
+			? `Completed ${ completed } · Enrolled ${ enrolled }`
+			: `Completed ${ completed }`;
+	}
+	return enrolled ? `Enrolled ${ enrolled }` : '';
+}
+
 document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 	const list = root.querySelector( '[data-bfc-list]' );
 	if ( ! list ) {
@@ -62,6 +89,10 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 			const li = document.createElement( 'li' );
 			li.className = 'bfc-my-courses__item';
 			li.dataset.courseId = String( item.course_id );
+			li.dataset.status = item.status || 'active';
+
+			const main = document.createElement( 'div' );
+			main.className = 'bfc-my-courses__main';
 
 			const title = document.createElement(
 				item.permalink ? 'a' : 'span'
@@ -71,13 +102,40 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 			if ( item.permalink ) {
 				title.href = item.permalink;
 			}
+			main.append( title );
+
+			const meta = metaText( item );
+			if ( meta ) {
+				const metaEl = document.createElement( 'p' );
+				metaEl.className = 'bfc-my-courses__meta';
+				metaEl.textContent = meta;
+				main.append( metaEl );
+			}
+
+			const actions = document.createElement( 'div' );
+			actions.className = 'bfc-my-courses__actions';
 
 			const badge = document.createElement( 'span' );
 			badge.className = 'bfc-my-courses__badge';
 			badge.dataset.status = item.status || 'active';
 			badge.textContent = statusLabel( item.status );
+			actions.append( badge );
 
-			li.append( title, badge );
+			let action = null;
+			if ( item.permalink ) {
+				action = document.createElement( 'a' );
+				action.className = 'bfc-my-courses__action';
+				action.href = item.permalink;
+				const inProgress =
+					item.status === 'active' || item.status === 'passed';
+				action.textContent = inProgress
+					? 'Continue course'
+					: 'View course';
+				action.classList.toggle( 'is-secondary', ! inProgress );
+				actions.append( action );
+			}
+
+			li.append( main, actions );
 
 			if ( item.status === 'active' || item.status === 'passed' ) {
 				const withdraw = document.createElement( 'button' );
@@ -112,6 +170,11 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 						}
 						badge.textContent = 'Withdrawn';
 						badge.dataset.status = 'withdrawn';
+						li.dataset.status = 'withdrawn';
+						if ( action ) {
+							action.textContent = 'View course';
+							action.classList.add( 'is-secondary' );
+						}
 						withdraw.remove();
 					} catch {
 						setStatus(
@@ -122,7 +185,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 						withdraw.disabled = false;
 					}
 				} );
-				li.append( withdraw );
+				actions.append( withdraw );
 			}
 
 			list.append( li );
