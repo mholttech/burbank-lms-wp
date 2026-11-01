@@ -101,6 +101,8 @@ html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notic
 		background-color: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
 		color: var(--bfc-cta-text, #fff);
 
+		&:hover,
+		&:focus-visible,
 		&:visited {
 			color: var(--bfc-cta-text, #fff);
 		}
