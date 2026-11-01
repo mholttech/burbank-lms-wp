@@ -75,7 +75,7 @@ class ProfileMyCoursesSoftGateTest extends WP_UnitTestCase {
 		wp_set_current_user( $user_id );
 		$html = do_blocks( '<!-- wp:burbank-lms/my-courses /-->' );
 		$this->assertStringContainsString( 'bfc-my-courses__list', $html );
-		$this->assertStringContainsString( 'bfc-my-courses__catalog-cta', $html );
+		$this->assertStringContainsString( 'bfc-my-courses__catalog-link', $html );
 		$this->assertStringNotContainsString( 'bfc-soft-gate', $html );
 	}
 }

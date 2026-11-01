@@ -1,6 +1,6 @@
 /**
  * My Courses list + withdraw via burbank-lms/v1 enrollments REST.
- * Catalog CTA and certificate history are server-rendered in render.php.
+ * Catalog link, stats strip, and certificate history are server-rendered.
  */
 
 function parseConfig( root ) {
@@ -72,8 +72,64 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 	const empty = root.querySelector( '[data-bfc-empty]' );
 	const status = root.querySelector( '[data-bfc-status]' );
 
+	const STATUS_ORDER = { active: 0, passed: 1, completed: 2, withdrawn: 3 };
+
+	const sortEnrollments = ( enrollments ) =>
+		[ ...enrollments ].sort( ( a, b ) => {
+			const rankA = STATUS_ORDER[ a.status ] ?? 0;
+			const rankB = STATUS_ORDER[ b.status ] ?? 0;
+			if ( rankA !== rankB ) {
+				return rankA - rankB;
+			}
+			if ( a.status === 'completed' ) {
+				return String( b.completed_at || '' ).localeCompare(
+					String( a.completed_at || '' )
+				);
+			}
+			return 0;
+		} );
+
+	const setStat = ( name, value ) => {
+		const el = root.querySelector( `[data-bfc-stat="${ name }"]` );
+		if ( el ) {
+			el.textContent = String( value );
+		}
+	};
+
+	const renderStats = ( enrollments ) => {
+		const stats = root.querySelector( '[data-bfc-stats]' );
+		if ( ! stats ) {
+			return;
+		}
+		const count = ( ...statuses ) =>
+			enrollments.filter( ( item ) => statuses.includes( item.status ) )
+				.length;
+		setStat( 'enrolled', count( 'active', 'passed', 'completed' ) );
+		setStat( 'in-progress', count( 'active', 'passed' ) );
+		setStat( 'completed', count( 'completed' ) );
+
+		const certRoot = root.querySelector( '.ppcert-my-certificates' );
+		if ( certRoot ) {
+			const items = certRoot.querySelectorAll(
+				'.ppcert-my-certificates__item'
+			);
+			setStat( 'certificates', items.length );
+			const valid = certRoot.querySelectorAll(
+				'.ppcert-my-certificates__item .ppcert-pill--valid'
+			).length;
+			const validEl = root.querySelector( '[data-bfc-cert-valid]' );
+			if ( validEl && items.length > 0 ) {
+				validEl.textContent =
+					valid === 1 ? '1 valid' : `${ valid } valid`;
+				validEl.hidden = false;
+			}
+		}
+		stats.hidden = false;
+	};
+
 	const render = ( enrollments ) => {
 		list.replaceChildren();
+		renderStats( enrollments );
 		if ( ! enrollments.length ) {
 			if ( empty ) {
 				empty.hidden = false;
@@ -85,14 +141,16 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 			empty.hidden = true;
 		}
 		list.hidden = false;
-		enrollments.forEach( ( item ) => {
+		sortEnrollments( enrollments ).forEach( ( item ) => {
 			const li = document.createElement( 'li' );
 			li.className = 'bfc-my-courses__item';
 			li.dataset.courseId = String( item.course_id );
 			li.dataset.status = item.status || 'active';
 
-			const main = document.createElement( 'div' );
-			main.className = 'bfc-my-courses__main';
+			const badge = document.createElement( 'span' );
+			badge.className = 'bfc-my-courses__badge';
+			badge.dataset.status = item.status || 'active';
+			badge.textContent = statusLabel( item.status );
 
 			const title = document.createElement(
 				item.permalink ? 'a' : 'span'
@@ -102,24 +160,27 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 			if ( item.permalink ) {
 				title.href = item.permalink;
 			}
-			main.append( title );
+
+			li.append( badge, title );
 
 			const meta = metaText( item );
 			if ( meta ) {
 				const metaEl = document.createElement( 'p' );
 				metaEl.className = 'bfc-my-courses__meta';
 				metaEl.textContent = meta;
-				main.append( metaEl );
+				li.append( metaEl );
 			}
 
-			const actions = document.createElement( 'div' );
-			actions.className = 'bfc-my-courses__actions';
+			const footer = document.createElement( 'div' );
+			footer.className = 'bfc-my-courses__foot';
 
-			const badge = document.createElement( 'span' );
-			badge.className = 'bfc-my-courses__badge';
-			badge.dataset.status = item.status || 'active';
-			badge.textContent = statusLabel( item.status );
-			actions.append( badge );
+			const left = document.createElement( 'div' );
+			left.className = 'bfc-my-courses__foot-left';
+
+			const footStatus = document.createElement( 'span' );
+			footStatus.className = 'bfc-my-courses__foot-status';
+			footStatus.textContent = statusLabel( item.status );
+			left.append( footStatus );
 
 			let action = null;
 			if ( item.permalink ) {
@@ -132,10 +193,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 					? 'Continue course'
 					: 'View course';
 				action.classList.toggle( 'is-secondary', ! inProgress );
-				actions.append( action );
 			}
-
-			li.append( main, actions );
 
 			if ( item.status === 'active' || item.status === 'passed' ) {
 				const withdraw = document.createElement( 'button' );
@@ -170,6 +228,7 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 						}
 						badge.textContent = 'Withdrawn';
 						badge.dataset.status = 'withdrawn';
+						footStatus.textContent = 'Withdrawn';
 						li.dataset.status = 'withdrawn';
 						if ( action ) {
 							action.textContent = 'View course';
@@ -185,8 +244,14 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 						withdraw.disabled = false;
 					}
 				} );
-				actions.append( withdraw );
+				left.append( withdraw );
 			}
+
+			footer.append( left );
+			if ( action ) {
+				footer.append( action );
+			}
+			li.append( footer );
 
 			list.append( li );
 		} );
