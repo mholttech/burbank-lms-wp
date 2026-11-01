@@ -65,6 +65,44 @@ class Profile {
 	}
 
 	/**
+	 * Set the legal/certificate name as the learner themself (audited).
+	 *
+	 * Self-service counterpart to admin correction: the current user must be
+	 * the target user. Appends an audit entry (by = the learner) when the
+	 * stored name changes. Direct usermeta writes stay blocked by the guards.
+	 *
+	 * @param int    $user_id User ID (must be the current user).
+	 * @param string $name    New legal name.
+	 */
+	public function set_legal_name_self_service( int $user_id, string $name ): bool|\WP_Error {
+		if ( $user_id < 1 || get_current_user_id() !== $user_id ) {
+			return new \WP_Error(
+				'burbank_profile_legal_name_forbidden',
+				__( 'You are not allowed to change this legal name.', 'burbank-lms' )
+			);
+		}
+		$name = sanitize_text_field( $name );
+		if ( '' === $name ) {
+			return new \WP_Error( 'burbank_profile_legal_name_required', __( 'Legal name is required.', 'burbank-lms' ) );
+		}
+		$current = $this->get_legal_name( $user_id );
+		if ( $current === $name ) {
+			return true;
+		}
+
+		self::$allow_legal_name_write = true;
+		try {
+			update_user_meta( $user_id, self::META_LEGAL_NAME, $name );
+			if ( '' !== $current ) {
+				$this->append_audit( $user_id, $current, $name );
+			}
+		} finally {
+			self::$allow_legal_name_write = false;
+		}
+		return true;
+	}
+
+	/**
 	 * Return the stored legal/certificate name.
 	 *
 	 * @param int $user_id User ID.

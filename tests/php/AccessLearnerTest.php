@@ -128,6 +128,37 @@ class AccessLearnerTest extends WP_UnitTestCase {
 		$this->assertSame( $admin_id, (int) $last['by'] );
 	}
 
+	/** Learner can change their own legal name via self-service; audit records self. */
+	public function test_learner_self_service_legal_name_change_audits(): void {
+		$user_id = $this->learner_with_access( 'self-name@example.com' );
+		$profile = new Profile();
+
+		wp_set_current_user( $user_id );
+		$result = $profile->set_legal_name_self_service( $user_id, 'Jamie A. Learner' );
+		$this->assertTrue( $result );
+		$this->assertSame( 'Jamie A. Learner', $profile->get_legal_name( $user_id ) );
+
+		$audit   = get_user_meta( $user_id, 'burbank_lms_legal_name_audit', true );
+		$entries = json_decode( (string) $audit, true );
+		$last    = end( $entries );
+		$this->assertSame( 'Jamie Learner', $last['from'] );
+		$this->assertSame( 'Jamie A. Learner', $last['to'] );
+		$this->assertSame( $user_id, (int) $last['by'] );
+
+		// Another learner cannot use self-service on this user.
+		$other_id = $this->learner_with_access( 'other-name@example.com' );
+		wp_set_current_user( $other_id );
+		$denied = $profile->set_legal_name_self_service( $user_id, 'Nope Name' );
+		$this->assertWPError( $denied );
+		$this->assertSame( 'Jamie A. Learner', $profile->get_legal_name( $user_id ) );
+
+		// Unchanged name: success but no second audit entry.
+		wp_set_current_user( $user_id );
+		$this->assertTrue( $profile->set_legal_name_self_service( $user_id, 'Jamie A. Learner' ) );
+		$entries_after = json_decode( (string) get_user_meta( $user_id, 'burbank_lms_legal_name_audit', true ), true );
+		$this->assertCount( count( $entries ), $entries_after );
+	}
+
 	/** Learners cannot delete legal name usermeta to clear-then-rewrite. */
 	public function test_learner_cannot_delete_legal_name_meta(): void {
 		$user_id = $this->learner_with_access( 'delete-name@example.com' );
