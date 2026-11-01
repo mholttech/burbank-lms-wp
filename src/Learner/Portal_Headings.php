@@ -48,7 +48,9 @@ class Portal_Headings {
 	}
 
 	/**
-	 * Drop core/query-title output on the course archive (portal owns the H1).
+	 * Drop competing archive titles on the course archive (portal owns the H1).
+	 *
+	 * Themes may use core/query-title or a level-1 core/heading for the catalog.
 	 *
 	 * @param string               $block_content Block HTML.
 	 * @param array<string, mixed> $block         Parsed block.
@@ -61,6 +63,16 @@ class Portal_Headings {
 			return $block_content;
 		}
 		$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
-		return 'core/query-title' === $name ? '' : $block_content;
+		if ( 'core/query-title' === $name ) {
+			return '';
+		}
+		if ( 'core/heading' === $name || '' === $name ) {
+			$level = isset( $block['attrs']['level'] ) ? (int) $block['attrs']['level'] : 2;
+			if ( 1 === $level ) {
+				return '';
+			}
+		}
+
+		return $block_content;
 	}
 }

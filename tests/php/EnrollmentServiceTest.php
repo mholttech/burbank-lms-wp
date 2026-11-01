@@ -296,6 +296,25 @@ class EnrollmentServiceTest extends WP_UnitTestCase {
 		$this->assertNull( $this->service()->get_active( $user_id, $course_id ) );
 	}
 
+	/** Self-enroll must not wipe a completed enrollment / credential. */
+	public function test_self_enroll_rejects_completed_row(): void {
+		$user_id   = $this->verified_learner( 'completed-guard@example.com' );
+		$course_id = $this->published_course( 'rev-done' );
+		$this->assertTrue( $this->service()->self_enroll( $user_id, $course_id ) );
+		$row = $this->service()->get_active( $user_id, $course_id );
+		$this->assertNotNull( $row );
+		$this->assertTrue( ( new Repository() )->complete( (int) $row->id, 55, gmdate( 'Y-m-d H:i:s' ) ) );
+		$this->assertNull( $this->service()->get_active( $user_id, $course_id ) );
+
+		$result = $this->service()->self_enroll( $user_id, $course_id );
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_enrollment_already_completed', $result->get_error_code() );
+		$kept = $this->service()->get( $user_id, $course_id );
+		$this->assertNotNull( $kept );
+		$this->assertSame( 'completed', $kept->status );
+		$this->assertSame( 55, (int) $kept->credential_id );
+	}
+
 	/** Withdrawn learners may re-enroll by reactivating the unique course/user row. */
 	public function test_withdraw_then_reenroll_reactivates_row(): void {
 		$user_id   = $this->verified_learner( 'reenroll@example.com' );
