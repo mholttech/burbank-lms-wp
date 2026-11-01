@@ -31,18 +31,19 @@ class Registration {
 		$invite_code  = isset( $data['invite'] ) ? (string) $data['invite'] : '';
 		$email        = isset( $data['email'] ) ? sanitize_email( (string) $data['email'] ) : '';
 		$password     = isset( $data['password'] ) ? (string) $data['password'] : '';
-		$first_name   = isset( $data['first_name'] ) ? sanitize_text_field( (string) $data['first_name'] ) : '';
-		$last_name    = isset( $data['last_name'] ) ? sanitize_text_field( (string) $data['last_name'] ) : '';
-		$legal_name   = isset( $data['legal_name'] ) ? sanitize_text_field( (string) $data['legal_name'] ) : '';
-		$display_name = isset( $data['display_name'] ) ? sanitize_text_field( (string) $data['display_name'] ) : '';
-		if ( '' !== $first_name || '' !== $last_name ) {
+		$first_name     = isset( $data['first_name'] ) ? sanitize_text_field( (string) $data['first_name'] ) : '';
+		$last_name      = isset( $data['last_name'] ) ? sanitize_text_field( (string) $data['last_name'] ) : '';
+		$legal_name     = isset( $data['legal_name'] ) ? sanitize_text_field( (string) $data['legal_name'] ) : '';
+		$display_name   = isset( $data['display_name'] ) ? sanitize_text_field( (string) $data['display_name'] ) : '';
+		$has_name_parts = array_key_exists( 'first_name', $data ) || array_key_exists( 'last_name', $data );
+		if ( $has_name_parts ) {
 			$legal_name = trim( $first_name . ' ' . $last_name );
 		}
 
 		if ( '' === $invite_code ) {
 			return new \WP_Error( 'burbank_register_invite_required', __( 'A site invite code is required.', 'burbank-lms' ) );
 		}
-		if ( ( '' !== $first_name || '' !== $last_name ) && ( '' === $first_name || '' === $last_name ) ) {
+		if ( $has_name_parts && ( '' === $first_name || '' === $last_name ) ) {
 			return new \WP_Error( 'burbank_register_legal_name_required', __( 'First and last name are required.', 'burbank-lms' ) );
 		}
 		if ( '' === $legal_name ) {
