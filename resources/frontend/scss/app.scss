@@ -337,12 +337,22 @@ html[data-bc-theme="dark"] {
 
 }
 
-.bfc-profile__form,
 .bfc-register__form {
 	padding: 1.1rem 1.15rem;
 	border-radius: var(--bfc-radius-panel);
 	background: var(--bfc-control-bg);
 	box-shadow: var(--bfc-panel-shadow);
+}
+
+/* Profile personal + security panels: bordered cards, no floating shadow
+   (same treatment as my-courses / catalog tiles). */
+.bfc-profile__form,
+.bfc-profile__security-form {
+	padding: clamp(1.125rem, 2.5vw, 1.5rem);
+	border: 1px solid var(--bfc-control-border);
+	border-radius: var(--bfc-radius-panel);
+	background: var(--bfc-control-bg);
+	box-shadow: none;
 }
 
 /* Align catalog filters / course panels with the portal system. Catalog
