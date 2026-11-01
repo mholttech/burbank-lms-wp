@@ -101,6 +101,43 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 		$this->assertWPError( $result );
 	}
 
+	/** First/last name composes the certificate name and WP name fields. */
+	public function test_register_first_last_composes_legal_name(): void {
+		$invite = $this->site_invite();
+		$result = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'firstlast@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'first_name'   => 'Alex',
+				'last_name'    => 'Volunteer',
+				'display_name' => 'Alex',
+			)
+		);
+		$this->assertNotWPError( $result );
+		$user_id = (int) $result;
+		$this->assertSame( 'Alex Volunteer', ( new Profile() )->get_legal_name( $user_id ) );
+		$this->assertSame( 'Alex', get_user_meta( $user_id, 'first_name', true ) );
+		$this->assertSame( 'Volunteer', get_user_meta( $user_id, 'last_name', true ) );
+	}
+
+	/** Missing first or last name is rejected like missing legal name was. */
+	public function test_register_missing_last_name_fails(): void {
+		$invite = $this->site_invite();
+		$result = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'nolast@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'first_name'   => 'Alex',
+				'last_name'    => '',
+				'display_name' => 'Alex',
+			)
+		);
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_register_legal_name_required', $result->get_error_code() );
+	}
+
 	/** Bound-email invites reject mismatched registration email. */
 	public function test_register_rejects_mismatched_bound_email(): void {
 		$invite = $this->site_invite( array( 'bound_email' => 'bound@example.com' ) );
