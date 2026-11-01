@@ -2,15 +2,21 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Phases 2–4 into PR 34: email verification with shell+verify soft-gate, course/enroll/quiz/cert UI in Phase 1 tile language, React Training admin + sidebar kit, and one branded mail template.
+**Goal:** Ship Phases 2–4 as **one stacked PR per phase** on top of Phase 1 (PR 34): Phase 2 course journey → Phase 3 email verify → Phase 4 React admin + branded mail.
 
 **Architecture:** Verification is an extra learning gate on top of `can_learn` (granted at register). Guest/`!can_learn` soft-gates stay shell-less; unverified `can_learn` users get Shell then a verify panel instead of body content. Enroll/quiz require verified. Course/enroll blocks match catalog/my-courses tiles. Admin: React wp-admin pages for site invites + learners; Course sidebar shares the kit. Mailer wraps all transactional messages in one HTML + text template.
 
 **Tech Stack:** PHP 8.2 / WordPress, Gutenberg blocks, vanilla block `view.js`, `@wordpress/scripts` React admin (existing course-editor pattern), PHPUnit via `npm run test:php`.
 
 **Spec:** `docs/superpowers/specs/2026-10-31-learner-phases-2-4-design.md`  
-**Branch:** `fix/learner-light-mode-pill-contrast` (PR 34)  
-**Phase 1:** Already on branch — do not regress.
+**Stack:**
+- Phase 1 — `fix/learner-light-mode-pill-contrast` ([PR 34](https://github.com/mholttech/burbank-lms-wp/pull/34)) → `main`
+- Phase 2 — `feat/learner-phase-2` → Phase 1 (tasks 5, 6, 7 chrome, 9)
+- Phase 3 — `feat/learner-phase-3` → Phase 2 (tasks 1–4, 7 verified gate, register copy)
+- Phase 4 — `feat/learner-phase-4` → Phase 3 (tasks 8, 10–13)
+
+**Phase 1:** Do not regress. Retarget each child when its base merges.
+**Order:** Journey order (Phase 2 → 3 → 4). Quiz **verified** gate ships in Phase 3; Phase 2 keeps `can_learn` + enrollment gating and chrome polish.
 
 **Test commands**
 
@@ -193,6 +199,16 @@ Shell: if `needs_email_verification`, do not print Enroll / Continue-quiz contex
 
 ---
 
+## Phase PR ownership
+
+| Phase | PR branch | Plan tasks |
+| --- | --- | --- |
+| 2 Taking a course | `feat/learner-phase-2` | 5, 6, 7 (chrome only), 9 |
+| 3 Getting in (verify) | `feat/learner-phase-3` | 1–4, 7 (verified gate), register success copy from 13 |
+| 4 Admin + mail | `feat/learner-phase-4` | 8, 10–12, remaining docs/QA from 13 |
+
+Execute Task numbers in **phase order** (5→6→7chrome→9, then 1→4→7gate, then 8→10…), not numeric order.
+
 ### Task 5: Course stack redesign
 
 **Files:**
@@ -338,7 +354,7 @@ Shell: if `needs_email_verification`, do not print Enroll / Continue-quiz contex
 - [ ] **Step 3: `npm run build` && `composer run phpstan` && scoped phpcs && `npm run test:php` → PASS; `npm run env:test:stop`.
 
 - [ ] **Step 4: Commit:** `docs(learner): document phases 2–4 verify and React admin`  
-- [ ] **Step 5: Push PR 34** (live preview still deferred until deploy).
+- [ ] **Step 5: Push Phase 4 PR** (retarget up the stack as bases merge; live preview deferred until deploy).
 
 ---
 
@@ -360,7 +376,7 @@ Shell: if `needs_email_verification`, do not print Enroll / Continue-quiz contex
 | Course sidebar kit | 12 |
 | Docs + register copy + suite | 13 |
 | No progress % | 5–6 (explicit) |
-| Same PR 34 | all commits on branch |
+| One PR per phase (stacked) | Phase 2→3→4 branches |
 
 ## Self-review notes
 
