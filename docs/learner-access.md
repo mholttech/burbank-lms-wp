@@ -116,7 +116,7 @@ Flow: validate active **site** invite → create user (with WP `first_name` / `l
 
 Default `wp-login.php?action=register` for learners is rejected (`registration_errors`). Admin `create_users` stays intact; staff may grant training access without a code.
 
-**Branded login:** `Access\Login` skins core `wp-login.php` with portal tokens (dark soft-gate panel, Training kicker, site-icon logo, red primary submit) via `build/burbank-lms-login.css`. Core Register links and the login footer CTA point at `/register/`. Shared identity helpers live in `Branding\Site` (`burbank_lms_product_name`, `burbank_lms_logo_url`).
+**Branded login:** `Access\Login` skins core `wp-login.php` with portal tokens (dark soft-gate panel, site-icon logo, red primary submit) via `build/burbank-lms-login.css`. Copy stays audience-neutral (training and Duty Officers). Core Register links and the login footer CTA point at `/register/`. Shared identity helpers live in `Branding\Site` (`burbank_lms_product_name`, `burbank_lms_logo_url`).
 
 **Certificate (legal) name:** WordPress first + last name is the single source; the composed string is stored in `burbank_lms_legal_name` for certificates. Learners may change it via the Profile block (`Profile::set_legal_name_self_service` / `POST /profile/legal-name`); changes are audited (`by` = the learner). Admins with `enroll_bfc_courses` may still correct it (audited). Direct usermeta writes stay blocked by the legal-name guards. Certificate merge fields use legal name and never email.
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Branded WordPress login screen for training learners.
+ * Branded WordPress login screen.
  *
  * @package Burbank_LMS
  */
@@ -10,7 +10,7 @@ namespace Burbank_LMS\Access;
 use Burbank_LMS\Branding\Site;
 
 /**
- * Skins `wp-login.php` to match the learner portal and points Register at `/register/`.
+ * Skins `wp-login.php` to match the portal and points Register at `/register/`.
  */
 class Login {
 	/** Webpack CSS entry / style handle. */
@@ -81,14 +81,12 @@ class Login {
 	}
 
 	/**
-	 * Print Training kicker above the login form.
+	 * Print a short lede above the login form.
 	 */
 	public function render_header(): void {
-		$site = new Site();
 		printf(
-			'<p class="bfc-login__caption">%s</p><p class="bfc-login__lede">%s</p>',
-			esc_html( $site->kicker() ),
-			esc_html__( 'Sign in with your training account.', 'burbank-lms' )
+			'<p class="bfc-login__lede">%s</p>',
+			esc_html__( 'Sign in to continue.', 'burbank-lms' )
 		);
 	}
 
@@ -99,7 +97,7 @@ class Login {
 		printf(
 			'<p class="bfc-login__register"><a href="%1$s">%2$s</a></p>',
 			esc_url( home_url( '/register/' ) ),
-			esc_html__( 'Create a training account', 'burbank-lms' )
+			esc_html__( 'Create an account', 'burbank-lms' )
 		);
 	}
 }
