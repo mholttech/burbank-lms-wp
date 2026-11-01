@@ -93,6 +93,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'rest_api_init', $verification, 'register_routes' );
 		$this->loader->add_action( 'profile_update', $verification, 'on_profile_update', 10, 2 );
 		$this->loader->add_action( 'template_redirect', $verification, 'landing' );
+		$course_content = new Learner\Course_Content();
+		$this->loader->add_filter( 'pre_render_block', $course_content, 'guard', 10, 3 );
 		$learner = new Access\Learner();
 		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
 		$mailer = new Mail\Mailer();

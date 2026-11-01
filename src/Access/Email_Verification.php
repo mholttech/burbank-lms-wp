@@ -113,7 +113,12 @@ class Email_Verification {
 							return new \WP_Error( 'burbank_already_verified', __( 'Your email is already verified.', 'burbank-lms' ), array( 'status' => 400 ) );
 						}
 						$result = $this->send( $id );
-						return is_wp_error( $result ) ? $result : rest_ensure_response( array( 'sent' => $result ) );
+						return is_wp_error( $result ) ? $result : rest_ensure_response(
+							array(
+								'sent'  => $result,
+								'email' => get_userdata( $id )->user_email,
+							)
+						);
 					},
 				)
 			);

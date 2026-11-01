@@ -40,6 +40,10 @@ async function verifyRequest( panel, action, body ) {
 			body: JSON.stringify( body ),
 		} );
 		const result = await response.json();
+		if ( result.email ) {
+			panel.querySelector( '[data-bfc-verify-email]' ).textContent =
+				result.email;
+		}
 		if ( ! response.ok || ! result.sent ) {
 			throw new Error(
 				result.message ||

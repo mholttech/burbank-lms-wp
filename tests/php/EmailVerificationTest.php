@@ -92,4 +92,24 @@ class EmailVerificationTest extends WP_UnitTestCase {
 			remove_filter( 'pre_wp_mail', '__return_true' );
 		}
 	}
+
+	/** Delivery failure still reports the email that was persisted. */
+	public function test_change_email_reports_persisted_address_when_mail_fails(): void {
+		rest_get_server();
+		$id = self::factory()->user->create();
+		( new Learner() )->grant_access( $id );
+		wp_set_current_user( $id );
+		$request = new WP_REST_Request( 'POST', '/burbank-lms/v1/profile/email' );
+		$request->set_param( 'email', 'delivery-failed@example.org' );
+		add_filter( 'pre_wp_mail', '__return_false' );
+		try {
+			$response = rest_get_server()->dispatch( $request );
+			$this->assertSame( 200, $response->get_status() );
+			$this->assertFalse( $response->get_data()['sent'] );
+			$this->assertSame( 'delivery-failed@example.org', $response->get_data()['email'] );
+			$this->assertSame( 'delivery-failed@example.org', get_userdata( $id )->user_email );
+		} finally {
+			remove_filter( 'pre_wp_mail', '__return_false' );
+		}
+	}
 }
