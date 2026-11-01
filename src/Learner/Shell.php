@@ -165,17 +165,19 @@ class Shell {
 			$actions_html = $this->render_actions_list( $actions );
 		}
 
-		$user    = get_userdata( $user_id );
-		$display = ( $user instanceof \WP_User && '' !== $user->display_name ) ? $user->display_name : __( 'Learner', 'burbank-lms' );
-		$lede    = $this->lede_for_current( $current );
-		$header  = sprintf(
-			'<header class="bfc-portal__header"><p class="bfc-portal__kicker">%1$s</p><p class="bfc-portal__title">%2$s</p><p class="bfc-portal__lede">%3$s</p></header>',
+		$user      = get_userdata( $user_id );
+		$display   = ( $user instanceof \WP_User && '' !== $user->display_name ) ? $user->display_name : __( 'Learner', 'burbank-lms' );
+		$lede      = $this->lede_for_current( $current );
+		$title_tag = ( 'course' === $current ) ? 'p' : 'h1';
+		$header    = sprintf(
+			'<header class="bfc-portal__header"><p class="bfc-portal__kicker">%1$s</p><%2$s class="bfc-portal__title">%3$s</%2$s><p class="bfc-portal__lede">%4$s</p></header>',
 			esc_html__( 'Training', 'burbank-lms' ),
+			$title_tag,
 			esc_html( $display ),
 			esc_html( $lede )
 		);
-		$aria    = esc_attr__( 'Training', 'burbank-lms' );
-		$nav     = sprintf(
+		$aria      = esc_attr__( 'Training', 'burbank-lms' );
+		$nav       = sprintf(
 			'<nav class="bfc-shell" aria-label="%1$s"><div class="bfc-shell__desktop">%2$s%3$s</div><details class="bfc-shell__mobile"><summary>%4$s</summary>%2$s%3$s</details></nav>',
 			$aria,
 			$nav_list,

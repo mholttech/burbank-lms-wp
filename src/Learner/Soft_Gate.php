@@ -67,7 +67,7 @@ class Soft_Gate {
 		}
 
 		return sprintf(
-			'<div class="bfc-soft-gate"><p class="bfc-soft-gate__caption">%1$s</p><h2 class="bfc-soft-gate__title">%2$s</h2><p class="bfc-soft-gate__body">%3$s</p>%4$s</div>',
+			'<div class="bfc-soft-gate"><p class="bfc-soft-gate__caption">%1$s</p><h1 class="bfc-soft-gate__title">%2$s</h1><p class="bfc-soft-gate__body">%3$s</p>%4$s</div>',
 			esc_html__( 'Training', 'burbank-lms' ),
 			esc_html( $title ),
 			esc_html( $body ),

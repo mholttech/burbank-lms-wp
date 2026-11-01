@@ -72,9 +72,13 @@ class LearnerSoftGateTest extends WP_UnitTestCase {
 		$guest   = $gate->render( 'guest' );
 		$blocked = $gate->render( 'no_access' );
 		$this->assertStringContainsString( 'bfc-soft-gate', $guest );
+		$this->assertStringContainsString( 'bfc-soft-gate__caption', $guest );
+		$this->assertStringContainsString( '<h1 class="bfc-soft-gate__title">', $guest );
 		$this->assertStringContainsString( 'register', strtolower( $guest ) );
 		$this->assertStringNotContainsString( 'bfc-catalog__list', $guest );
 		$this->assertStringContainsString( 'bfc-soft-gate', $blocked );
+		$this->assertStringContainsString( 'bfc-soft-gate__caption', $blocked );
+		$this->assertStringContainsString( '<h1 class="bfc-soft-gate__title">', $blocked );
 		$this->assertStringContainsString( 'administrator', strtolower( $blocked ) );
 		$this->assertNotSame( $guest, $blocked );
 		$this->assertSame( '', $gate->render( 'learner' ) );

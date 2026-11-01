@@ -38,12 +38,10 @@ class Templates {
 
 	/** Block markup for the course archive. */
 	private function archive_content(): string {
+		// Portal chrome owns the page H1 for learners; soft-gate owns it when blocked.
 		return '<!-- wp:burbank-lms/shell -->
 <!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group">
-	<!-- wp:heading {"level":1} -->
-	<h1 class="wp-block-heading">' . esc_html__( 'Course catalog', 'burbank-lms' ) . '</h1>
-	<!-- /wp:heading -->
 	<!-- wp:burbank-lms/catalog /-->
 </div>
 <!-- /wp:group -->

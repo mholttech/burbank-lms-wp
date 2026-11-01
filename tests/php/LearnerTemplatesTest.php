@@ -36,7 +36,8 @@ class LearnerTemplatesTest extends WP_UnitTestCase {
 		$content = (string) $method->invoke( $templates );
 		$this->assertStringContainsString( 'wp:burbank-lms/shell', $content );
 		$this->assertStringContainsString( 'wp:burbank-lms/catalog', $content );
-		$this->assertStringContainsString( 'Course catalog', $content );
+		$this->assertStringNotContainsString( 'wp:heading', $content );
+		$this->assertStringNotContainsString( 'Course catalog', $content );
 	}
 
 	/** Single template markup includes shell, title, featured image, post content, and course block. */
