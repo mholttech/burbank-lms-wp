@@ -9,8 +9,8 @@
 **Tech Stack:** PHP 8.2 / WordPress, Gutenberg blocks, vanilla block `view.js`, `@wordpress/scripts` React admin (existing course-editor pattern), PHPUnit via `npm run test:php`.
 
 **Spec:** `docs/superpowers/specs/2026-10-31-learner-phases-2-4-design.md`  
-**Branch:** `fix/learner-light-mode-pill-contrast` (PR 34)  
-**Phase 1:** Already on branch — do not regress.
+**Branch:** `feat/learner-phases-2-4` (stacked PR → PR 34 → `main`)  
+**Phase 1:** Lives on PR 34 (`fix/learner-light-mode-pill-contrast`) — do not regress; rebase/retarget when 34 merges.
 
 **Test commands**
 
@@ -338,7 +338,7 @@ Shell: if `needs_email_verification`, do not print Enroll / Continue-quiz contex
 - [ ] **Step 3: `npm run build` && `composer run phpstan` && scoped phpcs && `npm run test:php` → PASS; `npm run env:test:stop`.
 
 - [ ] **Step 4: Commit:** `docs(learner): document phases 2–4 verify and React admin`  
-- [ ] **Step 5: Push PR 34** (live preview still deferred until deploy).
+- [ ] **Step 5: Push stacked PR** (base = Phase 1 branch until 34 merges; live preview deferred until deploy).
 
 ---
 
@@ -360,7 +360,7 @@ Shell: if `needs_email_verification`, do not print Enroll / Continue-quiz contex
 | Course sidebar kit | 12 |
 | Docs + register copy + suite | 13 |
 | No progress % | 5–6 (explicit) |
-| Same PR 34 | all commits on branch |
+| Stacked on PR 34 | all commits on `feat/learner-phases-2-4` |
 
 ## Self-review notes
 
