@@ -119,6 +119,8 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 				$restricted   = $invites->course_has_active_invites( $course_id );
 				$row          = $can_learn ? $enroll->get( $user_id, $course_id ) : null;
 				$status_key   = $presentation->enrollment_status( $row );
+				$locked       = $enroll->credential_locks_actions( $row, $course_id );
+				$retake       = $enroll->retake_available( $row, $course_id );
 				?>
 				<li
 					class="bfc-catalog__item"
@@ -150,11 +152,21 @@ ksort( $subjects, SORT_NATURAL | SORT_FLAG_CASE );
 							<a class="bfc-catalog__cta bfc-catalog__cta--continue" href="<?php echo esc_url( $permalink ); ?>">
 								<?php esc_html_e( 'Continue course', 'burbank-lms' ); ?>
 							</a>
-						<?php elseif ( 'completed' === $status_key ) : ?>
+						<?php elseif ( $locked ) : ?>
 							<span class="bfc-catalog__chip bfc-catalog__chip--completed"><?php esc_html_e( 'Completed', 'burbank-lms' ); ?></span>
 							<a class="bfc-catalog__cta bfc-catalog__cta--continue" href="<?php echo esc_url( $permalink ); ?>">
 								<?php esc_html_e( 'View course', 'burbank-lms' ); ?>
 							</a>
+						<?php elseif ( $retake && $can_learn && $restricted ) : ?>
+							<span class="bfc-catalog__chip bfc-catalog__chip--completed"><?php esc_html_e( 'New version', 'burbank-lms' ); ?></span>
+							<a class="bfc-catalog__cta wp-element-button is-secondary" href="<?php echo esc_url( $permalink ); ?>">
+								<?php esc_html_e( 'View course', 'burbank-lms' ); ?>
+							</a>
+						<?php elseif ( $retake && $can_learn ) : ?>
+							<span class="bfc-catalog__chip bfc-catalog__chip--completed"><?php esc_html_e( 'New version', 'burbank-lms' ); ?></span>
+							<button type="button" class="bfc-catalog__enroll wp-element-button" data-bfc-enroll="<?php echo esc_attr( (string) $course_id ); ?>">
+								<?php esc_html_e( 'Enroll in new version', 'burbank-lms' ); ?>
+							</button>
 						<?php elseif ( $can_learn && $restricted ) : ?>
 							<span class="bfc-catalog__chip bfc-catalog__chip--invite"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></span>
 							<a class="bfc-catalog__cta wp-element-button is-secondary" href="<?php echo esc_url( $permalink ); ?>">

@@ -75,4 +75,25 @@ class Portal_Headings {
 
 		return $block_content;
 	}
+
+	/**
+	 * Drop theme post-title on course singles so the course block owns the H1.
+	 *
+	 * @param string               $block_content Block HTML.
+	 * @param array<string, mixed> $block         Parsed block.
+	 */
+	public function suppress_course_singular_title( string $block_content, array $block ): string {
+		if ( '' === $block_content || is_admin() ) {
+			return $block_content;
+		}
+		if ( ! is_singular( 'bfc_course' ) ) {
+			return $block_content;
+		}
+		$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+		if ( 'core/post-title' === $name ) {
+			return '';
+		}
+
+		return $block_content;
+	}
 }

@@ -104,8 +104,9 @@ class Shell {
 			return array();
 		}
 
-		$row = ( new Enrollment_Service() )->get( $user_id, $course_id );
-		if ( $row && 'completed' === $row->status ) {
+		$enrollment = new Enrollment_Service();
+		$row        = $enrollment->get( $user_id, $course_id );
+		if ( $enrollment->credential_locks_actions( $row, $course_id ) ) {
 			return array(
 				array(
 					'id'    => 'certificates',
@@ -117,7 +118,7 @@ class Shell {
 		}
 
 		$actions = array();
-		$active  = ( new Enrollment_Service() )->get_active( $user_id, $course_id );
+		$active  = $enrollment->get_active( $user_id, $course_id );
 		if ( $active ) {
 			$quiz_id = (int) get_post_meta( $course_id, 'pressprimer_quiz_id', true );
 			if ( $quiz_id > 0 ) {
@@ -139,7 +140,9 @@ class Shell {
 
 		$actions[] = array(
 			'id'    => 'enroll',
-			'label' => __( 'Enroll', 'burbank-lms' ),
+			'label' => $enrollment->retake_available( $row, $course_id )
+				? __( 'Enroll in new version', 'burbank-lms' )
+				: __( 'Enroll', 'burbank-lms' ),
 			'url'   => $permalink . '#bfc-course-enroll',
 			'kind'  => 'enroll',
 		);

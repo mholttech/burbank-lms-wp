@@ -54,7 +54,7 @@ class LearnerTemplatesTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'wp:post-content', $content );
 		$this->assertStringContainsString( 'wp:post-featured-image', $content );
 		$this->assertStringContainsString( 'wp:burbank-lms/course', $content );
-		$this->assertStringContainsString( 'wp:post-title', $content );
+		$this->assertStringNotContainsString( 'wp:post-title', $content );
 	}
 
 	/** Full single templates never disclose materials to blocked audiences. */

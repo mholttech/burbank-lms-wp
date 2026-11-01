@@ -91,6 +91,36 @@ class LearnerPortalHeadingsTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '<h1 class="bfc-portal__title">', $html );
 	}
 
+	/** Theme post-title is suppressed on course singles so the course block owns H1. */
+	public function test_suppresses_post_title_on_course_singular(): void {
+		( new \Burbank_LMS\Courses\Capabilities() )->install();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$course_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'bfc_course',
+				'post_status' => 'publish',
+				'post_title'  => 'Singular Title',
+			)
+		);
+		$this->go_to( (string) get_permalink( $course_id ) );
+		$this->assertTrue( is_singular( 'bfc_course' ) );
+
+		$headings = new Portal_Headings();
+		$block    = array(
+			'blockName' => 'core/post-title',
+			'attrs'     => array(),
+		);
+		$this->assertSame( '', $headings->suppress_course_singular_title( '<h1 class="wp-block-post-title">Singular Title</h1>', $block ) );
+
+		$this->go_to( home_url( '/?s=portal-headings-off-course' ) );
+		$this->assertFalse( is_singular( 'bfc_course' ) );
+		$this->assertSame(
+			'<h1 class="wp-block-post-title">Singular Title</h1>',
+			$headings->suppress_course_singular_title( '<h1 class="wp-block-post-title">Singular Title</h1>', $block )
+		);
+	}
+
 	/** Theme query-title H1 is suppressed on the course archive only. */
 	public function test_suppresses_query_title_on_course_archive(): void {
 		$course_id = self::factory()->post->create(

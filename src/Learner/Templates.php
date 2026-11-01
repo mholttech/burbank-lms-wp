@@ -50,10 +50,10 @@ class Templates {
 
 	/** Block markup for a single course. */
 	private function single_content(): string {
+		// Course block owns the document H1; theme post-title is suppressed for custom templates.
 		return '<!-- wp:burbank-lms/shell -->
 <!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group">
-	<!-- wp:post-title {"level":1} /-->
 	<!-- wp:post-featured-image /-->
 	<!-- wp:post-content /-->
 	<!-- wp:burbank-lms/course /-->

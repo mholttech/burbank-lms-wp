@@ -62,6 +62,7 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'render_block_core/heading', $portal_headings, 'suppress_page_h1', 10, 2 );
 		$this->loader->add_filter( 'render_block_core/heading', $portal_headings, 'suppress_archive_title', 10, 2 );
 		$this->loader->add_filter( 'render_block_core/post-title', $portal_headings, 'suppress_page_h1', 10, 2 );
+		$this->loader->add_filter( 'render_block_core/post-title', $portal_headings, 'suppress_course_singular_title', 10, 2 );
 		$this->loader->add_filter( 'render_block_core/query-title', $portal_headings, 'suppress_archive_title', 10, 2 );
 
 		$course_picks = new Courses\Picks();

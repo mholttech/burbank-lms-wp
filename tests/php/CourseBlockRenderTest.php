@@ -77,7 +77,7 @@ class CourseBlockRenderTest extends WP_UnitTestCase {
 		return $course_id;
 	}
 
-	/** Rendered course chrome shows meta, enrolled status, quiz CTA and embed. */
+	/** Rendered course chrome shows meta, quiz embed, and withdraw without duplicate foot CTAs. */
 	public function test_render_includes_meta_status_and_quiz_chrome(): void {
 		$course_id = $this->published_course();
 		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
@@ -93,17 +93,14 @@ class CourseBlockRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'bfc-course__code', $html );
 		$this->assertStringContainsString( 'bfc-course__subject', $html );
 		$this->assertStringContainsString( 'bfc-course__outcome', $html );
+		$this->assertStringContainsString( '<h1 class="bfc-course__title">', $html );
 		$this->assertStringNotContainsString( 'Code:', $html );
 		$this->assertStringNotContainsString( 'Revision:', $html );
-		$this->assertStringContainsString( 'You are enrolled in this course.', $html );
-		$this->assertStringContainsString( 'bfc-course__quiz-cta', $html );
-		$this->assertStringContainsString( 'href="#bfc-course-quiz"', $html );
 		$this->assertStringContainsString( 'bfc-course__quiz-embed', $html );
 		$this->assertStringContainsString( 'id="bfc-course-quiz"', $html );
-		$this->assertDoesNotMatchRegularExpression(
-			'/<a\b(?![^>]*\bbfc-course__quiz-cta\b)[^>]*>\s*Take quiz\s*<\/a>/i',
-			$html
-		);
+		$this->assertStringContainsString( 'data-bfc-withdraw', $html );
+		$this->assertStringNotContainsString( 'bfc-course__quiz-cta', $html );
+		$this->assertStringNotContainsString( 'You are enrolled in this course.', $html );
 	}
 
 	/** Guests see soft-gate instead of course meta or enroll chrome. */
