@@ -21,6 +21,7 @@
 		border-radius: var(--bfc-radius-panel, 16px);
 		background: var(--bfc-control-bg, #f2f6f3);
 		color: var(--bfc-control-text, inherit);
+		box-shadow: none;
 	}
 
 	/* Theme paints plain links content-link green + underline; the course
