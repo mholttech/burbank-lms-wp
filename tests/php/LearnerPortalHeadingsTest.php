@@ -90,4 +90,28 @@ class LearnerPortalHeadingsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<p class="bfc-portal__title">', $html );
 		$this->assertStringNotContainsString( '<h1 class="bfc-portal__title">', $html );
 	}
+
+	/** Theme query-title H1 is suppressed on the course archive only. */
+	public function test_suppresses_query_title_on_course_archive(): void {
+		$course_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'bfc_course',
+				'post_status' => 'publish',
+				'post_title'  => 'Archive Fixture',
+			)
+		);
+		$this->assertIsInt( $course_id );
+
+		$this->go_to( (string) get_post_type_archive_link( 'bfc_course' ) );
+
+		$headings = new Portal_Headings();
+		$block    = array(
+			'blockName' => 'core/query-title',
+			'attrs'     => array(),
+		);
+		$this->assertSame( '', $headings->suppress_archive_title( '<h1>Course catalog</h1>', $block ) );
+
+		$this->go_to( home_url( '/' ) );
+		$this->assertSame( '<h1>Blog</h1>', $headings->suppress_archive_title( '<h1>Blog</h1>', $block ) );
+	}
 }

@@ -38,9 +38,14 @@ $wrapper = get_block_wrapper_attributes(
 			<input id="bfc-register-invite" name="invite" type="text" required autocomplete="off">
 		</p>
 		<p class="bfc-register__field">
-			<label for="bfc-register-legal-name"><?php esc_html_e( 'Legal / certificate name', 'burbank-lms' ); ?></label>
-			<input id="bfc-register-legal-name" name="legal_name" type="text" required autocomplete="name">
+			<label for="bfc-register-first-name"><?php esc_html_e( 'First name', 'burbank-lms' ); ?></label>
+			<input id="bfc-register-first-name" name="first_name" type="text" required autocomplete="given-name">
 		</p>
+		<p class="bfc-register__field">
+			<label for="bfc-register-last-name"><?php esc_html_e( 'Last name', 'burbank-lms' ); ?></label>
+			<input id="bfc-register-last-name" name="last_name" type="text" required autocomplete="family-name">
+		</p>
+		<p class="bfc-register__hint"><?php esc_html_e( 'Your name is printed on certificates as first + last name.', 'burbank-lms' ); ?></p>
 		<p class="bfc-register__field">
 			<label for="bfc-register-display-name"><?php esc_html_e( 'Display name', 'burbank-lms' ); ?></label>
 			<input id="bfc-register-display-name" name="display_name" type="text" required autocomplete="nickname">

@@ -337,7 +337,6 @@ html[data-bc-theme="dark"] {
 
 }
 
-.bfc-profile__form,
 .bfc-register__form {
 	padding: 1.1rem 1.15rem;
 	border-radius: var(--bfc-radius-panel);
@@ -345,11 +344,22 @@ html[data-bc-theme="dark"] {
 	box-shadow: var(--bfc-panel-shadow);
 }
 
-/* Align catalog/course panels with the portal system. */
+/* Profile personal + security panels: bordered cards, no floating shadow
+   (same treatment as my-courses / catalog tiles). */
+.bfc-profile__form,
+.bfc-profile__security-form {
+	padding: clamp(1.125rem, 2.5vw, 1.5rem);
+	border: 1px solid var(--bfc-control-border);
+	border-radius: var(--bfc-radius-panel);
+	background: var(--bfc-control-bg);
+	box-shadow: none;
+}
+
+/* Align catalog filters / course panels with the portal system. Catalog
+   and my-courses items are list cards, not floating panels: their block
+   stylesheets give them a bordered card with no panel shadow. */
 .bfc-catalog__filters,
-.bfc-catalog__item,
-.bfc-course,
-.bfc-my-courses__item {
+.bfc-course {
 	border-color: var(--bfc-control-border);
 	border-radius: var(--bfc-radius-panel);
 	background: var(--bfc-control-bg);

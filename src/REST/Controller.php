@@ -8,6 +8,7 @@
 namespace Burbank_LMS\REST;
 
 use Burbank_LMS\Access\Learner;
+use Burbank_LMS\Access\Profile;
 use Burbank_LMS\Access\Registration;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
 
@@ -61,6 +62,16 @@ class Controller {
 						'required' => false,
 					),
 					'legal_name'   => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'first_name'   => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'last_name'    => array(
 						'type'              => 'string',
 						'required'          => false,
 						'sanitize_callback' => 'sanitize_text_field',
@@ -146,6 +157,33 @@ class Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/profile/legal-name',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'update_legal_name' ),
+				'permission_callback' => array( $this, 'permission_profile' ),
+				'args'                => array(
+					'legal_name' => array(
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/profile/sign-out-others',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'sign_out_others' ),
+				'permission_callback' => array( $this, 'permission_profile' ),
+			)
+		);
 	}
 
 	/**
@@ -160,15 +198,23 @@ class Controller {
 			return $limited;
 		}
 
-		$result = $this->registration()->register(
-			array(
-				'invite'       => (string) $request->get_param( 'invite' ),
-				'email'        => (string) $request->get_param( 'email' ),
-				'password'     => (string) $request->get_param( 'password' ),
-				'legal_name'   => (string) $request->get_param( 'legal_name' ),
-				'display_name' => (string) $request->get_param( 'display_name' ),
-			)
+		$payload = array(
+			'invite'       => (string) $request->get_param( 'invite' ),
+			'email'        => (string) $request->get_param( 'email' ),
+			'password'     => (string) $request->get_param( 'password' ),
+			'legal_name'   => (string) $request->get_param( 'legal_name' ),
+			'display_name' => (string) $request->get_param( 'display_name' ),
 		);
+		// Only forward name-part keys when the client sent them so legal_name-only
+		// payloads still get the legal-name required message.
+		if ( null !== $request->get_param( 'first_name' ) ) {
+			$payload['first_name'] = (string) $request->get_param( 'first_name' );
+		}
+		if ( null !== $request->get_param( 'last_name' ) ) {
+			$payload['last_name'] = (string) $request->get_param( 'last_name' );
+		}
+
+		$result = $this->registration()->register( $payload );
 		if ( is_wp_error( $result ) ) {
 			return $this->to_rest_error( $result );
 		}
@@ -361,6 +407,60 @@ class Controller {
 			return new \WP_Error(
 				'burbank_enrollment_forbidden',
 				__( 'You are not allowed to enroll learners.', 'burbank-lms' ),
+				array( 'status' => 403 )
+			);
+		}
+		return true;
+	}
+
+	/**
+	 * Change the current learner's legal/certificate name (audited, self only).
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function update_legal_name( \WP_REST_Request $request ) {
+		$user_id = get_current_user_id();
+		$result  = ( new Profile() )->set_legal_name_self_service( $user_id, (string) $request->get_param( 'legal_name' ) );
+		if ( is_wp_error( $result ) ) {
+			return $this->to_rest_error( $result );
+		}
+		return new \WP_REST_Response(
+			array( 'legal_name' => ( new Profile() )->get_legal_name( $user_id ) ),
+			200
+		);
+	}
+
+	/**
+	 * Destroy the current user's other sessions (wp-admin "Log Out Everywhere Else").
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function sign_out_others() {
+		$user_id = get_current_user_id();
+		$tokens  = \WP_Session_Tokens::get_instance( $user_id );
+		$current = wp_get_session_token();
+		if ( '' !== $current ) {
+			$tokens->destroy_others( $current );
+		} else {
+			$tokens->destroy_all();
+		}
+		return new \WP_REST_Response( array( 'signed_out_others' => true ), 200 );
+	}
+
+	/**
+	 * Profile routes require a logged-in learner who can_learn.
+	 *
+	 * @return true|\WP_Error
+	 */
+	public function permission_profile() {
+		if ( ! is_user_logged_in() ) {
+			return $this->unauthorized();
+		}
+		if ( ! $this->learner()->can_learn( get_current_user_id() ) ) {
+			return new \WP_Error(
+				'burbank_profile_cannot_learn',
+				__( 'You must have training access to edit your profile.', 'burbank-lms' ),
 				array( 'status' => 403 )
 			);
 		}

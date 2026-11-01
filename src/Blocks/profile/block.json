@@ -6,7 +6,7 @@
 	"title": "Learner Profile",
 	"category": "widgets",
 	"icon": "admin-users",
-	"description": "Learner account profile with read-only legal name.",
+	"description": "Learner account profile: editable certificate name, display name, email, and a separate security form.",
 	"example": {},
 	"supports": {
 		"html": false,

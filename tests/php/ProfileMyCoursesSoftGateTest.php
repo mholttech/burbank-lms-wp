@@ -6,6 +6,7 @@
  */
 
 use Burbank_LMS\Access\Learner;
+use Burbank_LMS\Access\Profile;
 
 /** Guests and no-access users see Soft_Gate; learners keep form/list markup. */
 class ProfileMyCoursesSoftGateTest extends WP_UnitTestCase {
@@ -41,6 +42,34 @@ class ProfileMyCoursesSoftGateTest extends WP_UnitTestCase {
 		$html = do_blocks( '<!-- wp:burbank-lms/profile /-->' );
 		$this->assertStringContainsString( 'bfc-profile__form', $html );
 		$this->assertStringNotContainsString( 'bfc-soft-gate', $html );
+		$this->assertStringContainsString( 'bfc-profile__summary', $html );
+		$this->assertStringContainsString( 'bfc-profile__avatar', $html );
+		$this->assertStringContainsString( 'Training access', $html );
+		$this->assertStringNotContainsString( 'Member since', $html );
+		$this->assertStringContainsString( 'name="first_name"', $html );
+		$this->assertStringContainsString( 'name="last_name"', $html );
+		$this->assertStringContainsString( 'bfc-profile__cert-preview', $html );
+		$this->assertStringContainsString( 'name="display_name"', $html );
+		$this->assertStringContainsString( 'bfc-profile__security-form', $html );
+		$this->assertStringNotContainsString( 'Contact a training administrator to correct your legal name.', $html );
+		$this->assertStringNotContainsString( 'readonly', $html );
+	}
+
+	/** Empty WP first/last prefills from the existing legal/certificate name. */
+	public function test_profile_render_prefills_first_last_from_legal_name(): void {
+		$user_id = self::factory()->user->create(
+			array(
+				'role'       => 'subscriber',
+				'first_name' => '',
+				'last_name'  => '',
+			)
+		);
+		( new Learner() )->grant_access( $user_id );
+		$this->assertTrue( ( new Profile() )->set_legal_name( $user_id, 'Mary Jane Watson' ) );
+		wp_set_current_user( $user_id );
+		$html = do_blocks( '<!-- wp:burbank-lms/profile /-->' );
+		$this->assertStringContainsString( 'value="Mary"', $html );
+		$this->assertStringContainsString( 'value="Jane Watson"', $html );
 	}
 
 	/** Guest my-courses render shows soft-gate with login/register CTAs, not the list shell. */
@@ -75,7 +104,7 @@ class ProfileMyCoursesSoftGateTest extends WP_UnitTestCase {
 		wp_set_current_user( $user_id );
 		$html = do_blocks( '<!-- wp:burbank-lms/my-courses /-->' );
 		$this->assertStringContainsString( 'bfc-my-courses__list', $html );
-		$this->assertStringContainsString( 'bfc-my-courses__catalog-cta', $html );
+		$this->assertStringContainsString( 'bfc-my-courses__catalog-link', $html );
 		$this->assertStringNotContainsString( 'bfc-soft-gate', $html );
 	}
 }

@@ -86,7 +86,7 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 		$this->assertWPError( $result );
 	}
 
-	/** Register without legal name fails. */
+	/** Register without legal name fails (legal_name-only clients). */
 	public function test_register_missing_legal_name_fails(): void {
 		$invite = $this->site_invite();
 		$result = $this->registration()->register(
@@ -99,6 +99,64 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_register_legal_name_required', $result->get_error_code() );
+		$this->assertSame( 'Legal name is required.', $result->get_error_message() );
+	}
+
+	/** First/last name composes the certificate name and WP name fields. */
+	public function test_register_first_last_composes_legal_name(): void {
+		$invite = $this->site_invite();
+		$result = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'firstlast@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'first_name'   => 'Alex',
+				'last_name'    => 'Volunteer',
+				'display_name' => 'Alex',
+			)
+		);
+		$this->assertNotWPError( $result );
+		$user_id = (int) $result;
+		$this->assertSame( 'Alex Volunteer', ( new Profile() )->get_legal_name( $user_id ) );
+		$this->assertSame( 'Alex', get_user_meta( $user_id, 'first_name', true ) );
+		$this->assertSame( 'Volunteer', get_user_meta( $user_id, 'last_name', true ) );
+	}
+
+	/** Empty first+last keys (UI register submit) ask for first and last, not legal name. */
+	public function test_register_empty_first_last_asks_for_first_and_last(): void {
+		$invite = $this->site_invite();
+		$result = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'emptyname@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'first_name'   => '',
+				'last_name'    => '',
+				'display_name' => 'Alex',
+			)
+		);
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_register_legal_name_required', $result->get_error_code() );
+		$this->assertSame( 'First and last name are required.', $result->get_error_message() );
+	}
+
+	/** Missing first or last name is rejected like missing legal name was. */
+	public function test_register_missing_last_name_fails(): void {
+		$invite = $this->site_invite();
+		$result = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'nolast@example.com',
+				'password'     => 'CorrectHorseBatteryStaple1!',
+				'first_name'   => 'Alex',
+				'last_name'    => '',
+				'display_name' => 'Alex',
+			)
+		);
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_register_legal_name_required', $result->get_error_code() );
+		$this->assertSame( 'First and last name are required.', $result->get_error_message() );
 	}
 
 	/** Bound-email invites reject mismatched registration email. */
