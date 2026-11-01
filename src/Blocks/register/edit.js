@@ -7,7 +7,7 @@ export default function Edit() {
 		<div { ...useBlockProps( { className: 'bfc-register' } ) }>
 			<p>
 				{ __(
-					'Learner registration form (site invite, legal name, display name, email, password).',
+					'Learner registration form (site invite, first/last name, display name, email, password).',
 					'burbank-lms'
 				) }
 			</p>

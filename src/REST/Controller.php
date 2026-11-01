@@ -198,17 +198,23 @@ class Controller {
 			return $limited;
 		}
 
-		$result = $this->registration()->register(
-			array(
-				'invite'       => (string) $request->get_param( 'invite' ),
-				'email'        => (string) $request->get_param( 'email' ),
-				'password'     => (string) $request->get_param( 'password' ),
-				'legal_name'   => (string) $request->get_param( 'legal_name' ),
-				'first_name'   => (string) $request->get_param( 'first_name' ),
-				'last_name'    => (string) $request->get_param( 'last_name' ),
-				'display_name' => (string) $request->get_param( 'display_name' ),
-			)
+		$payload = array(
+			'invite'       => (string) $request->get_param( 'invite' ),
+			'email'        => (string) $request->get_param( 'email' ),
+			'password'     => (string) $request->get_param( 'password' ),
+			'legal_name'   => (string) $request->get_param( 'legal_name' ),
+			'display_name' => (string) $request->get_param( 'display_name' ),
 		);
+		// Only forward name-part keys when the client sent them so legal_name-only
+		// payloads still get the legal-name required message.
+		if ( null !== $request->get_param( 'first_name' ) ) {
+			$payload['first_name'] = (string) $request->get_param( 'first_name' );
+		}
+		if ( null !== $request->get_param( 'last_name' ) ) {
+			$payload['last_name'] = (string) $request->get_param( 'last_name' );
+		}
+
+		$result = $this->registration()->register( $payload );
 		if ( is_wp_error( $result ) ) {
 			return $this->to_rest_error( $result );
 		}
