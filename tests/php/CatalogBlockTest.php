@@ -7,6 +7,7 @@
 
 use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Courses\Capabilities;
+use Burbank_LMS\Enrollment\Service as Enrollment_Service;
 use Burbank_LMS\Enrollment\Tables as EnrollmentTables;
 
 /** Asserts catalog filter controls and per-item data attributes. */
@@ -80,11 +81,12 @@ class CatalogBlockTest extends WP_UnitTestCase {
 
 	/** Rendered catalog includes search, subject filter, and item data attributes. */
 	public function test_render_includes_search_subject_filter_and_item_data(): void {
-		$this->published_course( 'Alpha Communications', 'BFC-101', 'communications' );
+		$alpha_id = $this->published_course( 'Alpha Communications', 'BFC-101', 'communications' );
 		$this->published_course( 'Beta Safety', 'BFC-202', 'safety' );
 
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		( new Learner() )->grant_access( $user_id );
+		$this->assertTrue( ( new Enrollment_Service() )->self_enroll( $user_id, $alpha_id ) );
 		wp_set_current_user( $user_id );
 
 		$html = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
@@ -97,6 +99,10 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'data-bfc-subject="safety"', $html );
 		$this->assertStringContainsString( 'data-bfc-catalog-empty-filter', $html );
 		$this->assertStringContainsString( 'No courses match your filters.', $html );
+		$this->assertStringContainsString( 'Course catalog', $html );
+		$this->assertStringContainsString( 'bfc-catalog__item', $html );
+		$this->assertStringContainsString( 'Continue course', $html );
+		$this->assertMatchesRegularExpression( '/\d+ courses? available/', $html );
 	}
 
 	/** Guests see soft-gate card instead of catalog course list. */
