@@ -90,7 +90,11 @@ class CourseBlockRenderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'BFC-998', $html );
 		$this->assertStringContainsString( 'Independent study', $html );
 		$this->assertStringContainsString( 'Communications', $html );
-		$this->assertStringContainsString( '1.0', $html );
+		$this->assertStringContainsString( 'bfc-course__code', $html );
+		$this->assertStringContainsString( 'bfc-course__subject', $html );
+		$this->assertStringContainsString( 'bfc-course__outcome', $html );
+		$this->assertStringNotContainsString( 'Code:', $html );
+		$this->assertStringNotContainsString( 'Revision:', $html );
 		$this->assertStringContainsString( 'You are enrolled in this course.', $html );
 		$this->assertStringContainsString( 'bfc-course__quiz-cta', $html );
 		$this->assertStringContainsString( 'href="#bfc-course-quiz"', $html );

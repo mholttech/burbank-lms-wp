@@ -52,6 +52,9 @@ class PressPrimerChromeTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'bfc-quiz-chrome', $html );
 		$this->assertStringContainsString( 'bfc-quiz-chrome__back', $html );
 		$this->assertStringContainsString( 'Chrome Course', $html );
+		$this->assertStringContainsString( 'bfc-quiz-chrome__status', $html );
+		$this->assertStringContainsString( 'You are enrolled', $html );
+		$this->assertStringNotContainsString( '%', $html );
 	}
 
 	/** Unmapped quiz prints no chrome. */

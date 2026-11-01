@@ -104,6 +104,18 @@ class Shell {
 			return array();
 		}
 
+		$row = ( new Enrollment_Service() )->get( $user_id, $course_id );
+		if ( $row && 'completed' === $row->status ) {
+			return array(
+				array(
+					'id'    => 'certificates',
+					'label' => __( 'View certificates', 'burbank-lms' ),
+					'url'   => $this->page_url( 'my-courses' ),
+					'kind'  => 'continue',
+				),
+			);
+		}
+
 		$actions = array();
 		$active  = ( new Enrollment_Service() )->get_active( $user_id, $course_id );
 		if ( $active ) {

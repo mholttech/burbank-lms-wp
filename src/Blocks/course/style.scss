@@ -1,15 +1,55 @@
 .bfc-course {
 	display: grid;
-	gap: 1rem;
-	padding: clamp(1rem, 2vw, 1.5rem);
+	gap: 0.55rem;
+	padding: clamp(1.125rem, 2.5vw, 1.5rem);
 	border: 1px solid var(--bfc-control-border, var(--wp--preset--color--content-border, #c3c4c7));
 	border-radius: var(--bfc-radius-panel, 16px);
 	background: var(--bfc-control-bg, var(--bc-surface-card, var(--wp--preset--color--content-background, #fff)));
 	color: var(--bfc-control-text, var(--wp--preset--color--content-text, inherit));
+	box-shadow: none;
+
+	&__badge {
+		display: inline-flex;
+		align-items: center;
+		justify-self: start;
+		flex: none;
+		margin: 0;
+		padding: 0.3rem 0.7rem;
+		border-radius: var(--bfc-radius-pill, 999px);
+		background: color-mix(in srgb, var(--bfc-pill-active-bg, #1b6540) 16%, transparent);
+		color: var(--bfc-pill-idle-text, #1b6540);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		line-height: 1.2;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	&__title,
+	&__lede {
+		margin: 0;
+	}
+
+	&__title {
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1.3;
+	}
 
 	&__meta {
-		display: grid;
-		gap: 0.35rem;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 0.75rem;
+		margin: 0;
+		color: var(--bfc-control-muted, #556b60);
+		font-size: 0.9rem;
+		line-height: 1.45;
+		opacity: 1;
+	}
+
+	&__code {
+		font-weight: 600;
 	}
 
 	&__status {
@@ -29,6 +69,21 @@
 
 	&__quiz-cta {
 		display: inline-block;
+	}
+
+	&__actions {
+		margin: 0;
+	}
+
+	&__foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem 0.75rem;
+		margin-top: 0.35rem;
+		padding-top: 0.85rem;
+		border-top: 1px solid var(--bfc-control-border, #d0ddd4);
 	}
 
 	&__notice.is-error {

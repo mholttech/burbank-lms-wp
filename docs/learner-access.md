@@ -246,3 +246,13 @@ Active enrollment remains the source of truth for taking a specific course’s m
 ## Tests
 
 `Access*Test`, `Enrollment*Test`, `ProgressPipelineTest`, `PressPrimerGateTest`, `LearnerRestTest`, `CourseEditorRestTest`, `MailerTest`, `LearnerSoftGateTest`, `LearnerShellTest`, `ProfileMyCoursesSoftGateTest`, and block registration coverage run with `npm run test:php`.
+
+### Course journey presentation
+
+The course block uses the learner tile stack: status badge, course title, metadata,
+excerpt, mapped quiz region, and action footer. Active enrollments offer Withdraw
+through the existing enrollment REST route. Standalone enrollment cards link enrolled
+learners back to the course, send invite-only learners to the course invite form, and
+replace successful enrollment forms with Continue course. These surfaces show status
+labels rather than progress percentages. Public `[ppcert_verify]` pages explicitly load
+the PressPrimer skin and remain outside the learner shell.

@@ -1,11 +1,14 @@
+/* eslint-disable camelcase -- REST contract field names. */
 /**
  * Course open-enroll and invite redeem → POST /burbank-lms/v1/enrollments.
  */
 
 function parseConfig( root ) {
 	try {
-		return JSON.parse( root.getAttribute( 'data-bfc-rest-config' ) || '{}' );
-	} catch ( error ) {
+		return JSON.parse(
+			root.getAttribute( 'data-bfc-rest-config' ) || '{}'
+		);
+	} catch {
 		return {};
 	}
 }
@@ -38,8 +41,39 @@ document.querySelectorAll( '.bfc-course' ).forEach( ( root ) => {
 	const config = parseConfig( root );
 	const courseId = Number(
 		root.getAttribute( 'data-course-id' ) ||
-			root.querySelector( '[data-bfc-enroll]' )?.getAttribute( 'data-bfc-enroll' )
+			root
+				.querySelector( '[data-bfc-enroll]' )
+				?.getAttribute( 'data-bfc-enroll' )
 	);
+
+	const withdraw = root.querySelector( '[data-bfc-withdraw]' );
+	withdraw?.addEventListener( 'click', async () => {
+		withdraw.disabled = true;
+		try {
+			const response = await fetch(
+				`${ config.restUrl }/enrollments/${ courseId }`,
+				{
+					method: 'DELETE',
+					credentials: 'same-origin',
+					headers: { 'X-WP-Nonce': config.nonce || '' },
+				}
+			);
+			const payload = await response.json().catch( () => ( {} ) );
+			if ( ! response.ok ) {
+				setStatus(
+					status,
+					payload.message || 'Withdraw failed.',
+					true
+				);
+				withdraw.disabled = false;
+				return;
+			}
+			window.location.reload();
+		} catch {
+			setStatus( status, 'Withdraw failed. Please try again.', true );
+			withdraw.disabled = false;
+		}
+	} );
 
 	const openButton = root.querySelector( '[data-bfc-enroll]' );
 	if ( openButton ) {
@@ -60,8 +94,12 @@ document.querySelectorAll( '.bfc-course' ).forEach( ( root ) => {
 					return;
 				}
 				window.location.reload();
-			} catch ( error ) {
-				setStatus( status, 'Enrollment failed. Please try again.', true );
+			} catch {
+				setStatus(
+					status,
+					'Enrollment failed. Please try again.',
+					true
+				);
 				openButton.disabled = false;
 			}
 		} );
@@ -72,7 +110,9 @@ document.querySelectorAll( '.bfc-course' ).forEach( ( root ) => {
 		inviteForm.addEventListener( 'submit', async ( event ) => {
 			event.preventDefault();
 			setStatus( status, '' );
-			const data = Object.fromEntries( new FormData( inviteForm ).entries() );
+			const data = Object.fromEntries(
+				new FormData( inviteForm ).entries()
+			);
 			try {
 				const { response, payload } = await enroll( config, {
 					course_id: courseId,
@@ -87,8 +127,12 @@ document.querySelectorAll( '.bfc-course' ).forEach( ( root ) => {
 					return;
 				}
 				window.location.reload();
-			} catch ( error ) {
-				setStatus( status, 'Enrollment failed. Please try again.', true );
+			} catch {
+				setStatus(
+					status,
+					'Enrollment failed. Please try again.',
+					true
+				);
 			}
 		} );
 	}

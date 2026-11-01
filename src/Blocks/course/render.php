@@ -63,7 +63,6 @@ $quiz_id      = (int) get_post_meta( $course_id, 'pressprimer_quiz_id', true );
 $code         = (string) get_post_meta( $course_id, 'bfc_code', true );
 $subject      = $presentation->label( (string) get_post_meta( $course_id, 'subject_category', true ) );
 $outcome      = $presentation->label( (string) get_post_meta( $course_id, 'course_outcome', true ) );
-$revision     = (string) get_post_meta( $course_id, 'course_revision', true );
 $quiz_cta     = 'passed' === $status_key
 	? __( 'Continue to quiz', 'burbank-lms' )
 	: __( 'Start quiz', 'burbank-lms' );
@@ -76,34 +75,42 @@ $wrapper      = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<span class="bfc-course__badge"><?php echo esc_html( 'none' === $status_key ? ( $restricted ? __( 'Invite required', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ) : $presentation->label( $status_key ) ); ?></span>
+	<h2 class="bfc-course__title"><?php echo esc_html( get_the_title( $course_id ) ); ?></h2>
 	<div class="bfc-course__meta">
 		<?php if ( $code ) : ?>
-			<p class="bfc-course__code"><strong><?php esc_html_e( 'Code:', 'burbank-lms' ); ?></strong> <?php echo esc_html( $code ); ?></p>
+			<span class="bfc-course__code"><?php echo esc_html( $code ); ?></span>
 		<?php endif; ?>
 		<?php if ( $subject ) : ?>
-			<p class="bfc-course__subject"><?php echo esc_html( $subject ); ?></p>
+			<span class="bfc-course__subject"><?php echo esc_html( $subject ); ?></span>
 		<?php endif; ?>
 		<?php if ( $outcome ) : ?>
-			<p class="bfc-course__outcome"><?php echo esc_html( $outcome ); ?></p>
-		<?php endif; ?>
-		<?php if ( $revision ) : ?>
-			<p class="bfc-course__revision"><strong><?php esc_html_e( 'Revision:', 'burbank-lms' ); ?></strong> <?php echo esc_html( $revision ); ?></p>
+			<span class="bfc-course__outcome"><?php echo esc_html( $outcome ); ?></span>
 		<?php endif; ?>
 	</div>
 
-	<?php if ( 'none' !== $status_key && '' !== $status_text ) : ?>
-		<p class="bfc-course__status"><?php echo esc_html( $status_text ); ?></p>
+	<?php if ( has_excerpt( $course_id ) ) : ?>
+		<p class="bfc-course__lede"><?php echo esc_html( get_the_excerpt( $course_id ) ); ?></p>
 	<?php endif; ?>
-
 	<?php if ( $active && $quiz_id > 0 ) : ?>
-		<p class="bfc-course__actions">
-			<a class="bfc-course__quiz-cta wp-element-button" href="#bfc-course-quiz"><?php echo esc_html( $quiz_cta ); ?></a>
-		</p>
 		<div id="bfc-course-quiz" class="bfc-course__quiz-embed">
 			<?php if ( shortcode_exists( 'pressprimer_quiz' ) ) : ?>
 				<?php echo do_shortcode( '[pressprimer_quiz id="' . absint( $quiz_id ) . '"]' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- PressPrimer shortcode HTML. ?>
 			<?php endif; ?>
 		</div>
+	<?php endif; ?>
+	<div class="bfc-course__foot">
+	<?php if ( 'none' !== $status_key && '' !== $status_text ) : ?>
+		<p class="bfc-course__status"><?php echo esc_html( $status_text ); ?></p>
+	<?php endif; ?>
+
+	<?php if ( 'completed' === $status_key ) : ?>
+		<a class="bfc-course__action wp-element-button is-secondary" href="<?php echo esc_url( home_url( '/my-courses/' ) ); ?>"><?php esc_html_e( 'View certificates', 'burbank-lms' ); ?></a>
+	<?php elseif ( $active && $quiz_id > 0 ) : ?>
+		<p class="bfc-course__actions">
+			<a class="bfc-course__quiz-cta wp-element-button" href="#bfc-course-quiz"><?php echo esc_html( $quiz_cta ); ?></a>
+		</p>
+
 	<?php elseif ( ! $active && $can_learn && $restricted ) : ?>
 		<form id="bfc-course-enroll" class="bfc-course__invite-form" novalidate>
 			<p class="bfc-course__field">
@@ -125,5 +132,9 @@ $wrapper      = get_block_wrapper_attributes(
 	<?php elseif ( ! $active ) : ?>
 		<p><?php esc_html_e( 'Ask a training administrator to grant training access before enrolling.', 'burbank-lms' ); ?></p>
 	<?php endif; ?>
+	<?php if ( $active && 'completed' !== $status_key ) : ?>
+		<button type="button" class="bfc-course__action wp-element-button is-secondary" data-bfc-withdraw><?php esc_html_e( 'Withdraw', 'burbank-lms' ); ?></button>
+	<?php endif; ?>
+	</div>
 	<p class="bfc-course__notice" hidden data-bfc-status></p>
 </div>

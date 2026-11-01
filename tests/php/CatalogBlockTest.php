@@ -105,6 +105,92 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/\d+ courses? available/', $html );
 	}
 
+	/** Course details use the shared tile stack without percentage progress. */
+	public function test_course_stack_has_badge_title_and_action_footer(): void {
+		$course_id = $this->published_course( 'Stack course', 'BFC-303', 'safety' );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'bfc-course__badge', $html );
+		$this->assertStringContainsString( 'bfc-course__title', $html );
+		$this->assertStringContainsString( 'bfc-course__foot', $html );
+		$this->assertStringContainsString( 'Open enrollment', $html );
+		$this->assertStringContainsString( 'bfc-course__meta', $html );
+		$this->assertStringContainsString( 'bfc-course__code', $html );
+		$this->assertStringContainsString( 'BFC-303', $html );
+		$this->assertStringContainsString( 'bfc-course__subject', $html );
+		$this->assertStringContainsString( 'bfc-course__outcome', $html );
+		$this->assertStringNotContainsString( 'Code:', $html );
+		$this->assertStringNotContainsString( 'Revision:', $html );
+		$this->assertMatchesRegularExpression( '/<span[^>]*class="[^"]*bfc-course__code[^"]*"/', $html );
+		$this->assertMatchesRegularExpression( '/<span[^>]*class="[^"]*bfc-course__subject[^"]*"/', $html );
+		$this->assertMatchesRegularExpression( '/<span[^>]*class="[^"]*bfc-course__outcome[^"]*"/', $html );
+		$this->assertStringNotContainsString( '%', $html );
+	}
+
+	/** Enrolled mini-cards offer a direct return to the course. */
+	public function test_enroll_card_offers_continue_for_active_enrollment(): void {
+		$course_id = $this->published_course( 'Continue course', 'BFC-304', 'safety' );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		$this->assertTrue( ( new Enrollment_Service() )->self_enroll( $user_id, $course_id ) );
+		wp_set_current_user( $user_id );
+		$html = do_blocks( '<!-- wp:burbank-lms/enroll {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'bfc-enroll__foot', $html );
+		$this->assertStringContainsString( 'bfc-enroll__badge', $html );
+		$this->assertStringContainsString( 'Enrolled', $html );
+		$this->assertStringContainsString( 'Continue course', $html );
+		$this->assertStringNotContainsString( 'You are already enrolled', $html );
+		$course_html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'data-bfc-withdraw', $course_html );
+	}
+
+	/** Invite-only mini-cards link to the course redemption form. */
+	public function test_invite_mini_card_links_to_course(): void {
+		$course_id = $this->published_course( 'Invite course', 'BFC-305', 'safety' );
+		( new \Burbank_LMS\Access\Tables() )->install();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$invite = ( new \Burbank_LMS\Access\Invites() )->create(
+			'course',
+			array(
+				'course_id' => $course_id,
+				'label'     => 'Card',
+				'kind'      => 'multi',
+			)
+		);
+		$this->assertIsArray( $invite );
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$html = do_blocks( '<!-- wp:burbank-lms/enroll {"courseId":' . $course_id . '} /-->' );
+		$this->assertStringContainsString( 'Invite required', $html );
+		$this->assertStringContainsString( 'View course', $html );
+		$this->assertStringNotContainsString( 'type="submit"', $html );
+	}
+
+	/** Completed enrollment cards preserve credentials and never offer enrollment. */
+	public function test_completed_blocks_preserve_credential_and_hide_enrollment(): void {
+		$course_id = $this->published_course( 'Completed course', 'BFC-306', 'safety' );
+		$user_id   = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		$service = new Enrollment_Service();
+		$this->assertTrue( $service->self_enroll( $user_id, $course_id ) );
+		$row = $service->get( $user_id, $course_id );
+		$this->assertTrue( ( new \Burbank_LMS\Enrollment\Repository() )->complete( (int) $row->id, 731, '2026-10-31 12:00:00' ) );
+		wp_set_current_user( $user_id );
+		foreach ( array( 'course', 'enroll' ) as $block_name ) {
+			$html = do_blocks( '<!-- wp:burbank-lms/' . $block_name . ' {"courseId":' . $course_id . '} /-->' );
+			$this->assertStringNotContainsString( 'data-bfc-enroll=', $html );
+			$this->assertStringNotContainsString( 'type="submit"', $html );
+			$this->assertStringNotContainsString( 'data-bfc-withdraw', $html );
+			$this->assertStringContainsString( 'View ', $html );
+		}
+		$after = $service->get( $user_id, $course_id );
+		$this->assertSame( 'completed', $after->status );
+		$this->assertSame( 731, (int) $after->credential_id );
+	}
+
 	/** Guests see soft-gate card instead of catalog course list. */
 	public function test_catalog_render_soft_gates_guest(): void {
 		$this->published_course( 'Gated Course', 'BFC-901', 'communications' );
