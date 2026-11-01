@@ -198,6 +198,7 @@ class PressPrimerChromeTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertIsInt( $user_id );
+		( new \Burbank_LMS\Access\Learner() )->mark_email_verified( $user_id );
 		return $user_id;
 	}
 }

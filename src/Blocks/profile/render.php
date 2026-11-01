@@ -35,6 +35,11 @@ $chrome = $shell->render_chrome(
 	)
 );
 echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
+if ( ( new \Burbank_LMS\Access\Learner() )->needs_email_verification( $user_id ) ) {
+	echo $gate->render_verify( $user_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
+	return;
+}
+
 
 wp_enqueue_script( 'password-strength-meter' );
 $view_handle = 'burbank-lms-profile-view-script';

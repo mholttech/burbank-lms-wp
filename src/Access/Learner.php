@@ -19,6 +19,35 @@ class Learner {
 
 	public const META_SUSPENDED = 'burbank_lms_suspended';
 
+	public const META_EMAIL_VERIFIED = 'burbank_lms_email_verified';
+
+	/** Existing accounts without a verification flag retain access.
+	 *
+	 * @param int $user_id User ID.
+	 */
+	public function is_email_verified( int $user_id ): bool {
+		return $user_id > 0 && '0' !== (string) get_user_meta( $user_id, self::META_EMAIL_VERIFIED, true );
+	}
+
+	/**
+	 * Mark email verified and restore the effective quiz capability.
+	 *
+	 * @param int $user_id User ID.
+	 */
+	public function mark_email_verified( int $user_id ): void {
+		update_user_meta( $user_id, self::META_EMAIL_VERIFIED, '1' );
+		$this->sync_quiz_cap( $user_id );
+	}
+
+	/**
+	 * Whether training access still requires email verification.
+	 *
+	 * @param int $user_id User ID.
+	 */
+	public function needs_email_verification( int $user_id ): bool {
+		return $this->can_learn( $user_id ) && ! $this->is_email_verified( $user_id );
+	}
+
 	/**
 	 * Grant training access and optionally record the redeeming site invite.
 	 *
@@ -127,7 +156,7 @@ class Learner {
 		if ( ! $user->exists() ) {
 			return;
 		}
-		if ( $this->can_learn( $user_id ) ) {
+		if ( $this->can_learn( $user_id ) && $this->is_email_verified( $user_id ) ) {
 			$user->add_cap( self::CAP_TAKE_QUIZ );
 			return;
 		}
@@ -148,7 +177,7 @@ class Learner {
 		if ( ! in_array( self::CAP_TAKE_QUIZ, $caps, true ) ) {
 			return $allcaps;
 		}
-		$allcaps[ self::CAP_TAKE_QUIZ ] = $this->can_learn( (int) $user->ID );
+		$allcaps[ self::CAP_TAKE_QUIZ ] = $this->can_learn( (int) $user->ID ) && $this->is_email_verified( (int) $user->ID );
 		return $allcaps;
 	}
 

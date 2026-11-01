@@ -89,6 +89,10 @@ class Burbank_LMS {
 		$this->loader->add_filter( 'update_user_metadata', $profile, 'guard_legal_name_meta', 10, 4 );
 		$this->loader->add_filter( 'delete_user_metadata', $profile, 'guard_legal_name_delete', 10, 3 );
 		$this->loader->add_filter( 'delete_user_metadata_by_mid', $profile, 'guard_legal_name_delete_id', 10, 2 );
+		$verification = new Access\Email_Verification();
+		$this->loader->add_action( 'rest_api_init', $verification, 'register_routes' );
+		$this->loader->add_action( 'profile_update', $verification, 'on_profile_update', 10, 2 );
+		$this->loader->add_action( 'template_redirect', $verification, 'landing' );
 		$learner = new Access\Learner();
 		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
 		$mailer = new Mail\Mailer();

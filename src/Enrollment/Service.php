@@ -35,6 +35,9 @@ class Service {
 	 * @param string|null $course_invite Plaintext course invite when restricted.
 	 */
 	public function self_enroll( int $user_id, int $course_id, ?string $course_invite = null ): true|\WP_Error {
+		if ( $this->learner()->needs_email_verification( $user_id ) ) {
+			return new \WP_Error( 'burbank_email_unverified', __( 'Verify your email before enrolling.', 'burbank-lms' ) );
+		}
 		if ( ! $this->learner()->can_learn( $user_id ) ) {
 			return new \WP_Error( 'burbank_enrollment_cannot_learn', __( 'You must have training access to enroll.', 'burbank-lms' ) );
 		}

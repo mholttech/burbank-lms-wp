@@ -356,6 +356,10 @@ class Controller {
 	 * @return true|\WP_Error
 	 */
 	public function permission_enroll() {
+		if ( ( new Learner() )->needs_email_verification( get_current_user_id() ) ) {
+			return new \WP_Error( 'burbank_email_unverified', __( 'Verify your email before enrolling.', 'burbank-lms' ), array( 'status' => 403 ) );
+		}
+
 		if ( ! is_user_logged_in() ) {
 			return $this->unauthorized();
 		}

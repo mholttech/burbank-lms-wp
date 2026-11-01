@@ -10,6 +10,23 @@ namespace Burbank_LMS\Mail;
 /** Sends filterable transactional mail via wp_mail. */
 class Mailer {
 	/**
+	 * Send the email ownership link.
+	 *
+	 * @param int    $user_id User ID.
+	 * @param string $token Plain verification token.
+	 */
+	public function send_verification_email( int $user_id, string $token ): bool {
+		$user = get_userdata( $user_id );
+		if ( ! $user || '' === $token ) {
+			return false;
+		}
+		$url  = add_query_arg( 'burbank_lms_verify', $token, home_url( '/' ) );
+		$sent = wp_mail( $user->user_email, __( 'Verify your email', 'burbank-lms' ), __( 'Verify your email to unlock training. This link expires in 24 hours.', 'burbank-lms' ) . "\n\n" . $url );
+		do_action( 'burbank_lms_sent_verification_email', $user_id, $sent );
+		return (bool) $sent;
+	}
+
+	/**
 	 * Welcome message after training access is granted.
 	 *
 	 * @param int $user_id User ID.

@@ -4,8 +4,10 @@
 
 function parseConfig( root ) {
 	try {
-		return JSON.parse( root.getAttribute( 'data-bfc-rest-config' ) || '{}' );
-	} catch ( error ) {
+		return JSON.parse(
+			root.getAttribute( 'data-bfc-rest-config' ) || '{}'
+		);
+	} catch {
 		return {};
 	}
 }
@@ -21,10 +23,10 @@ function setStatus( el, message, isError ) {
 
 document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 	const form = root.querySelector( '.bfc-register__form' );
-	const status = root.querySelector( '[data-bfc-status]' );
 	if ( ! form ) {
 		return;
 	}
+	const status = root.querySelector( '[data-bfc-status]' );
 	const config = parseConfig( root );
 
 	form.addEventListener( 'submit', async ( event ) => {
@@ -55,10 +57,10 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 			form.reset();
 			setStatus(
 				status,
-				'Account created. You can sign in and enroll in courses.',
+				'Account created. Check your email to verify your address, then sign in.',
 				false
 			);
-		} catch ( error ) {
+		} catch {
 			setStatus( status, 'Registration failed. Please try again.', true );
 		}
 	} );

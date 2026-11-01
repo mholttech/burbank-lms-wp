@@ -201,7 +201,8 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 
 		$learner = new Learner();
 		$this->assertTrue( $learner->can_learn( $user_id ) );
-		$this->assertTrue( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap via user_has_cap.
+		$this->assertTrue( $learner->needs_email_verification( $user_id ) );
+		$this->assertFalse( user_can( $user_id, 'pressprimer_quiz_take_quiz' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Synced quiz take cap via user_has_cap.
 	}
 
 	/** Open wp-login registration is rejected while admin create_users still works. */
