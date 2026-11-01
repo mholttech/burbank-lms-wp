@@ -4,6 +4,10 @@ const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
 
 /** Plugin-specific asset entry points, merged with wp-scripts block entries. */
 const customEntries = {
+	'burbank-lms-training-admin': [
+		path.resolve( __dirname, 'resources/admin/js/training/index.js' ),
+		path.resolve( __dirname, 'resources/admin/scss/training.scss' ),
+	],
 	'burbank-lms-frontend': [
 		path.resolve( __dirname, 'resources/frontend/js/app.js' ),
 		path.resolve( __dirname, 'resources/frontend/scss/app.scss' ),

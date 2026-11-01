@@ -98,6 +98,7 @@ class Burbank_LMS {
 		$learner = new Access\Learner();
 		$this->loader->add_filter( 'user_has_cap', $learner, 'filter_quiz_cap', 10, 4 );
 		$mailer = new Mail\Mailer();
+		$this->loader->add_action( 'phpmailer_init', new Mail\Template(), 'configure_alternative' );
 		$this->loader->add_action( 'burbank_lms_access_granted', $mailer, 'on_access_granted', 10, 2 );
 		$this->loader->add_action( 'burbank_lms_enrolled', $mailer, 'on_enrolled', 10, 4 );
 		$this->loader->add_action( 'burbank_lms_course_completed', $mailer, 'on_course_completed', 10, 3 );
@@ -159,12 +160,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'add_meta_boxes_bfc_course', $course_editor, 'hide_pods_fields', 99 );
 		$access_admin = new Access\Admin();
 		$this->loader->add_action( 'admin_menu', $access_admin, 'register_menu' );
-		$this->loader->add_action( 'admin_post_bfc_invite_create', $access_admin, 'handle_create_invite' );
-		$this->loader->add_action( 'admin_post_bfc_invite_revoke', $access_admin, 'handle_revoke_invite' );
-		$this->loader->add_action( 'admin_post_bfc_learner_profile', $access_admin, 'handle_profile' );
-		$this->loader->add_action( 'show_user_profile', $access_admin, 'render_profile' );
-		$this->loader->add_action( 'edit_user_profile', $access_admin, 'render_profile' );
-		$this->loader->add_action( 'admin_notices', $access_admin, 'notice' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $access_admin, 'enqueue' );
+		$this->loader->add_action( 'rest_api_init', new REST\Training_Controller(), 'register_routes' );
 	}
 
 	/**

@@ -1,0 +1,36 @@
+@use "training-kit" as kit;
+
+.bfc-training {
+
+	@include kit.training-kit;
+	max-width: 1200px;
+
+	&__tabs,
+	&__actions,
+	&__search {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		margin: 16px 0;
+	}
+
+	&__panel {
+		margin: 20px 0;
+		padding: 24px;
+		border: 1px solid var(--bfc-admin-border);
+		border-radius: 12px;
+		background: #fff;
+		color: var(--bfc-admin-ink);
+	}
+
+	&__fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 16px;
+	}
+
+	&__scroll {
+		overflow-x: auto;
+	}
+}

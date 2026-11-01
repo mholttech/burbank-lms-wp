@@ -1,8 +1,12 @@
+@use "training-kit" as kit;
+
 /**
  * Course block-editor sidebar styles.
  */
 
 .burbank-lms-course-sidebar {
+
+	@include kit.training-kit;
 
 	.burbank-lms-course-sidebar__panel {
 
@@ -38,8 +42,8 @@
 
 			th,
 			td {
-				padding: 4px 8px;
-				border-bottom: 1px solid #ddd;
+				padding: 8px;
+				border-bottom: 1px solid var(--bfc-admin-border);
 				text-align: left;
 				white-space: nowrap;
 			}

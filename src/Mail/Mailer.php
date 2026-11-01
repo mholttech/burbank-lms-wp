@@ -21,7 +21,7 @@ class Mailer {
 			return false;
 		}
 		$url  = add_query_arg( 'burbank_lms_verify', $token, home_url( '/' ) );
-		$sent = wp_mail( $user->user_email, __( 'Verify your email', 'burbank-lms' ), __( 'Verify your email to unlock training. This link expires in 24 hours.', 'burbank-lms' ) . "\n\n" . $url );
+		$sent = Template::send( $user->user_email, __( 'Verify your email', 'burbank-lms' ), __( 'Verify your email to unlock training. This link expires in 24 hours.', 'burbank-lms' ) . "\n\n" . $url );
 		do_action( 'burbank_lms_sent_verification_email', $user_id, $sent );
 		return (bool) $sent;
 	}
@@ -47,7 +47,7 @@ class Mailer {
 			$user_id
 		);
 		$headers = apply_filters( 'burbank_lms_welcome_email_headers', array(), $user_id );
-		$sent    = wp_mail( $user->user_email, $subject, $message, $headers );
+		$sent    = Template::send( $user->user_email, $subject, $message, $headers );
 		/**
 		 * Fires after a welcome email is attempted.
 		 *
@@ -90,7 +90,7 @@ class Mailer {
 			$course_id
 		);
 		$headers = apply_filters( 'burbank_lms_enrollment_email_headers', array(), $user_id, $course_id );
-		$sent    = wp_mail( $user->user_email, $subject, $message, $headers );
+		$sent    = Template::send( $user->user_email, $subject, $message, $headers );
 		/**
 		 * Fires after an enrollment confirmation email is attempted.
 		 *
@@ -137,7 +137,7 @@ class Mailer {
 			$enrollment
 		);
 		$headers = apply_filters( 'burbank_lms_completion_email_headers', array(), $user_id, $course_id, $enrollment );
-		$sent    = wp_mail( $user->user_email, $subject, $message, $headers );
+		$sent    = Template::send( $user->user_email, $subject, $message, $headers );
 		/**
 		 * Fires after a completion email is attempted.
 		 *

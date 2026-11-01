@@ -1,0 +1,31 @@
+@mixin training-kit {
+	--bfc-admin-border: #d5ddd8;
+	--bfc-admin-ink: #172820;
+	--bfc-admin-muted: #f3f6f4;
+
+	.components-button {
+		border-radius: 6px;
+	}
+
+	table {
+		border-collapse: collapse;
+
+		th,
+		td {
+			padding: 12px;
+			border-bottom: 1px solid var(--bfc-admin-border);
+			text-align: left;
+			vertical-align: top;
+		}
+
+		th {
+			background: var(--bfc-admin-muted);
+			font-weight: 600;
+		}
+	}
+
+	.components-notice {
+		margin: 12px 0;
+		border-radius: 6px;
+	}
+}

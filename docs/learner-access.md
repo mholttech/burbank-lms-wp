@@ -266,3 +266,17 @@ Self-enrollment (including direct service calls), mapped quiz start/submission a
 Authenticated `POST /burbank-lms/v1/profile/resend-verification` and `POST /burbank-lms/v1/profile/email` support resend and changing the address. Both require training access. Email changes clear verification; the UI updates its address hint after success. Requests are limited to one verification email per minute. The public `?burbank_lms_verify=TOKEN` landing is outside the portal shell and supplies success/expired-link recovery links. Tokens expire after 24 hours, are bound to the current email, stored only as SHA-256 hashes, and consumed once. Registration remains successful if mail fails; the verification panel offers another attempt and send results fire `burbank_lms_sent_verification_email` for monitoring.
 
 Course materials rendered by `core/post-content` are guarded before child blocks or shortcodes execute, including the plugin single-course template. Guests, accounts without access, and unverified learners receive no materials; the course block presents their gate. Editor screens and unrelated post content remain available. Change-email responses include the persisted address even when mail delivery fails, so the panel can show the saved address while reporting the delivery failure.
+
+
+### React training administration and mail
+
+Training → Site Invites and Training → Training Access load the dedicated `burbank-lms-training-admin` React entry. PHP provides menus, capability checks, mount point and assets; the old profile forms and admin-post UI hooks are retired. The Course editor shares the admin kit (spacing, table borders, notices, button radii).
+
+The management API requires `enroll_bfc_courses` and the standard REST nonce:
+
+- `GET|POST /burbank-lms/v1/training/invites`: list site invites or create one-time/multi-use invites with optional bound email, UTC expiry and use limit. Plaintext is returned only by create; list responses omit the stored hash. The create panel has copy and dismiss controls.
+- `DELETE /burbank-lms/v1/training/invites/{id}`: revoke a site invite; course invite IDs are rejected.
+- `GET /burbank-lms/v1/training/learners?search=...&page=1`: search login/email/display name, 20 accounts per page with total count, access/suspension/verification and certificate-name status.
+- `POST /burbank-lms/v1/training/learners/{id}`: `operation` is `grant`, `revoke`, `suspend`, `reactivate`, `legal_name` (with `legal_name`) or `resend`. Existing domain services perform mutations and audit legal-name corrections. Resend respects the same verification requirement and throttle as learner requests.
+
+All welcome, enrollment, completion and verification/resend mail uses one branded HTML template. Existing message/subject/header filters and sent actions remain available. The plain message becomes a real multipart alternative via the Loader-registered `phpmailer_init` adapter. A private encoded header carries the alternative within the synchronous send and is removed before transmission; WordPress resets its reused mailer for subsequent unrelated messages. Mail transport failures retain the existing nonblocking registration behavior and report errors to resend callers. Visual checks in real mail clients remain part of deployment QA.
