@@ -283,13 +283,8 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 			setStatus( securityStatus, 'Enter a new password first.', true );
 			return;
 		}
-		// Client-side UX only: both values are user-typed form fields, not a stored secret.
-		const confirmMismatch =
-			password.length !== confirm.length ||
-			Array.from( password ).some(
-				( char, index ) => char !== confirm.charAt( index )
-			);
-		if ( confirmMismatch ) {
+		// nosemgrep: gitlab.eslint.detect-possible-timing-attacks -- browser UX comparing two user-typed fields before POST; not a secret-store check.
+		if ( password !== confirm ) {
 			setStatus( securityStatus, 'Passwords do not match.', true );
 			return;
 		}
