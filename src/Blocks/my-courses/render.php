@@ -46,7 +46,7 @@ $has_certs = shortcode_exists( 'ppcert_my_certificates' );
 	<?php
 	echo ( new Block_Title() )->render( __( 'My courses', 'burbank-lms' ), 'bfc-my-courses__heading' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
 	?>
-	<ul class="bfc-my-courses__stats" data-bfc-stats hidden>
+	<ul class="bfc-my-courses__stats<?php echo $has_certs ? '' : ' bfc-my-courses__stats--no-certs'; ?>" data-bfc-stats hidden>
 		<li class="bfc-my-courses__stat">
 			<span class="bfc-my-courses__stat-value" data-bfc-stat="enrolled">–</span>
 			<span class="bfc-my-courses__stat-label"><?php esc_html_e( 'Enrolled', 'burbank-lms' ); ?></span>
@@ -69,7 +69,7 @@ $has_certs = shortcode_exists( 'ppcert_my_certificates' );
 	<div class="bfc-my-courses__section-head">
 		<h2 class="bfc-my-courses__section-title"><?php esc_html_e( 'Enrolled courses', 'burbank-lms' ); ?></h2>
 		<?php if ( is_string( $archive ) && $archive ) : ?>
-			<a class="bfc-my-courses__catalog-link" href="<?php echo esc_url( $archive ); ?>"><?php esc_html_e( 'Browse course catalog', 'burbank-lms' ); ?> →</a>
+			<a class="bfc-my-courses__catalog-link" href="<?php echo esc_url( $archive ); ?>"><?php esc_html_e( 'Browse course catalog', 'burbank-lms' ); ?> <span aria-hidden="true">→</span></a>
 		<?php endif; ?>
 	</div>
 	<p class="bfc-my-courses__loading" data-bfc-loading><?php esc_html_e( 'Loading your courses…', 'burbank-lms' ); ?></p>
