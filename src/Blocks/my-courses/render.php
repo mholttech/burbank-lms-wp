@@ -10,6 +10,28 @@
  */
 
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Block_Title;
+use Burbank_LMS\Learner\Shell;
+use Burbank_LMS\Learner\Soft_Gate;
+
+$user_id = get_current_user_id();
+$gate    = new Soft_Gate();
+if ( $gate->should_block( $user_id ) ) {
+	printf(
+		'<div %1$s>%2$s</div>',
+		get_block_wrapper_attributes( array( 'class' => 'bfc-my-courses' ) ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper.
+		$gate->render( $gate->audience( $user_id ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
+	);
+	return;
+}
+
+$shell  = new Shell();
+$chrome = $shell->render_chrome(
+	array(
+		'current' => 'my-courses',
+	)
+);
+echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
 $wrapper = get_block_wrapper_attributes(
 	array(
@@ -17,18 +39,12 @@ $wrapper = get_block_wrapper_attributes(
 		'data-bfc-rest-config' => Block_Context::rest_config_json(),
 	)
 );
-
-if ( ! is_user_logged_in() ) {
-	printf(
-		'<div %1$s><p>%2$s</p></div>',
-		$wrapper, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes().
-		esc_html__( 'Sign in to view your courses.', 'burbank-lms' )
-	);
-	return;
-}
 $archive = get_post_type_archive_link( 'bfc_course' );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<?php
+	echo ( new Block_Title() )->render( __( 'My courses', 'burbank-lms' ), 'bfc-my-courses__heading' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
+	?>
 	<p class="bfc-my-courses__loading" data-bfc-loading><?php esc_html_e( 'Loading your courses…', 'burbank-lms' ); ?></p>
 	<ul class="bfc-my-courses__list" data-bfc-list hidden></ul>
 	<p class="bfc-my-courses__empty" data-bfc-empty hidden><?php esc_html_e( 'You are not enrolled in any courses yet.', 'burbank-lms' ); ?></p>

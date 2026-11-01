@@ -5,12 +5,15 @@
  * @package Burbank_LMS
  */
 
+use Burbank_LMS\Access\Learner;
+
 /** Asserts logged-in my-courses render includes catalog CTA and optional cert shortcode. */
 class MyCoursesBlockTest extends WP_UnitTestCase {
 
 	/** Logged-in render includes catalog archive CTA. */
 	public function test_logged_in_render_includes_catalog_cta(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
 
 		$type = get_post_type_object( 'bfc_course' );
@@ -31,6 +34,7 @@ class MyCoursesBlockTest extends WP_UnitTestCase {
 	/** When ppcert shortcode exists, render wraps it in certificates container. */
 	public function test_render_embeds_certificate_shortcode_when_registered(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
 
 		add_shortcode(

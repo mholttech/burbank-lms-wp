@@ -31,6 +31,7 @@ class BlockRegistrationTest extends WP_UnitTestCase {
 		'burbank-lms/course',
 		'burbank-lms/enroll',
 		'burbank-lms/my-courses',
+		'burbank-lms/shell',
 	);
 
 	/**

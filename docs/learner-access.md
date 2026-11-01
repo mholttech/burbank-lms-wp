@@ -18,6 +18,8 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Course editor Invites / Enrollments panels + editorial REST | Course sidebar + `REST\Admin_Controller` (see [course-authoring.md](course-authoring.md)) |
 | Quiz pass stamp and certificate completion | `Progress\Service` |
 | Catalog queries and FSE templates | `Learner\Catalog`, `Learner\Templates`, `Learner\Block_Context` |
+| Soft gate (invite-only presentation) | `Learner\Soft_Gate` |
+| Training shell subnav and contextual actions | `Learner\Shell` |
 | Learner REST register / enroll / withdraw | `REST\Controller` (`burbank-lms/v1`) |
 | Lifecycle emails | `Mail\Mailer` |
 | Optional PressPrimer chrome branding | `Branding\PressPrimer` |
@@ -49,6 +51,28 @@ WordPress user + burbank_lms_access
 | No training access | No | No | No | No |
 | Training access | Yes | Per course policy | With enrollment | Yes |
 | Suspended | No | No | No | Yes (read-only past credentials) |
+
+### Soft gate and shell (presentation)
+
+Domain rules above are unchanged. `Learner\Soft_Gate` and `Learner\Shell` only affect HTML on learner surfaces; REST and PressPrimer gates still require `can_learn` and enrollment as documented.
+
+**Soft gate audiences** (`Soft_Gate::audience( $user_id )`):
+
+| Audience | When | Markup |
+| --- | --- | --- |
+| `guest` | `$user_id < 1` | `.bfc-soft-gate` card: invite-only copy, **Log in** + **Register** (`/register/`) |
+| `no_access` | Logged in, `! can_learn` | Same title, administrator/reactivation copy; no Register CTA |
+| `learner` | `can_learn` | No gate card (`should_block` is false) |
+
+When `should_block` is true, `burbank-lms/catalog`, `course`, `profile`, and `my-courses` render only the gate card—no catalog rows, filters, course meta, profile form, or my-courses list (no course-list leakage). The LMS subnav does not print on gated views.
+
+**Shell** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests). Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state.
+
+Optional `burbank-lms/shell` block prints the same chrome then InnerBlocks; learner block renders also call `Shell::render_chrome`, so the once-flag prevents duplicate nav when both run.
+
+**Outside the shell:** `burbank-lms/register` stays public (site invite form; logged-in users see “already signed in”). No soft gate and no shell on register. Public certificate **verify** pages (PressPrimer) likewise stay outside the shell; they may still pick up shared control tokens from the frontend bundle. `burbank-lms/enroll` does not use `Soft_Gate` (short login/access messages only).
+
+**Shared LMS CSS:** control, shell, and soft-gate styles live in `resources/frontend/scss/app.scss`, compiled with the `burbank-lms-frontend` webpack entry to `build/burbank-lms-frontend.css` and enqueued on `wp_enqueue_scripts` (alongside block assets). PressPrimer quiz/certificate skin remains `build/burbank-lms-pressprimer.css` (see below).
 
 ## Invites
 
@@ -179,6 +203,7 @@ Quiz taking stays in PressPrimer’s player; the course block embeds `[pressprim
 | `burbank-lms/course` | BFC meta row, enrollment status, enroll / invite actions; primary quiz CTA scrolls to `#bfc-course-quiz` when enrolled |
 | `burbank-lms/enroll` | Standalone enroll / course-invite redeem |
 | `burbank-lms/my-courses` | REST-driven enrollments; catalog archive CTA; embeds `[ppcert_my_certificates]` when PressPrimer Certificate registers that shortcode |
+| `burbank-lms/shell` | Optional Site Editor wrapper: once-per-request training subnav + InnerBlocks slot (same `Shell` API as block render paths) |
 
 ### Quiz course chrome (mapped quizzes only)
 
@@ -212,4 +237,4 @@ Active enrollment remains the source of truth for taking a specific course’s m
 
 ## Tests
 
-`Access*Test`, `Enrollment*Test`, `ProgressPipelineTest`, `PressPrimerGateTest`, `LearnerRestTest`, `CourseEditorRestTest`, `MailerTest`, and block registration coverage run with `npm run test:php`.
+`Access*Test`, `Enrollment*Test`, `ProgressPipelineTest`, `PressPrimerGateTest`, `LearnerRestTest`, `CourseEditorRestTest`, `MailerTest`, `LearnerSoftGateTest`, `LearnerShellTest`, `ProfileMyCoursesSoftGateTest`, and block registration coverage run with `npm run test:php`.

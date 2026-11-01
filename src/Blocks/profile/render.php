@@ -11,15 +11,28 @@
 
 use Burbank_LMS\Access\Profile;
 use Burbank_LMS\Learner\Block_Context;
+use Burbank_LMS\Learner\Block_Title;
+use Burbank_LMS\Learner\Shell;
+use Burbank_LMS\Learner\Soft_Gate;
 
-if ( ! is_user_logged_in() ) {
+$user_id = get_current_user_id();
+$gate    = new Soft_Gate();
+if ( $gate->should_block( $user_id ) ) {
 	printf(
-		'<div %1$s><p>%2$s</p></div>',
+		'<div %1$s>%2$s</div>',
 		get_block_wrapper_attributes( array( 'class' => 'bfc-profile' ) ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core helper.
-		esc_html__( 'Sign in to manage your profile.', 'burbank-lms' )
+		$gate->render( $gate->audience( $user_id ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Soft_Gate escapes.
 	);
 	return;
 }
+
+$shell  = new Shell();
+$chrome = $shell->render_chrome(
+	array(
+		'current' => 'profile',
+	)
+);
+echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
 $user       = wp_get_current_user();
 $legal_name = ( new Profile() )->get_legal_name( (int) $user->ID );
@@ -31,6 +44,9 @@ $wrapper    = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
+	<?php
+	echo ( new Block_Title() )->render( __( 'Profile', 'burbank-lms' ), 'bfc-profile__title' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
+	?>
 	<form class="bfc-profile__form" novalidate>
 		<p class="bfc-profile__field">
 			<label for="bfc-profile-legal-name"><?php esc_html_e( 'Legal / certificate name', 'burbank-lms' ); ?></label>

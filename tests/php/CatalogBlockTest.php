@@ -5,6 +5,7 @@
  * @package Burbank_LMS
  */
 
+use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Courses\Capabilities;
 use Burbank_LMS\Enrollment\Tables as EnrollmentTables;
 
@@ -82,6 +83,10 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->published_course( 'Alpha Communications', 'BFC-101', 'communications' );
 		$this->published_course( 'Beta Safety', 'BFC-202', 'safety' );
 
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+
 		$html = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
 
 		$this->assertStringContainsString( 'data-bfc-catalog-search', $html );
@@ -92,5 +97,32 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'data-bfc-subject="safety"', $html );
 		$this->assertStringContainsString( 'data-bfc-catalog-empty-filter', $html );
 		$this->assertStringContainsString( 'No courses match your filters.', $html );
+	}
+
+	/** Guests see soft-gate card instead of catalog course list. */
+	public function test_catalog_render_soft_gates_guest(): void {
+		$this->published_course( 'Gated Course', 'BFC-901', 'communications' );
+		wp_set_current_user( 0 );
+		$block = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
+		$this->assertStringContainsString( 'bfc-soft-gate', $block );
+		$this->assertStringNotContainsString( 'bfc-catalog__list', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-search', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-subject', $block );
+		$this->assertStringNotContainsString( 'bfc-catalog__enroll', $block );
+		$this->assertStringNotContainsString( 'BFC-901', $block );
+	}
+
+	/** Subscribers without training access see soft-gate, not catalog list. */
+	public function test_catalog_render_soft_gates_no_access(): void {
+		$this->published_course( 'Gated Course', 'BFC-902', 'safety' );
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+		$block = do_blocks( '<!-- wp:burbank-lms/catalog /-->' );
+		$this->assertStringContainsString( 'bfc-soft-gate', $block );
+		$this->assertStringNotContainsString( 'bfc-catalog__list', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-search', $block );
+		$this->assertStringNotContainsString( 'data-bfc-catalog-subject', $block );
+		$this->assertStringNotContainsString( 'bfc-catalog__enroll', $block );
+		$this->assertStringNotContainsString( 'BFC-902', $block );
 	}
 }
