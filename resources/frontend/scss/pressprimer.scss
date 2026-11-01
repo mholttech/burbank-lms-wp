@@ -86,25 +86,40 @@ html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notic
 	--ppcert-background-gray: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
 
 	/* Force white-on-red for primary CTAs and active filter chips. */
-	:is(.ppcert-button-primary, .ppcert-view__download, a.ppcert-button-primary, button.ppcert-button-primary) {
+	a.ppcert-button-primary,
+	a.ppcert-view__download,
+	button.ppcert-button-primary,
+	.ppcert-button-primary,
+	.ppcert-view__download {
 		background-color: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
 		color: var(--bfc-cta-text, #fff);
+		-webkit-text-fill-color: var(--bfc-cta-text, #fff);
+		text-decoration: none;
 
+		&:link,
+		&:visited,
 		&:hover,
-		&:focus-visible,
-		&:visited {
+		&:focus-visible {
 			color: var(--bfc-cta-text, #fff);
+			-webkit-text-fill-color: var(--bfc-cta-text, #fff);
+			text-decoration: none;
 		}
 	}
 
+	a.ppcert-my-certificates__chip.is-active,
 	.ppcert-my-certificates__chip.is-active {
 		background-color: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
 		color: var(--bfc-cta-text, #fff);
+		-webkit-text-fill-color: var(--bfc-cta-text, #fff);
+		text-decoration: none;
 
+		&:link,
+		&:visited,
 		&:hover,
-		&:focus-visible,
-		&:visited {
+		&:focus-visible {
 			color: var(--bfc-cta-text, #fff);
+			-webkit-text-fill-color: var(--bfc-cta-text, #fff);
+			text-decoration: none;
 		}
 	}
 }

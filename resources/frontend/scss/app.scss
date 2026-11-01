@@ -130,7 +130,26 @@ html[data-bc-theme="dark"] {
 		list-style: none;
 	}
 
-	&__link {
+	&__actions {
+		gap: 0.5rem;
+	}
+
+	&__action {
+		margin: 0;
+		list-style: none;
+	}
+}
+
+/*
+ * Theme.json paints `a:where(:not(.wp-element-button))` with
+ * content-link + underline. Scope under .bfc-portal / .wp-site-blocks
+ * and target `a.` so idle/active pill text wins (dark-on-dark active
+ * pills and underlined idle pills in light mode).
+ */
+.bfc-portal .bfc-shell,
+.wp-site-blocks .bfc-shell {
+
+	a.bfc-shell__link {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -140,36 +159,48 @@ html[data-bc-theme="dark"] {
 		border-radius: var(--bfc-radius-pill);
 		background: transparent;
 		color: var(--bfc-pill-idle-text);
+		-webkit-text-fill-color: var(--bfc-pill-idle-text);
 		font-size: 0.95rem;
 		font-weight: 700;
 		line-height: 1.2;
 		text-decoration: none;
 		white-space: nowrap;
 
+		&:link,
+		&:visited {
+			color: var(--bfc-pill-idle-text);
+			-webkit-text-fill-color: var(--bfc-pill-idle-text);
+			text-decoration: none;
+		}
+
 		&:hover,
 		&:focus-visible {
+			color: var(--bfc-pill-idle-text);
+			-webkit-text-fill-color: var(--bfc-pill-idle-text);
 			text-decoration: none;
 			background: color-mix(in srgb, var(--bfc-pill-idle-text) 12%, transparent);
 		}
 	}
 
-	&__item.is-current &__link {
+	.bfc-shell__item.is-current a.bfc-shell__link {
 		background: var(--bfc-pill-active-bg);
 		color: var(--bfc-pill-active-text);
+		-webkit-text-fill-color: var(--bfc-pill-active-text);
 		font-weight: 700;
 		text-decoration: none;
+
+		&:link,
+		&:visited,
+		&:hover,
+		&:focus-visible {
+			background: var(--bfc-pill-active-bg);
+			color: var(--bfc-pill-active-text);
+			-webkit-text-fill-color: var(--bfc-pill-active-text);
+			text-decoration: none;
+		}
 	}
 
-	&__actions {
-		gap: 0.5rem;
-	}
-
-	&__action {
-		margin: 0;
-		list-style: none;
-	}
-
-	&__action-link {
+	a.bfc-shell__action-link {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -184,18 +215,35 @@ html[data-bc-theme="dark"] {
 		line-height: 1.2;
 		text-decoration: none;
 
+		&:link,
+		&:visited {
+			color: var(--bfc-control-text);
+			text-decoration: none;
+		}
+
 		&:hover,
 		&:focus-visible {
+			color: var(--bfc-control-text);
 			text-decoration: none;
 			border-color: var(--bfc-pill-active-bg);
 		}
 	}
 
-	&__action--enroll .bfc-shell__action-link,
-	&__action--continue .bfc-shell__action-link {
+	.bfc-shell__action--enroll a.bfc-shell__action-link,
+	.bfc-shell__action--continue a.bfc-shell__action-link {
 		border-color: transparent;
 		background: var(--bfc-pill-active-bg);
 		color: var(--bfc-pill-active-text);
+
+		&:link,
+		&:visited,
+		&:hover,
+		&:focus-visible {
+			border-color: transparent;
+			background: var(--bfc-pill-active-bg);
+			color: var(--bfc-pill-active-text);
+			text-decoration: none;
+		}
 	}
 }
 
@@ -286,6 +334,7 @@ html[data-bc-theme="dark"] {
 			opacity: 1;
 		}
 	}
+
 }
 
 .bfc-profile__form,
@@ -324,5 +373,94 @@ html[data-bc-theme="dark"] {
 
 	@media (max-width: 781px) {
 		padding-bottom: 3.5rem;
+	}
+}
+
+/*
+ * Inverse text on filled LMS / PressPrimer CTAs. Theme link color +
+ * -webkit-text-fill-color can otherwise paint content-link on
+ * action-red (Browse catalog, Download PDF, etc.). Scoped under
+ * .wp-site-blocks main so specificity clears main `a` rules.
+ */
+.wp-site-blocks main {
+
+	.bfc-catalog a.wp-element-button,
+	.bfc-course a.wp-element-button,
+	.bfc-my-courses a.wp-element-button,
+	.bfc-profile a.wp-element-button,
+	.bfc-register a.wp-element-button,
+	.bfc-soft-gate a.wp-element-button,
+	.bfc-catalog button.wp-element-button,
+	.bfc-course button.wp-element-button,
+	.bfc-my-courses button.wp-element-button,
+	.bfc-profile button.wp-element-button,
+	.bfc-register button.wp-element-button,
+	.bfc-soft-gate button.wp-element-button,
+	a.ppcert-button-primary,
+	a.ppcert-view__download,
+	button.ppcert-button-primary,
+	.ppcert-button-primary,
+	.ppcert-view__download,
+	a.ppq-button-primary,
+	a.ppq-shell-btn--primary,
+	button.ppq-button-primary,
+	.ppq-button-primary,
+	.ppq-shell-btn--primary {
+		background-color: var(--bfc-cta-bg);
+		color: var(--bfc-cta-text);
+		-webkit-text-fill-color: var(--bfc-cta-text);
+		text-decoration: none;
+
+		&:link,
+		&:visited,
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-cta-text);
+			-webkit-text-fill-color: var(--bfc-cta-text);
+			text-decoration: none;
+		}
+	}
+
+	.bfc-catalog a.wp-element-button.is-secondary,
+	.bfc-course a.wp-element-button.is-secondary,
+	.bfc-my-courses a.wp-element-button.is-secondary,
+	.bfc-profile a.wp-element-button.is-secondary,
+	.bfc-register a.wp-element-button.is-secondary,
+	.bfc-soft-gate a.wp-element-button.is-secondary,
+	.bfc-catalog button.wp-element-button.is-secondary,
+	.bfc-course button.wp-element-button.is-secondary,
+	.bfc-my-courses button.wp-element-button.is-secondary,
+	.bfc-profile button.wp-element-button.is-secondary,
+	.bfc-register button.wp-element-button.is-secondary,
+	.bfc-soft-gate button.wp-element-button.is-secondary {
+		background-color: var(--bfc-control-bg);
+		color: var(--bfc-control-text);
+		-webkit-text-fill-color: var(--bfc-control-text);
+		border: 1px solid var(--bfc-control-border);
+
+		&:link,
+		&:visited,
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-control-text);
+			-webkit-text-fill-color: var(--bfc-control-text);
+		}
+	}
+
+	a.ppcert-my-certificates__chip.is-active,
+	.ppcert-my-certificates__chip.is-active {
+		background-color: var(--bfc-cta-bg);
+		color: var(--bfc-cta-text);
+		-webkit-text-fill-color: var(--bfc-cta-text);
+		text-decoration: none;
+
+		&:link,
+		&:visited,
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-cta-text);
+			-webkit-text-fill-color: var(--bfc-cta-text);
+			text-decoration: none;
+		}
 	}
 }
