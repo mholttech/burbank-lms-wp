@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.7.0...burbank-lms-v1.7.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* **access:** neutral login copy for training and DOs ([#47](https://github.com/mholttech/burbank-lms-wp/issues/47)) ([8dc5569](https://github.com/mholttech/burbank-lms-wp/commit/8dc556928c2b277d5919c06f5612e63facafa4ea))
+
 ## [1.7.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.6.2...burbank-lms-v1.7.0) (2026-11-01)
 
 
