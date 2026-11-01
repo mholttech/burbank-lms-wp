@@ -1,72 +1,202 @@
 /**
- * All of the CSS for your public-facing functionality should be
- * included in this file.
+ * Learner portal + shared LMS controls.
+ * Visual language mirrors the Duty Officer member portal
+ * (pill tabs, panels, theme tokens).
  */
 
 :root {
-	--bfc-control-bg: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
+	--bfc-control-bg: var(--bc-surface-card, var(--wp--preset--color--content-background, #f2f6f3));
 	--bfc-control-text: var(--wp--preset--color--content-text, #1c1f23);
-	--bfc-control-border: var(--wp--preset--color--content-border, #c3c4c7);
-	--bfc-radius: 6px;
+	--bfc-control-border: var(--wp--preset--color--content-border, #d0ddd4);
+	--bfc-control-muted: var(--wp--preset--color--content-muted, #556b60);
+	--bfc-pill-track: var(--wp--preset--color--brand-muted, #c5d4cb);
+	--bfc-pill-active-bg: var(--wp--preset--color--callout-green, #1b6540);
+	--bfc-pill-active-text: #fff;
+	--bfc-radius: 12px;
+	--bfc-radius-pill: 999px;
+	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.12);
 }
 
 html[data-bc-theme="dark"] {
-	--bfc-control-bg: var(--bc-surface-card, #292c2a);
-	--bfc-control-text: var(--wp--preset--color--content-text, #f6f8fc);
-	--bfc-control-border: var(--wp--preset--color--content-border, #414b45);
+
+	/* Prefer solid LMS dark tokens so controls stay readable even when
+	   theme presets lag behind data-bc-theme. */
+	--bfc-control-bg: #1c1e1d;
+	--bfc-control-text: #f6f8fc;
+	--bfc-control-border: #414b45;
+	--bfc-control-muted: #a8b8af;
+	--bfc-pill-track: #2f3833;
+	--bfc-pill-active-bg: var(--wp--preset--color--callout-green, #1b6540);
+	--bfc-pill-active-text: #fff;
+	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.25);
 }
 
-.bfc-catalog,
-.bfc-course,
-.bfc-profile,
-.bfc-register,
-.bfc-my-courses,
-.bfc-soft-gate,
-.bfc-shell {
+/* -------------------------------------------------------------------------
+   Portal chrome (Duty Officer–style workspace header + pill tabs)
+   ------------------------------------------------------------------------- */
 
-	input[type="text"],
-	input[type="email"],
-	input[type="password"],
-	input[type="search"],
-	select,
-	textarea {
-		box-sizing: border-box;
-		width: 100%;
-		min-height: 46px;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--bfc-control-border);
-		border-radius: var(--bfc-radius);
-		background: var(--bfc-control-bg);
-		color: var(--bfc-control-text);
-	}
+.bfc-portal {
+	display: grid;
+	gap: 1.25rem;
+	margin: 0 0 1.5rem;
+	color: var(--bfc-control-text);
+}
+
+.bfc-portal__header {
+	display: grid;
+	gap: 0.35rem;
+}
+
+.bfc-portal__kicker {
+	margin: 0;
+	color: var(--bfc-control-muted);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	line-height: 1.15;
+	text-transform: uppercase;
+}
+
+.bfc-portal__title {
+	margin: 0;
+	font-size: clamp(1.5rem, 2.5vw, 2rem);
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.bfc-portal__lede {
+	margin: 0;
+	color: var(--bfc-control-muted);
+	font-size: 0.95rem;
+	line-height: 1.45;
+	max-width: 40rem;
 }
 
 .bfc-shell {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.75rem 1.25rem;
-	align-items: center;
-	justify-content: space-between;
-	margin: 0 0 1.25rem;
-	padding: 0.75rem 0;
-	border-bottom: 1px solid var(--bfc-control-border);
+	display: grid;
+	gap: 0.75rem;
 
-	&__list {
+	&__desktop {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
 		gap: 0.75rem 1rem;
+	}
+
+	&__list,
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem;
 		list-style: none;
 		margin: 0;
 		padding: 0;
 	}
 
-	&__item.is-current &__link {
+	&__list {
+		gap: 0.35rem;
+		padding: 0.3rem;
+		border-radius: 20px;
+		background: var(--bfc-pill-track);
+	}
+
+	&__item {
+		margin: 0;
+	}
+
+	&__link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 44px;
+		padding: 0.55rem 1rem;
+		border-radius: var(--bfc-radius-pill);
+		color: var(--bfc-control-text);
+		font-size: 0.95rem;
 		font-weight: 600;
-		text-decoration: underline;
+		line-height: 1.2;
+		text-decoration: none;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: none;
+			background: color-mix(in srgb, var(--bfc-control-text) 8%, transparent);
+		}
+	}
+
+	&__item.is-current &__link {
+		background: var(--bfc-pill-active-bg);
+		color: var(--bfc-pill-active-text);
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	&__actions {
+		gap: 0.5rem;
+	}
+
+	&__action-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 44px;
+		padding: 0.55rem 1rem;
+		border: 1px solid var(--bfc-control-border);
+		border-radius: var(--bfc-radius-pill);
+		background: var(--bfc-control-bg);
+		color: var(--bfc-control-text);
+		font-size: 0.9rem;
+		font-weight: 700;
+		line-height: 1.2;
+		text-decoration: none;
+
+		&:hover,
+		&:focus-visible {
+			text-decoration: none;
+			border-color: var(--bfc-pill-active-bg);
+		}
+	}
+
+	&__action--enroll .bfc-shell__action-link,
+	&__action--continue .bfc-shell__action-link {
+		border-color: transparent;
+		background: var(--bfc-pill-active-bg);
+		color: var(--bfc-pill-active-text);
 	}
 
 	&__mobile {
 		display: none;
+		width: 100%;
+		border: 1px solid var(--bfc-control-border);
+		border-radius: var(--bfc-radius);
+		background: var(--bfc-control-bg);
+		color: var(--bfc-control-text);
+
+		summary {
+			cursor: pointer;
+			list-style: none;
+			min-height: 44px;
+			padding: 0.75rem 1rem;
+			font-weight: 700;
+
+			&::-webkit-details-marker {
+				display: none;
+			}
+		}
+
+		.bfc-shell__list,
+		.bfc-shell__actions {
+			padding: 0 0.75rem 0.75rem;
+		}
+
+		.bfc-shell__list {
+			background: transparent;
+			border-radius: 0;
+			padding-left: 0;
+			padding-right: 0;
+		}
 	}
 
 	@media (max-width: 781px) {
@@ -77,10 +207,13 @@ html[data-bc-theme="dark"] {
 
 		&__mobile {
 			display: block;
-			width: 100%;
 		}
 	}
 }
+
+/* -------------------------------------------------------------------------
+   Soft gate + shared form controls
+   ------------------------------------------------------------------------- */
 
 .bfc-soft-gate {
 	display: grid;
@@ -90,6 +223,88 @@ html[data-bc-theme="dark"] {
 	border: 1px solid var(--bfc-control-border);
 	border-radius: var(--bfc-radius);
 	background: var(--bfc-control-bg);
+	color: var(--bfc-control-text);
+	box-shadow: var(--bfc-panel-shadow);
+
+	&__caption {
+		margin: 0;
+		color: var(--bfc-control-muted);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		line-height: 1.15;
+		text-transform: uppercase;
+	}
+
+	&__title {
+		margin: 0;
+		font-size: 1.25rem;
+		line-height: 1.3;
+	}
+
+	&__body {
+		margin: 0;
+		color: var(--bfc-control-muted);
+		line-height: 1.5;
+	}
+
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin: 0.25rem 0 0;
+
+		.wp-element-button,
+		a {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 44px;
+			padding: 0.55rem 1rem;
+			border-radius: var(--bfc-radius-pill);
+			font-weight: 700;
+			text-decoration: none;
+		}
+	}
+}
+
+.bfc-catalog,
+.bfc-course,
+.bfc-profile,
+.bfc-register,
+.bfc-my-courses,
+.bfc-soft-gate,
+.bfc-shell,
+.bfc-portal {
+
+	input[type="text"],
+	input[type="email"],
+	input[type="password"],
+	input[type="search"],
+	select,
+	textarea {
+		box-sizing: border-box;
+		width: 100%;
+		min-height: 46px;
+		padding: 0.55rem 0.75rem;
+		border: 1px solid var(--bfc-control-border);
+		border-radius: 6px;
+		background: var(--bfc-control-bg);
+		color: var(--bfc-control-text);
+
+		&::placeholder {
+			color: var(--bfc-control-muted);
+			opacity: 1;
+		}
+	}
+}
+
+/* Align catalog/course panel radii with the portal system. */
+.bfc-catalog__filters,
+.bfc-catalog__item,
+.bfc-course {
+	border-radius: var(--bfc-radius);
+	box-shadow: var(--bfc-panel-shadow);
 }
 
 .bfc-quiz-chrome {

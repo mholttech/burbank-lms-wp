@@ -165,14 +165,48 @@ class Shell {
 			$actions_html = $this->render_actions_list( $actions );
 		}
 
-		$aria = esc_attr__( 'Training', 'burbank-lms' );
-		return sprintf(
+		$user    = get_userdata( $user_id );
+		$display = ( $user instanceof \WP_User && '' !== $user->display_name ) ? $user->display_name : __( 'Learner', 'burbank-lms' );
+		$lede    = $this->lede_for_current( $current );
+		$header  = sprintf(
+			'<header class="bfc-portal__header"><p class="bfc-portal__kicker">%1$s</p><p class="bfc-portal__title">%2$s</p><p class="bfc-portal__lede">%3$s</p></header>',
+			esc_html__( 'Training', 'burbank-lms' ),
+			esc_html( $display ),
+			esc_html( $lede )
+		);
+		$aria    = esc_attr__( 'Training', 'burbank-lms' );
+		$nav     = sprintf(
 			'<nav class="bfc-shell" aria-label="%1$s"><div class="bfc-shell__desktop">%2$s%3$s</div><details class="bfc-shell__mobile"><summary>%4$s</summary>%2$s%3$s</details></nav>',
 			$aria,
 			$nav_list,
 			$actions_html,
 			esc_html__( 'Training', 'burbank-lms' )
 		);
+
+		return sprintf(
+			'<section class="bfc-portal">%1$s%2$s</section>',
+			$header,
+			$nav
+		);
+	}
+
+	/**
+	 * Short lede under the portal title for the active shell context.
+	 *
+	 * @param string $current Context id.
+	 */
+	private function lede_for_current( string $current ): string {
+		switch ( $current ) {
+			case 'my-courses':
+				return __( 'Your enrollments, certificates, and progress.', 'burbank-lms' );
+			case 'profile':
+				return __( 'Your training profile and account details.', 'burbank-lms' );
+			case 'course':
+				return __( 'Course materials, enrollment, and quiz access.', 'burbank-lms' );
+			case 'catalog':
+			default:
+				return __( 'Browse the catalog, enroll, and continue your courses.', 'burbank-lms' );
+		}
 	}
 
 	/**
