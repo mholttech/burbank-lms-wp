@@ -20,6 +20,8 @@
 	--bfc-radius-pill: 999px;
 	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.12);
 	--bfc-shell-bg: var(--wp--preset--color--content-background, #f3f6f3);
+	--bfc-cta-bg: var(--wp--preset--color--action-red, #c8102e);
+	--bfc-cta-text: #fff;
 }
 
 html[data-bc-theme="dark"] {
@@ -37,6 +39,8 @@ html[data-bc-theme="dark"] {
 	--bfc-kicker: #8fbf9f;
 	--bfc-panel-shadow: 0 14px 38px rgba(0, 0, 0, 0.25);
 	--bfc-shell-bg: #1c1e1d;
+	--bfc-cta-bg: var(--wp--preset--color--action-red, #c8102e);
+	--bfc-cta-text: #fff;
 }
 
 /* -------------------------------------------------------------------------

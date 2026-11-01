@@ -14,14 +14,26 @@
 	--ppq-border: var(--wp--preset--color--content-border);
 	--ppq-border-light: var(--wp--preset--color--content-border);
 	--ppq-border-focus: var(--wp--preset--color--content-link);
-	--ppq-primary: var(--wp--preset--color--action-red);
-	--ppq-primary-dark: var(--wp--preset--color--action-red);
-	--ppq-primary-hover: var(--wp--preset--color--action-red);
+	--ppq-primary: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
+	--ppq-primary-dark: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
+	--ppq-primary-hover: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
 	--ppq-primary-light: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
-	--ppq-text-inverse: #fff;
+	--ppq-text-inverse: var(--bfc-cta-text, #fff);
 	--ppq-shadow-card: none;
 	--ppq-shadow-lg: none;
 	--ppq-shadow-focus: 0 0 0 3px var(--wp--preset--color--content-link);
+
+	/* Force white-on-red for primary CTAs (theme link color can otherwise win). */
+	:is(.ppq-button-primary, .ppq-shell-btn--primary, button.ppq-button-primary, a.ppq-button-primary, a.ppq-shell-btn--primary) {
+		background-color: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
+		color: var(--bfc-cta-text, #fff);
+
+		&:hover,
+		&:focus-visible,
+		&:visited {
+			color: var(--bfc-cta-text, #fff);
+		}
+	}
 }
 
 .wp-site-blocks main .ppq-quiz-landing {
@@ -62,8 +74,8 @@ html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notic
 }
 
 .wp-site-blocks main :is(.ppcert-verify, .ppcert-view, .ppcert-my-certificates) {
-	--ppcert-primary: var(--wp--preset--color--action-red);
-	--ppcert-primary-hover: var(--wp--preset--color--action-red);
+	--ppcert-primary: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
+	--ppcert-primary-hover: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
 	--ppcert-primary-light: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
 	--ppcert-text: var(--wp--preset--color--content-text);
 	--ppcert-text-secondary: var(--wp--preset--color--content-muted);
@@ -72,6 +84,27 @@ html[data-bc-theme="dark"] .wp-site-blocks main :is(.ppq-notice-info, .ppq-notic
 	--ppcert-border-light: var(--wp--preset--color--content-border);
 	--ppcert-background: var(--bc-surface-card, var(--wp--preset--color--content-background, #fff));
 	--ppcert-background-gray: var(--bc-surface-subtle, var(--wp--preset--color--content-background, #f6f7f7));
+
+	/* Force white-on-red for primary CTAs and active filter chips. */
+	:is(.ppcert-button-primary, .ppcert-view__download, a.ppcert-button-primary, button.ppcert-button-primary) {
+		background-color: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
+		color: var(--bfc-cta-text, #fff);
+
+		&:hover,
+		&:focus-visible,
+		&:visited {
+			color: var(--bfc-cta-text, #fff);
+		}
+	}
+
+	.ppcert-my-certificates__chip.is-active {
+		background-color: var(--bfc-cta-bg, var(--wp--preset--color--action-red));
+		color: var(--bfc-cta-text, #fff);
+
+		&:visited {
+			color: var(--bfc-cta-text, #fff);
+		}
+	}
 }
 
 .wp-site-blocks .ppcert-verify__input {
