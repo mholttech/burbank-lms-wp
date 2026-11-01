@@ -58,7 +58,9 @@ class Burbank_LMS {
 
 		$this->loader->add_action( 'init', $this, 'register_blocks' );
 		$this->loader->add_action( 'init', new Learner\Templates(), 'register' );
-		$this->loader->add_filter( 'render_block_core/heading', new Learner\Portal_Headings(), 'suppress_page_h1', 10, 2 );
+		$portal_headings = new Learner\Portal_Headings();
+		$this->loader->add_filter( 'render_block_core/heading', $portal_headings, 'suppress_page_h1', 10, 2 );
+		$this->loader->add_filter( 'render_block_core/post-title', $portal_headings, 'suppress_page_h1', 10, 2 );
 
 		$course_picks = new Courses\Picks();
 		$this->loader->add_action( 'pods_form_ui_field_pick_related_objects_custom', $course_picks, 'register' );

@@ -143,11 +143,15 @@ class PressPrimer_Quiz {
 		return preg_replace_callback(
 			'/<h1\b([^>]*)>(.*?)<\/h1>/is',
 			static function ( array $heading ): string {
-				if ( ! preg_match( '/(?:^|\s)class=(["\'])(.*?)\1/is', $heading[1], $class )
-					|| ! in_array( 'ppq-quiz-title', preg_split( '/\s+/', trim( $class[2] ) ), true ) ) {
+				$attrs = $heading[1];
+				if ( ! preg_match( '/\bclass\s*=\s*(["\'])(.*?)\1/is', $attrs, $class ) ) {
 					return $heading[0];
 				}
-				return '<h2' . $heading[1] . '>' . $heading[2] . '</h2>';
+				$tokens = preg_split( '/\s+/', trim( $class[2] ) );
+				if ( ! is_array( $tokens ) || ! in_array( 'ppq-quiz-title', $tokens, true ) ) {
+					return $heading[0];
+				}
+				return '<h2' . $attrs . '>' . $heading[2] . '</h2>';
 			},
 			$html
 		) ?? $html;
