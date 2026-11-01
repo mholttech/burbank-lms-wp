@@ -474,9 +474,9 @@ class CourseEditorialTest extends WP_UnitTestCase {
 		$this->assertNotContains( 'bfc-course-enrollments', $box_ids );
 		$this->assertFalse( has_action( 'admin_post_bfc_course_editorial' ) );
 		$this->assertFalse( has_action( 'admin_post_bfc_enrollment_admin_enroll' ) );
-		$this->assertNotFalse( has_action( 'admin_post_bfc_invite_create' ) );
-		$this->assertNotFalse( has_action( 'admin_post_bfc_invite_revoke' ) );
-		$this->assertNotFalse( has_action( 'admin_post_bfc_learner_profile' ) );
+		$this->assertFalse( has_action( 'admin_post_bfc_invite_create' ) );
+		$this->assertFalse( has_action( 'admin_post_bfc_invite_revoke' ) );
+		$this->assertFalse( has_action( 'admin_post_bfc_learner_profile' ) );
 	}
 
 	/** Failed audit persistence must not leave a successful-looking historical approval. */
