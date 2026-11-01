@@ -199,6 +199,16 @@ Shell: if `needs_email_verification`, do not print Enroll / Continue-quiz contex
 
 ---
 
+## Execution status
+
+- [x] Phase 2 — tasks 5, 6, 7 chrome and 9, including completed-course preservation, success feedback and scoped action styling review fixes.
+- [x] Phase 3 — tasks 1–4, verified quiz gate and registration copy, including course-material pre-render guard and failed-delivery email hint review fixes.
+- [x] Phase 4 implementation — branded multipart mail, React site invites and Training Access with REST, shared Course sidebar kit and documentation.
+- [x] Final Phase 4 full-suite result and PR push recorded by the controller.
+- [ ] Post-deployment live browser/mail-client visual verification.
+
+The task checkboxes below preserve the original implementation recipe (including suggested red-test sequencing); this status checklist and the SDD ledger record executed work. Delivery is one stacked PR per phase, superseding the earlier spec’s single-PR wording.
+
 ## Phase PR ownership
 
 | Phase | PR branch | Plan tasks |
