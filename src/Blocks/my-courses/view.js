@@ -75,12 +75,17 @@ document.querySelectorAll( '.bfc-my-courses' ).forEach( ( root ) => {
 	/** @type {Array<Record<string, unknown>>} */
 	let enrollments = [];
 
-	const STATUS_ORDER = { active: 0, passed: 1, completed: 2, withdrawn: 3 };
+	const STATUS_ORDER = new Map( [
+		[ 'active', 0 ],
+		[ 'passed', 1 ],
+		[ 'completed', 2 ],
+		[ 'withdrawn', 3 ],
+	] );
 
 	const sortEnrollments = ( items ) =>
 		[ ...items ].sort( ( a, b ) => {
-			const rankA = STATUS_ORDER[ a.status ] ?? 0;
-			const rankB = STATUS_ORDER[ b.status ] ?? 0;
+			const rankA = STATUS_ORDER.get( a.status ) ?? 0;
+			const rankB = STATUS_ORDER.get( b.status ) ?? 0;
 			if ( rankA !== rankB ) {
 				return rankA - rankB;
 			}

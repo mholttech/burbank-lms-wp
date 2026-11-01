@@ -283,7 +283,13 @@ document.querySelectorAll( '.bfc-profile' ).forEach( ( root ) => {
 			setStatus( securityStatus, 'Enter a new password first.', true );
 			return;
 		}
-		if ( password !== confirm ) {
+		// Client-side UX only: both values are user-typed form fields, not a stored secret.
+		const confirmMismatch =
+			password.length !== confirm.length ||
+			Array.from( password ).some(
+				( char, index ) => char !== confirm.charAt( index )
+			);
+		if ( confirmMismatch ) {
 			setStatus( securityStatus, 'Passwords do not match.', true );
 			return;
 		}
