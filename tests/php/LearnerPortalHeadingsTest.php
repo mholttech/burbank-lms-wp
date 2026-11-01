@@ -111,7 +111,17 @@ class LearnerPortalHeadingsTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( '', $headings->suppress_archive_title( '<h1>Course catalog</h1>', $block ) );
 
+		$heading = array(
+			'blockName' => 'core/heading',
+			'attrs'     => array( 'level' => 1 ),
+		);
+		$this->assertSame( '', $headings->suppress_archive_title( '<h1 class="wp-block-heading">Course catalog</h1>', $heading ) );
+
 		$this->go_to( home_url( '/' ) );
 		$this->assertSame( '<h1>Blog</h1>', $headings->suppress_archive_title( '<h1>Blog</h1>', $block ) );
+		$this->assertSame(
+			'<h1 class="wp-block-heading">Course catalog</h1>',
+			$headings->suppress_archive_title( '<h1 class="wp-block-heading">Course catalog</h1>', $heading )
+		);
 	}
 }
