@@ -68,7 +68,7 @@ When `should_block` is true, `burbank-lms/catalog`, `course`, `profile`, and `my
 
 **Shell / portal chrome** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests) as a Duty Officer–style `.bfc-portal` workspace: uppercase **Training** kicker, learner display name as the document **H1** (or a `<p>` title on course singles so the course post title keeps H1), context lede, then `.bfc-shell` pill-track nav. Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state. Pill-track nav (Catalog · My Courses · Profile) stays expanded at all breakpoints; course contextual actions wrap onto a second row when needed.
 
-**Heading ownership:** Plugin archive template does not print a competing “Course catalog” H1. `Learner\Portal_Headings` suppresses `core/heading` level-1 **and** `core/post-title` on `/profile/` and `/my-courses/` so theme patterns do not duplicate the portal/soft-gate title. Course singles keep `core/post-title` as H1.
+**Heading ownership:** The catalog block owns the course-archive H1 (“Course catalog”). `Learner\Portal_Headings` suppresses `core/query-title` on the `bfc_course` archive and suppresses `core/heading` level-1 **and** `core/post-title` on `/profile/` and `/my-courses/` so theme patterns do not duplicate the portal/soft-gate title. Course singles keep `core/post-title` as H1.
 
 Optional `burbank-lms/shell` block prints the same chrome then InnerBlocks; learner block renders also call `Shell::render_chrome`, so the once-flag prevents duplicate nav when both run.
 
@@ -103,16 +103,18 @@ Learner registration goes through `Registration::register()` (Register block or 
 - site invite code
 - email
 - password (WordPress-native strength; the invite is never the password)
-- legal / certificate name (`burbank_lms_legal_name`)
+- first name + last name (composed into the certificate / legal name `burbank_lms_legal_name`; both required when either is present)
 - display name
 
-Flow: validate active **site** invite → create user → store legal name → grant `burbank_lms_access` → increment invite use. Granting access enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). There is no separate email-verification step.
+The Register block collects first/last name (hint: certificates print as first + last). API clients may still send a single `legal_name` when first/last keys are omitted.
+
+Flow: validate active **site** invite → create user (with WP `first_name` / `last_name`) → store legal name → grant `burbank_lms_access` → increment invite use. Granting access enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). There is no separate email-verification step.
 
 **Compensating transaction (not a single DB transaction):** `wp_insert_user` cannot share a MySQL transaction with invite redeem across WordPress’s user tables reliably. On failure after user create, `Registration::register` compensates by revoking training access (when granted) and deleting the user before returning a `WP_Error`. Course restricted enroll uses a real shared transaction for enrollment insert + invite redeem.
 
 Default `wp-login.php?action=register` for learners is rejected (`registration_errors`). Admin `create_users` stays intact; staff may grant training access without a code.
 
-Legal name is set at registration. Afterward only an admin with `enroll_bfc_courses` may correct it (audited). Certificate merge fields use legal name and never email.
+**Certificate (legal) name:** WordPress first + last name is the single source; the composed string is stored in `burbank_lms_legal_name` for certificates. Learners may change it via the Profile block (`Profile::set_legal_name_self_service` / `POST /profile/legal-name`); changes are audited (`by` = the learner). Admins with `enroll_bfc_courses` may still correct it (audited). Direct usermeta writes stay blocked by the legal-name guards. Certificate merge fields use legal name and never email.
 
 ## Suspension
 
@@ -162,11 +164,13 @@ Unmapped quizzes (no published `bfc_course` with that `pressprimer_quiz_id`) are
 
 | Method | Route | Auth |
 | --- | --- | --- |
-| `POST` | `/register` | Public (rate-limited); site invite required |
+| `POST` | `/register` | Public (rate-limited); site invite required; accepts `first_name` / `last_name` (or legacy `legal_name`) |
 | `GET` | `/enrollments` | Logged-in learner (`can_learn` for useful data) |
 | `POST` | `/enrollments` | Logged-in `can_learn`; optional `course_invite` |
 | `DELETE` | `/enrollments/{course_id}` | Self or `enroll_bfc_courses` (optional `user_id`) |
 | `POST` | `/enrollments/admin` | `enroll_bfc_courses` |
+| `POST` | `/profile/legal-name` | Logged-in `can_learn`; audited self-service certificate name |
+| `POST` | `/profile/sign-out-others` | Logged-in `can_learn`; destroys other sessions |
 
 ### Course editor admin (`REST\Admin_Controller`)
 
@@ -201,12 +205,12 @@ Quiz taking stays in PressPrimer’s player; the course block embeds `[pressprim
 
 | Block | Role |
 | --- | --- |
-| `burbank-lms/register` | Site invite + legal name + email/password/display name; success copy tells the learner they can sign in (no email-verification step). |
-| `burbank-lms/profile` | Display name / email / password; read-only legal name |
-| `burbank-lms/catalog` | Published, non-archived courses; client-side **search** (title + BFC code) and **subject** filter from distinct `subject_category` on the rendered list; status chips and enroll CTAs when `can_learn` |
+| `burbank-lms/register` | Site invite + first/last name (certificate name) + email/password/display name; success copy tells the learner they can sign in (no email-verification step). |
+| `burbank-lms/profile` | Summary band (training access + enrolled count); personal form (editable first/last → audited certificate name, nickname, display-name select, email); separate security form (password + strength meter + sign out other sessions) |
+| `burbank-lms/catalog` | Section head + available count; tile grid (subject badge, title, code/outcome, enrolled **Continue course** / invite View / open Enroll); client-side **search** (title + BFC code) and **subject** filter; archive H1 owned by the block (`core/query-title` suppressed) |
 | `burbank-lms/course` | BFC meta row, enrollment status, enroll / invite actions; primary quiz CTA scrolls to `#bfc-course-quiz` when enrolled |
 | `burbank-lms/enroll` | Standalone enroll / course-invite redeem |
-| `burbank-lms/my-courses` | REST-driven enrollments; catalog archive CTA; embeds `[ppcert_my_certificates]` when PressPrimer Certificate registers that shortcode |
+| `burbank-lms/my-courses` | Stats strip (enrolled / in progress / completed / certificates); enrolled-course tile grid (status badge, meta, Continue/View, withdraw); catalog link; embeds `[ppcert_my_certificates]` when PressPrimer Certificate registers that shortcode |
 | `burbank-lms/shell` | Optional Site Editor wrapper: once-per-request training subnav + InnerBlocks slot (same `Shell` API as block render paths) |
 
 ### Quiz course chrome (mapped quizzes only)

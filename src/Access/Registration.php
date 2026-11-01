@@ -28,9 +28,9 @@ class Registration {
 	 * @param array{invite?:string,email?:string,password?:string,first_name?:string,last_name?:string,legal_name?:string,display_name?:string} $data Registration payload.
 	 */
 	public function register( array $data ): int|\WP_Error {
-		$invite_code  = isset( $data['invite'] ) ? (string) $data['invite'] : '';
-		$email        = isset( $data['email'] ) ? sanitize_email( (string) $data['email'] ) : '';
-		$password     = isset( $data['password'] ) ? (string) $data['password'] : '';
+		$invite_code    = isset( $data['invite'] ) ? (string) $data['invite'] : '';
+		$email          = isset( $data['email'] ) ? sanitize_email( (string) $data['email'] ) : '';
+		$password       = isset( $data['password'] ) ? (string) $data['password'] : '';
 		$first_name     = isset( $data['first_name'] ) ? sanitize_text_field( (string) $data['first_name'] ) : '';
 		$last_name      = isset( $data['last_name'] ) ? sanitize_text_field( (string) $data['last_name'] ) : '';
 		$legal_name     = isset( $data['legal_name'] ) ? sanitize_text_field( (string) $data['legal_name'] ) : '';

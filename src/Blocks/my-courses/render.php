@@ -33,7 +33,7 @@ $chrome = $shell->render_chrome(
 );
 echo $chrome; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Shell escapes.
 
-$wrapper = get_block_wrapper_attributes(
+$wrapper   = get_block_wrapper_attributes(
 	array(
 		'class'                => 'bfc-my-courses',
 		'data-bfc-rest-config' => Block_Context::rest_config_json(),
