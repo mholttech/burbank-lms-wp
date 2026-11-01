@@ -5,15 +5,55 @@
 	background: var(--bfc-control-bg, #fff);
 	color: var(--bfc-control-text, inherit);
 
+	&__foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem 0.75rem;
+	}
+
+	&__badge {
+		display: inline-block;
+		margin: 0;
+		padding: 0.25rem 0.6rem;
+		border-radius: 999px;
+		background: var(--wp--preset--color--content-border, #c3c4c7);
+		font-size: 0.9em;
+		font-weight: 600;
+	}
+
+	&__badge--enrolled {
+		background: color-mix(in srgb, var(--wp--preset--color--vivid-green-cyan, #00d084) 25%, transparent);
+	}
+
+	&__badge--invite {
+		background: color-mix(in srgb, var(--wp--preset--color--luminous-vivid-orange, #ff6900) 22%, transparent);
+	}
+
+	&__badge--open {
+		padding: 0;
+		border-radius: 0;
+		background: transparent;
+		color: var(--bfc-control-muted, #556b60);
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
 	&__form {
 		display: grid;
 		gap: 0.75rem;
+		flex: 1 1 100%;
 		max-width: 28rem;
 	}
 
 	&__field {
 		display: grid;
 		gap: 0.35rem;
+		margin: 0;
+	}
+
+	&__actions {
 		margin: 0;
 	}
 

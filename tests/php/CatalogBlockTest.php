@@ -116,6 +116,16 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'bfc-course__title', $html );
 		$this->assertStringContainsString( 'bfc-course__foot', $html );
 		$this->assertStringContainsString( 'Open enrollment', $html );
+		$this->assertStringContainsString( 'bfc-course__meta', $html );
+		$this->assertStringContainsString( 'bfc-course__code', $html );
+		$this->assertStringContainsString( 'BFC-303', $html );
+		$this->assertStringContainsString( 'bfc-course__subject', $html );
+		$this->assertStringContainsString( 'bfc-course__outcome', $html );
+		$this->assertStringNotContainsString( 'Code:', $html );
+		$this->assertStringNotContainsString( 'Revision:', $html );
+		$this->assertMatchesRegularExpression( '/<span[^>]*class="[^"]*bfc-course__code[^"]*"/', $html );
+		$this->assertMatchesRegularExpression( '/<span[^>]*class="[^"]*bfc-course__subject[^"]*"/', $html );
+		$this->assertMatchesRegularExpression( '/<span[^>]*class="[^"]*bfc-course__outcome[^"]*"/', $html );
 		$this->assertStringNotContainsString( '%', $html );
 	}
 
@@ -128,7 +138,10 @@ class CatalogBlockTest extends WP_UnitTestCase {
 		wp_set_current_user( $user_id );
 		$html = do_blocks( '<!-- wp:burbank-lms/enroll {"courseId":' . $course_id . '} /-->' );
 		$this->assertStringContainsString( 'bfc-enroll__foot', $html );
+		$this->assertStringContainsString( 'bfc-enroll__badge', $html );
+		$this->assertStringContainsString( 'Enrolled', $html );
 		$this->assertStringContainsString( 'Continue course', $html );
+		$this->assertStringNotContainsString( 'You are already enrolled', $html );
 		$course_html = do_blocks( '<!-- wp:burbank-lms/course {"courseId":' . $course_id . '} /-->' );
 		$this->assertStringContainsString( 'data-bfc-withdraw', $course_html );
 	}

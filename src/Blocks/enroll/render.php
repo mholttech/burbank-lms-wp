@@ -45,16 +45,16 @@ $active     = $course_id > 0 ? ( new Enrollment_Service() )->get_active( $user_i
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
 	<div class="bfc-enroll__foot">
 	<?php if ( $completed ) : ?>
-		<p class="bfc-enroll__badge"><?php esc_html_e( 'Completed', 'burbank-lms' ); ?></p>
+		<span class="bfc-enroll__badge"><?php esc_html_e( 'Completed', 'burbank-lms' ); ?></span>
 		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
 	<?php elseif ( $active ) : ?>
-		<p><?php esc_html_e( 'You are already enrolled in this course.', 'burbank-lms' ); ?></p>
+		<span class="bfc-enroll__badge bfc-enroll__badge--enrolled"><?php esc_html_e( 'Enrolled', 'burbank-lms' ); ?></span>
 		<a class="bfc-enroll__action wp-element-button" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'Continue course', 'burbank-lms' ); ?></a>
 	<?php elseif ( $restricted ) : ?>
-		<p class="bfc-enroll__badge"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></p>
+		<span class="bfc-enroll__badge bfc-enroll__badge--invite"><?php esc_html_e( 'Invite required', 'burbank-lms' ); ?></span>
 		<a class="bfc-enroll__action wp-element-button is-secondary" href="<?php echo esc_url( get_permalink( $course_id ) ); ?>"><?php esc_html_e( 'View course', 'burbank-lms' ); ?></a>
 	<?php else : ?>
-		<p class="bfc-enroll__badge"><?php esc_html_e( 'Open enrollment', 'burbank-lms' ); ?></p>
+		<span class="bfc-enroll__badge bfc-enroll__badge--open"><?php esc_html_e( 'Open enrollment', 'burbank-lms' ); ?></span>
 		<form class="bfc-enroll__form" novalidate>
 			<p class="bfc-enroll__field">
 				<label for="bfc-enroll-course"><?php esc_html_e( 'Course', 'burbank-lms' ); ?></label>

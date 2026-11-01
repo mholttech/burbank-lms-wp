@@ -63,7 +63,6 @@ $quiz_id      = (int) get_post_meta( $course_id, 'pressprimer_quiz_id', true );
 $code         = (string) get_post_meta( $course_id, 'bfc_code', true );
 $subject      = $presentation->label( (string) get_post_meta( $course_id, 'subject_category', true ) );
 $outcome      = $presentation->label( (string) get_post_meta( $course_id, 'course_outcome', true ) );
-$revision     = (string) get_post_meta( $course_id, 'course_revision', true );
 $quiz_cta     = 'passed' === $status_key
 	? __( 'Continue to quiz', 'burbank-lms' )
 	: __( 'Start quiz', 'burbank-lms' );
@@ -76,20 +75,17 @@ $wrapper      = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes(). ?>>
-	<p class="bfc-course__badge"><?php echo esc_html( 'none' === $status_key ? ( $restricted ? __( 'Invite required', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ) : $presentation->label( $status_key ) ); ?></p>
+	<span class="bfc-course__badge"><?php echo esc_html( 'none' === $status_key ? ( $restricted ? __( 'Invite required', 'burbank-lms' ) : __( 'Open enrollment', 'burbank-lms' ) ) : $presentation->label( $status_key ) ); ?></span>
 	<h2 class="bfc-course__title"><?php echo esc_html( get_the_title( $course_id ) ); ?></h2>
 	<div class="bfc-course__meta">
 		<?php if ( $code ) : ?>
-			<p class="bfc-course__code"><strong><?php esc_html_e( 'Code:', 'burbank-lms' ); ?></strong> <?php echo esc_html( $code ); ?></p>
+			<span class="bfc-course__code"><?php echo esc_html( $code ); ?></span>
 		<?php endif; ?>
 		<?php if ( $subject ) : ?>
-			<p class="bfc-course__subject"><?php echo esc_html( $subject ); ?></p>
+			<span class="bfc-course__subject"><?php echo esc_html( $subject ); ?></span>
 		<?php endif; ?>
 		<?php if ( $outcome ) : ?>
-			<p class="bfc-course__outcome"><?php echo esc_html( $outcome ); ?></p>
-		<?php endif; ?>
-		<?php if ( $revision ) : ?>
-			<p class="bfc-course__revision"><strong><?php esc_html_e( 'Revision:', 'burbank-lms' ); ?></strong> <?php echo esc_html( $revision ); ?></p>
+			<span class="bfc-course__outcome"><?php echo esc_html( $outcome ); ?></span>
 		<?php endif; ?>
 	</div>
 

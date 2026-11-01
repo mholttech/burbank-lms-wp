@@ -78,6 +78,11 @@ document.querySelectorAll( '.bfc-enroll' ).forEach( ( root ) => {
 			const badge = root.querySelector( '.bfc-enroll__badge' );
 			if ( badge ) {
 				badge.textContent = 'Enrolled';
+				badge.classList.add( 'bfc-enroll__badge--enrolled' );
+				badge.classList.remove(
+					'bfc-enroll__badge--open',
+					'bfc-enroll__badge--invite'
+				);
 			}
 			if ( submittedUrl ) {
 				const link = document.createElement( 'a' );
