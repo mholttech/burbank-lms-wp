@@ -16,7 +16,7 @@
 		flex-wrap: wrap;
 		gap: 0.5rem 1rem;
 		align-items: center;
-		padding: 1rem 1.25rem;
+		padding: clamp(1.125rem, 2.5vw, 1.5rem);
 		border: 1px solid var(--bfc-control-border, #d0ddd4);
 		border-radius: var(--bfc-radius-panel, 16px);
 		background: var(--bfc-control-bg, #f2f6f3);
