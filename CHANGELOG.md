@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.7.1...burbank-lms-v1.7.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* close invite, password, and toolbar review findings ([#49](https://github.com/mholttech/burbank-lms-wp/issues/49)) ([177598c](https://github.com/mholttech/burbank-lms-wp/commit/177598c3484a58131742c13a16094a70f57abdbf))
+
 ## [1.7.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.7.0...burbank-lms-v1.7.1) (2026-11-01)
 
 
