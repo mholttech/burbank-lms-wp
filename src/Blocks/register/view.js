@@ -19,6 +19,28 @@ function setStatus( el, message, isError ) {
 	el.hidden = ! message;
 	el.textContent = message || '';
 	el.classList.toggle( 'is-error', Boolean( isError ) );
+	if ( message && isError ) {
+		el.focus();
+	}
+}
+
+function passwordScore( password, email ) {
+	const meter =
+		window.wp &&
+		window.wp.passwordStrength &&
+		typeof window.wp.passwordStrength.meter === 'function';
+	if ( ! meter ) {
+		return password.length >= 8 ? 3 : 1;
+	}
+	const score = window.wp.passwordStrength.meter(
+		password,
+		[],
+		email ? [ email ] : []
+	);
+	if ( score < 0 ) {
+		return password.length >= 8 ? 3 : 1;
+	}
+	return score;
 }
 
 document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
@@ -27,11 +49,121 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 		return;
 	}
 	const status = root.querySelector( '[data-bfc-status]' );
+	const done = root.querySelector( '[data-bfc-done]' );
+	const submit = form.querySelector( '[data-bfc-submit]' );
 	const config = parseConfig( root );
+	const first = form.querySelector( '[name="first_name"]' );
+	const last = form.querySelector( '[name="last_name"]' );
+	const display = form.querySelector( '[name="display_name"]' );
+	const certificate = root.querySelector( '[data-bfc-cert-name]' );
+	const password = form.querySelector( '[name="password"]' );
+	const email = form.querySelector( '[name="email"]' );
+	const reveal = form.querySelector( '.bfc-register__reveal' );
+	const meter = form.querySelector( '[data-bfc-meter]' );
+	const meterBar = form.querySelector( '[data-bfc-meter-bar]' );
+	const meterLabel = form.querySelector( '[data-bfc-meter-label]' );
+	const strengthLabels = [
+		'Very weak',
+		'Weak',
+		'Medium',
+		'Strong',
+		'Very strong',
+	];
+	let displayEdited = Boolean( display && display.value );
+
+	const fillNames = () => {
+		const parts = [ first?.value || '', last?.value || '' ]
+			.map( ( part ) => part.trim() )
+			.filter( Boolean );
+		const legal = parts.join( ' ' );
+		if ( certificate ) {
+			certificate.textContent = legal;
+		}
+		if ( ! displayEdited && display ) {
+			display.value = legal;
+		}
+	};
+	display?.addEventListener( 'input', () => {
+		displayEdited = true;
+	} );
+	first?.addEventListener( 'input', fillNames );
+	last?.addEventListener( 'input', fillNames );
+	fillNames();
+
+	const updateMeter = () => {
+		const value = password ? password.value : '';
+		const score = passwordScore( value, email ? email.value : '' );
+		if ( ! value || score < 0 || score > 4 ) {
+			if ( meter ) {
+				meter.hidden = true;
+			}
+			if ( meterLabel ) {
+				meterLabel.hidden = true;
+			}
+			return score;
+		}
+		if ( meterBar ) {
+			meterBar.style.width = `${ ( ( score + 1 ) / 5 ) * 100 }%`;
+		}
+		if ( meter ) {
+			meter.hidden = false;
+			meter.dataset.score = String( score );
+		}
+		if ( meterLabel ) {
+			meterLabel.hidden = false;
+			meterLabel.textContent = strengthLabels[ score ] || '';
+		}
+		return score;
+	};
+	password?.addEventListener( 'input', updateMeter );
+	email?.addEventListener( 'input', updateMeter );
+
+	reveal?.addEventListener( 'click', () => {
+		if ( ! password ) {
+			return;
+		}
+		const showing = password.type === 'text';
+		password.type = showing ? 'password' : 'text';
+		reveal.textContent = showing ? 'Show' : 'Hide';
+		reveal.setAttribute( 'aria-pressed', showing ? 'false' : 'true' );
+	} );
 
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
 		setStatus( status, '' );
+		updateMeter();
+		const passwordValue = password ? password.value : '';
+		const emailValue = email ? email.value : '';
+		let classes = 0;
+		if ( /[a-z]/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if ( /[A-Z]/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if ( /\d/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if ( /[^A-Za-z0-9]/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if (
+			passwordValue.length < 8 ||
+			classes < 3 ||
+			( emailValue &&
+				passwordValue.toLowerCase() === emailValue.toLowerCase() )
+		) {
+			setStatus(
+				status,
+				'Use a stronger password with at least 8 characters and a mix of letters, numbers, and symbols.',
+				true
+			);
+			password?.focus();
+			return;
+		}
+		if ( submit ) {
+			submit.disabled = true;
+		}
 		const data = Object.fromEntries( new FormData( form ).entries() );
 		try {
 			const response = await fetch( `${ config.restUrl }/register`, {
@@ -47,21 +179,24 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 			if ( ! response.ok ) {
 				setStatus(
 					status,
-					payload.message ||
-						payload?.data?.params ||
-						'Registration failed.',
+					payload.message || 'Registration failed.',
 					true
 				);
+				if ( submit ) {
+					submit.disabled = false;
+				}
 				return;
 			}
-			form.reset();
-			setStatus(
-				status,
-				'Account created. Check your email to verify your address, then sign in.',
-				false
-			);
+			form.hidden = true;
+			if ( done ) {
+				done.hidden = false;
+				done.querySelector( '[data-bfc-done-title]' )?.focus();
+			}
 		} catch {
 			setStatus( status, 'Registration failed. Please try again.', true );
+			if ( submit ) {
+				submit.disabled = false;
+			}
 		}
 	} );
 } );

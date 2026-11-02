@@ -9,6 +9,7 @@ namespace Burbank_LMS\Learner;
 
 use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
+use Burbank_LMS\Integrations\Duty_Officer_Portal;
 
 /** Builds hybrid training subnav and contextual course actions for can_learn users. */
 class Shell {
@@ -80,6 +81,10 @@ class Shell {
 				'current' => 'profile' === $highlight,
 			),
 		);
+		$duty      = ( new Duty_Officer_Portal() )->nav_item( $highlight );
+		if ( null !== $duty ) {
+			$items[] = $duty;
+		}
 		return $items;
 	}
 
@@ -191,12 +196,13 @@ class Shell {
 			esc_html( $display ),
 			esc_html( $lede )
 		);
-		$aria      = esc_attr__( 'Training', 'burbank-lms' );
+		$aria      = esc_attr( $this->navigation_label( $items ) );
 		$nav       = sprintf(
-			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav>',
+			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s%4$s</nav>',
 			$aria,
 			$nav_list,
-			$actions_html
+			$actions_html,
+			$this->logout_link()
 		);
 
 		return sprintf(
@@ -204,6 +210,54 @@ class Shell {
 			$header,
 			$nav
 		);
+	}
+
+	/**
+	 * Pill navigation shared by training pages and the Duty Officer portal.
+	 *
+	 * Does not print the training title. The member portal already has its own heading.
+	 *
+	 * @param string $current Context id. Use `duty-officer` on the member portal.
+	 */
+	public function render_switcher( string $current ): string {
+		if ( ! $this->should_show( get_current_user_id() ) ) {
+			return '';
+		}
+		$items = $this->nav_items( $current );
+		return sprintf(
+			'<section class="bfc-portal bfc-portal--switcher"><nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav></section>',
+			esc_attr( $this->navigation_label( $items ) ),
+			$this->render_nav_list( $items, 'bfc-shell__list' ),
+			$this->logout_link()
+		);
+	}
+
+	/**
+	 * Sign-out control for the shared pill row.
+	 *
+	 * The member portal hides the WordPress admin bar for volunteers, so this
+	 * link is the way back to the public site.
+	 */
+	private function logout_link(): string {
+		return sprintf(
+			'<a class="bfc-shell__logout" href="%1$s">%2$s</a>',
+			esc_url( wp_logout_url( home_url( '/' ) ) ),
+			esc_html__( 'Log out', 'burbank-lms' )
+		);
+	}
+
+	/**
+	 * Accessible name for the pill nav.
+	 *
+	 * @param array<int, array{id:string,label:string,url:string,current:bool}> $items Nav items.
+	 */
+	private function navigation_label( array $items ): string {
+		foreach ( $items as $item ) {
+			if ( 'duty-officer' === $item['id'] ) {
+				return __( 'Training and Duty Officer', 'burbank-lms' );
+			}
+		}
+		return __( 'Training', 'burbank-lms' );
 	}
 
 	/**

@@ -200,14 +200,24 @@ export default function InvitesPanel() {
 			setForm( EMPTY_FORM );
 			const successNotice = {
 				status: 'success',
-				message: sprintf(
-					/* translators: %s: plaintext invite code shown once. */
-					__(
-						'Invite created. Copy this code now; it will not be shown again: %s',
-						'burbank-lms'
-					),
-					created?.plaintext || ''
-				),
+				message: created?.url
+					? sprintf(
+							/* translators: 1: plaintext invite code, 2: shareable course URL. */
+							__(
+								'Invite created. Copy this code now; it will not be shown again: %1$s. Shareable link: %2$s',
+								'burbank-lms'
+							),
+							created?.plaintext || '',
+							created.url
+						)
+					: sprintf(
+							/* translators: %s: plaintext invite code shown once. */
+							__(
+								'Invite created. Copy this code now; it will not be shown again: %s',
+								'burbank-lms'
+							),
+							created?.plaintext || ''
+						),
 			};
 			setNotices( [ successNotice ] );
 			try {

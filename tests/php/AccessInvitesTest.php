@@ -322,4 +322,19 @@ echo ( new \\Burbank_LMS\\Access\\Invites() )->redeem( %4$d ) ? "1" : "0";
 		$this->assertSame( 1, $wins );
 		$this->assertFalse( $this->invites()->redeem( $id ) );
 	}
+
+	/** A new site invite includes a registration URL that carries the plaintext code. */
+	public function test_site_invite_includes_registration_url(): void {
+		$created = $this->invites()->create(
+			'site',
+			array(
+				'label' => 'Link',
+				'kind'  => 'multi',
+			)
+		);
+		$this->assertIsArray( $created );
+		$this->assertStringContainsString( '/register/#invite=', $created['url'] );
+		$this->assertStringNotContainsString( '?invite=', $created['url'] );
+		$this->assertStringContainsString( rawurlencode( $created['plaintext'] ), $created['url'] );
+	}
 }

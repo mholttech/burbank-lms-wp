@@ -31,6 +31,12 @@
 	}
 }
 
+.bfc-portal--switcher {
+	gap: 0;
+	margin-bottom: 1rem;
+	padding: 0.75rem 1rem;
+}
+
 .bfc-portal__header {
 	display: grid;
 	gap: 0.35rem;
@@ -88,6 +94,22 @@
 		background: var(--bfc-pill-track);
 	}
 
+	a.bfc-shell__logout {
+		margin-left: auto;
+		color: var(--bfc-control-muted);
+		font-size: 0.95rem;
+		font-weight: 700;
+		line-height: 1.2;
+		text-decoration: none;
+		white-space: nowrap;
+
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-control-text);
+			text-decoration: underline;
+		}
+	}
+
 	&__item {
 		margin: 0;
 		list-style: none;
@@ -111,6 +133,28 @@
  */
 .bfc-portal .bfc-shell,
 .wp-site-blocks .bfc-shell {
+
+	a.bfc-shell__logout {
+		color: var(--bfc-control-muted);
+		-webkit-text-fill-color: var(--bfc-control-muted);
+		text-decoration: none;
+
+		&:link,
+		&:visited,
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-control-muted);
+			-webkit-text-fill-color: var(--bfc-control-muted);
+			text-decoration: none;
+		}
+
+		&:hover,
+		&:focus-visible {
+			color: var(--bfc-control-text);
+			-webkit-text-fill-color: var(--bfc-control-text);
+			text-decoration: underline;
+		}
+	}
 
 	a.bfc-shell__link {
 		display: inline-flex;
@@ -300,11 +344,13 @@
 
 }
 
-.bfc-register__form {
-	padding: 1.1rem 1.15rem;
+.bfc-register__form,
+.bfc-register__panel,
+.bfc-register__done {
+	border: 1px solid var(--bfc-control-border);
 	border-radius: var(--bfc-radius-panel);
 	background: var(--bfc-control-bg);
-	box-shadow: var(--bfc-panel-shadow);
+	box-shadow: none;
 }
 
 /* Profile personal + security panels: bordered cards, no floating shadow

@@ -82,7 +82,7 @@ $active     = $course_id > 0 ? $enroll_svc->get_active( $user_id, $course_id ) :
 			</p>
 			<p class="bfc-enroll__field bfc-enroll__invite" hidden data-bfc-invite-wrap>
 				<label for="bfc-enroll-invite"><?php esc_html_e( 'Course invite code', 'burbank-lms' ); ?></label>
-				<input id="bfc-enroll-invite" name="course_invite" type="text" autocomplete="off">
+				<input id="bfc-enroll-invite" name="course_invite" type="text" autocomplete="off" value="<?php echo esc_attr( Invites::requested_code() ); ?>">
 			</p>
 			<p class="bfc-enroll__actions">
 				<button type="submit" class="wp-element-button"><?php echo esc_html( $retake ? __( 'Enroll in new version', 'burbank-lms' ) : __( 'Enroll', 'burbank-lms' ) ); ?></button>

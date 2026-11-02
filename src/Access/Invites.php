@@ -91,7 +91,35 @@ class Invites {
 		return array(
 			'id'        => (int) $db->insert_id,
 			'plaintext' => $plaintext,
+			'url'       => self::share_url( $scope, $plaintext, $course_id ),
 		);
+	}
+
+	/**
+	 * Shareable link that prefills this invite on registration or the course page.
+	 *
+	 * @param string $scope      `site` or `course`.
+	 * @param string $plaintext  Raw invite code.
+	 * @param int    $course_id  Course post ID when scope is course.
+	 */
+	public static function share_url( string $scope, string $plaintext, int $course_id = 0 ): string {
+		$fragment = '#invite=' . rawurlencode( $plaintext );
+		if ( 'course' === $scope && $course_id > 0 ) {
+			$permalink = get_permalink( $course_id );
+			$base      = '' !== $permalink ? $permalink : home_url( '/courses/' );
+			return explode( '#', $base )[0] . $fragment;
+		}
+		return home_url( '/register/' ) . $fragment;
+	}
+
+	/**
+	 * Invite code from the current request, if a share link included one.
+	 */
+	public static function requested_code(): string {
+		if ( ! isset( $_GET['invite'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public invite prefill, not an authorization change.
+			return '';
+		}
+		return sanitize_text_field( wp_unslash( (string) $_GET['invite'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public invite prefill.
 	}
 
 	/**

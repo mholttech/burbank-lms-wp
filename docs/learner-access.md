@@ -10,7 +10,7 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Site and course invite CRUD / redeem | `Access\Invites` |
 | Site-invite registration, alternate-path block | `Access\Registration` |
 | Branded `wp-login.php` skin + register link | `Access\Login` |
-| Training access, suspend, `can_learn`, quiz-cap sync | `Access\Learner` |
+| Training access, suspend, `can_learn`, quiz-cap sync, learner role | `Access\Learner` (`burbank_lms_learner`) |
 | Legal name guards and admin correction audit | `Access\Profile` |
 | Site invite admin + user profile Training Access | `Access\Admin` |
 | Enrollment table install | `Enrollment\Tables` |
@@ -26,6 +26,7 @@ Operational guide for the Burbank-owned learner suite on top of Phase 1 course a
 | Shared product name / logo | `Branding\Site` |
 | Optional PressPrimer chrome branding | `Branding\PressPrimer` |
 | Quiz / certificate adapters and course chrome | `Integrations\PressPrimer_Quiz`, `Integrations\PressPrimer_Certificate` |
+| Duty Officer portal cross-links | `Integrations\Duty_Officer_Portal` |
 | PressPrimer front-end skin (CSS enqueue) | `Integrations\PressPrimer_Assets` |
 
 All hooks register through `Loader` in `src/Burbank_LMS.php`. Invite and enrollment tables survive uninstall (Phase 1 `Uninstallor` remains a no-op).
@@ -68,7 +69,7 @@ Domain rules above are unchanged. `Learner\Soft_Gate` and `Learner\Shell` only a
 
 When `should_block` is true, `burbank-lms/catalog`, `course`, `profile`, and `my-courses` render only the gate card—no catalog rows, filters, course meta, profile form, or my-courses list (no course-list leakage). The LMS subnav does not print on gated views.
 
-**Shell / portal chrome** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests) as a Duty Officer–style `.bfc-portal` workspace: uppercase **Training** kicker, learner display name as the document **H1** (or a `<p>` title on course singles so the course post title keeps H1), context lede, then `.bfc-shell` pill-track nav. Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state. Pill-track nav (Catalog · My Courses · Profile) stays expanded at all breakpoints; course contextual actions wrap onto a second row when needed.
+**Shell / portal chrome** (`Learner\Shell`) appears only when `should_show( $user_id )` (`can_learn`). `render_chrome()` prints at most once per request (static once-flag; optional `force` for tests) as a training workspace: uppercase **Training** kicker, learner display name as the document **H1** (or a `<p>` title on course singles so the course post title keeps H1), context lede, then `.bfc-shell` pill-track nav. Primary nav ids: **Catalog** (`get_post_type_archive_link( 'bfc_course' )`), **My Courses** and **Profile** (pages at `/my-courses/` and `/profile/` with `home_url` fallbacks). When the Duty Officer member shortcode is registered and the current user has the `duty_officer` or `duty_officer_admin` role, or linked-officer meta `duty_officer_access` of `member` or `scheduler`, the shell adds **Duty Officer** and names the nav **Training and Duty Officer**. On the member portal, a user who can also train sees that same pill nav above the shift workspace, with Duty Officer marked current, plus **Log out** (the portal hides the admin bar for volunteers). A training-only account that opens the member portal is redirected to My Courses. An officer-only account gets a Log out link from Duty Officer when the training switcher is absent. Duty Officer does not read enrollments, and this plugin does not read the roster. On `bfc_course` singles, context `course` highlights Catalog; **contextual actions** add Enroll (`#bfc-course-enroll`), Continue (`#bfc-course-quiz` when enrolled and a quiz is mapped), or Withdraw (my-courses URL with `course` query arg) from enrollment state. Pill-track nav (Catalog · My Courses · Profile) stays expanded at all breakpoints; course contextual actions wrap onto a second row when needed.
 
 **Heading ownership:** The catalog block owns the course-archive H1 (“Course catalog”). `Learner\Portal_Headings` suppresses `core/query-title` on the `bfc_course` archive and suppresses `core/heading` level-1 **and** `core/post-title` on `/profile/` and `/my-courses/` so theme patterns do not duplicate the portal/soft-gate title. On course singles, `burbank-lms/course` owns the document H1 (`.bfc-course__title`); `suppress_course_singular_title` drops theme `core/post-title`, and embedded PressPrimer quiz titles are demoted H1→H2.
 
@@ -96,7 +97,7 @@ One table `{prefix}bfc_invite_codes`, two scopes. Site and course codes are neve
 
 **Active code** = not revoked, not expired, and (`once` with `use_count = 0`) or (`multi` under `max_uses` if set). Plaintext is shown once at create; storage is hashed (HMAC). Optional `bound_email` on a **site** invite requires the registration email to match; on a **course** invite, `Enrollment\Service` compares it to the learner’s `user_email` before redeem.
 
-Admin UI: **Training → Site invites** for site codes (PHP admin screens); course codes are managed in the Course sidebar **Invites** panel on the block editor (admin REST). Capability: `enroll_bfc_courses` (administrator by default). Site invite admin and user profile Training Access stay PHP for now.
+Admin UI: **Training → Site invites** for site codes; course codes are managed in the Course sidebar **Invites** panel. Creating an invite returns the plaintext once and a shareable `url`. The code rides in the URL fragment (`#invite=`), not the query string, so it is not sent to the server or the next page's Referer. The front end copies it into the form and then removes it from the address bar. Older `?invite=` links still prefill, then are removed the same way. Capability: `enroll_bfc_courses` (administrator by default).
 
 ## Registration
 
@@ -104,13 +105,13 @@ Learner registration goes through `Registration::register()` (Register block or 
 
 - site invite code
 - email
-- password (WordPress-native strength; the invite is never the password)
+- password (at least 8 characters and three of: lowercase, uppercase, number, symbol; the strength meter is guidance)
 - first name + last name (composed into the certificate / legal name `burbank_lms_legal_name`; both required when either is present)
 - display name
 
 The Register block collects first/last name (hint: certificates print as first + last). API clients may still send a single `legal_name` when first/last keys are omitted.
 
-Flow: validate active **site** invite → create user (with WP `first_name` / `last_name`) → store legal name → grant `burbank_lms_access` → increment invite use. Granting access enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). There is no separate email-verification step.
+Flow: validate active **site** invite → create user on the `burbank_lms_learner` role (with WP `first_name` / `last_name`) → store legal name → grant `burbank_lms_access` → increment invite use. Granting access adds that role and enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). Administrators and editors keep their own roles and the capability. Registration sends a verification email; mapped quizzes stay closed until that link is used. Subscribers, learners, and duty officers do not see the front-end admin bar. The role list is the `burbankcert_toolbar_hidden_roles` filter, defaulting to `subscriber`, `burbank_lms_learner`, `duty_officer`, and `duty_officer_admin`. Editors and administrators keep the bar.
 
 **Compensating transaction (not a single DB transaction):** `wp_insert_user` cannot share a MySQL transaction with invite redeem across WordPress’s user tables reliably. On failure after user create, `Registration::register` compensates by revoking training access (when granted) and deleting the user before returning a `WP_Error`. Course restricted enroll uses a real shared transaction for enrollment insert + invite redeem.
 

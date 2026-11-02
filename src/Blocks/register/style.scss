@@ -1,13 +1,87 @@
 .bfc-register {
-	&__form {
+	max-width: 36rem;
+
+	&__panel,
+	&__form,
+	&__done {
+		display: grid;
+		gap: 1rem;
+		margin: 0;
+		padding: clamp(1.125rem, 2.5vw, 1.5rem);
+		border: 1px solid var(--bfc-control-border, #d5ded8);
+		border-radius: var(--bfc-radius-panel, 16px);
+		background: var(--bfc-control-bg, #fff);
+		color: var(--bfc-control-text, #172820);
+	}
+
+	&__section {
 		display: grid;
 		gap: 0.75rem;
-		max-width: 28rem;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	&__section legend {
+		padding: 0;
+		color: var(--bfc-kicker, #315a46);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	&__name {
+		display: grid;
+		gap: 0.75rem;
+
+		@media (min-width: 520px) {
+			grid-template-columns: 1fr 1fr;
+		}
 	}
 
 	&__field {
 		display: grid;
 		gap: 0.35rem;
+		margin: 0;
+	}
+
+	&__hint,
+	&__preview,
+	&__switch {
+		margin: 0;
+		color: var(--bfc-control-muted, #5c6b63);
+		font-size: 0.95rem;
+		line-height: 1.45;
+	}
+
+	&__preview strong:empty::before {
+		content: "—";
+		font-weight: 400;
+	}
+
+	&__password {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
+	&__reveal {
+		min-height: 46px;
+		padding: 0 0.85rem;
+		border: 1px solid var(--bfc-control-border, #d5ded8);
+		border-radius: 0.375rem;
+		background: transparent;
+		color: inherit;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	&__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 		margin: 0;
 	}
 
@@ -17,5 +91,41 @@
 		&.is-error {
 			color: #b32d2e;
 		}
+
+		&:focus {
+			outline: 2px solid currentColor;
+			outline-offset: 2px;
+		}
+	}
+
+	&__meter {
+		display: block;
+		height: 0.45rem;
+		overflow: hidden;
+		border-radius: 999px;
+		background: var(--bfc-control-border, #d0ddd4);
+	}
+
+	&__meter-bar {
+		display: block;
+		height: 100%;
+		width: 0;
+		border-radius: inherit;
+		background: var(--bfc-pill-active-bg, #1b6540);
+	}
+
+	&__meter-label {
+		color: var(--bfc-control-muted, #556b60);
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	&__done h2 {
+		margin: 0;
+		font-size: 1.5rem;
+	}
+
+	&__done p {
+		margin: 0;
 	}
 }

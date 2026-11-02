@@ -73,6 +73,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'init', $course_schema, 'maybe_flush_rewrite_rules', 99 );
 		$this->loader->add_action( 'admin_notices', $course_schema, 'notice' );
 		$this->loader->add_action( 'init', new Courses\Capabilities(), 'install', 12 );
+		$this->loader->add_action( 'init', new Access\Learner(), 'install_role', 12 );
+		$this->loader->add_filter( 'show_admin_bar', new Access\Admin_Bar(), 'filter_show', 100 );
 		$course_registry = new Courses\Registry();
 		$this->loader->add_action( 'init', $course_registry, 'install', 12 );
 		$this->loader->add_action( 'admin_notices', $course_registry, 'notice' );
@@ -173,6 +175,9 @@ class Burbank_LMS {
 		$this->loader->add_action( 'admin_menu', $access_admin, 'register_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $access_admin, 'enqueue' );
 		$this->loader->add_action( 'rest_api_init', new REST\Training_Controller(), 'register_routes' );
+		$duty_portal = new Integrations\Duty_Officer_Portal();
+		$this->loader->add_filter( 'duty_officer_member_portal_companion', $duty_portal, 'companion', 10, 2 );
+		$this->loader->add_action( 'template_redirect', $duty_portal, 'redirect_training_only', 11 );
 	}
 
 	/**

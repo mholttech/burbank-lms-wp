@@ -59,6 +59,7 @@ function App() {
 	const [ error, setError ] = useState( '' );
 	const [ notice, setNotice ] = useState( '' );
 	const [ code, setCode ] = useState( '' );
+	const [ inviteUrl, setInviteUrl ] = useState( '' );
 	const [ reload, setReload ] = useState( 0 );
 	const [ invite, setInvite ] = useState( {
 		label: '',
@@ -165,6 +166,7 @@ function App() {
 							onSubmit={ async ( event ) => {
 								event.preventDefault();
 								setCode( '' );
+								setInviteUrl( '' );
 								const data = await mutate(
 									'/invites',
 									'POST',
@@ -172,6 +174,7 @@ function App() {
 								);
 								if ( data ) {
 									setCode( data.plaintext );
+									setInviteUrl( data.url || '' );
 								}
 							} }
 						>
@@ -268,6 +271,11 @@ function App() {
 									) }
 								</p>
 								<code>{ code }</code>{ ' ' }
+								{ inviteUrl && (
+									<p>
+										<a href={ inviteUrl }>{ inviteUrl }</a>
+									</p>
+								) }
 								<Button
 									variant="secondary"
 									onClick={ async () => {
@@ -293,6 +301,36 @@ function App() {
 								>
 									{ __( 'Copy code', 'burbank-lms' ) }
 								</Button>
+								{ inviteUrl && (
+									<Button
+										variant="secondary"
+										onClick={ async () => {
+											try {
+												await navigator.clipboard.writeText(
+													inviteUrl
+												);
+												setNotice(
+													__(
+														'Invite link copied.',
+														'burbank-lms'
+													)
+												);
+											} catch {
+												setError(
+													__(
+														'Copy the invite link manually.',
+														'burbank-lms'
+													)
+												);
+											}
+										} }
+									>
+										{ __(
+											'Copy invite link',
+											'burbank-lms'
+										) }
+									</Button>
+								) }
 								<Button onClick={ () => setCode( '' ) }>
 									{ __( 'Dismiss', 'burbank-lms' ) }
 								</Button>
