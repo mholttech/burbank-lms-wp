@@ -150,8 +150,8 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'bfc-shell__item--seam', $html );
 	}
 
-	/** The member portal keeps one Training link back to My Courses. */
-	public function test_member_portal_collapses_training_to_my_courses(): void {
+	/** The member portal keeps Training and Profile, and folds the course list into Training. */
+	public function test_member_portal_keeps_training_and_profile(): void {
 		add_shortcode( 'duty_officer_member', '__return_empty_string' );
 		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		( new Learner() )->grant_access( $user_id );
@@ -166,11 +166,15 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->go_to( (string) get_permalink( $page_id ) );
 		$items = ( new Menu() )->items();
 		$ids   = wp_list_pluck( $items, 'id' );
-		$this->assertSame( array( 'training', 'logout' ), $ids );
+		$this->assertSame( array( 'training', 'profile', 'logout' ), $ids );
 		$this->assertSame( 'Training', $items[0]['label'] );
 		$this->assertSame( home_url( '/my-courses/' ), $items[0]['url'] );
 		$this->assertFalse( $items[0]['current'] );
+		$this->assertSame( 'Profile', $items[1]['label'] );
+		$this->assertSame( home_url( '/profile/' ), $items[1]['url'] );
+		$this->assertFalse( $items[1]['current'] );
 		$html = ( new Menu() )->render();
+		$this->assertStringContainsString( 'Profile', $html );
 		$this->assertStringNotContainsString( 'Catalog', $html );
 		$this->assertStringNotContainsString( 'bfc-shell__item--seam', $html );
 	}

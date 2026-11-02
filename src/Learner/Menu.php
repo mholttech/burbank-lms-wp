@@ -134,8 +134,8 @@ class Menu {
 	/**
 	 * Training destinations for someone who can learn.
 	 *
-	 * On the member portal these collapse to one Training link. Duty Officer
-	 * then fills the rest of the row with its own sections.
+	 * On the member portal Catalog and My Courses collapse to one Training link.
+	 * Profile stays, and Duty Officer fills the rest of the row.
 	 *
 	 * @return array<int, array{id:string,label:string,url:string,current:bool,priority:int}>
 	 */
@@ -151,6 +151,13 @@ class Menu {
 					'url'      => $this->page_url( 'my-courses' ),
 					'current'  => false,
 					'priority' => 10,
+				),
+				array(
+					'id'       => 'profile',
+					'label'    => __( 'Profile', 'burbank-lms' ),
+					'url'      => $this->page_url( 'profile' ),
+					'current'  => false,
+					'priority' => 30,
 				),
 			);
 		}
