@@ -325,7 +325,10 @@ function App() {
 											}
 										} }
 									>
-										{ __( 'Copy invite link', 'burbank-lms' ) }
+										{ __(
+											'Copy invite link',
+											'burbank-lms'
+										) }
 									</Button>
 								) }
 								<Button onClick={ () => setCode( '' ) }>

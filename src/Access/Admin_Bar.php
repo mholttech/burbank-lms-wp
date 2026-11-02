@@ -12,16 +12,22 @@ namespace Burbank_LMS\Access;
  */
 class Admin_Bar {
 	/**
-	 * Roles that use the public site, not wp-admin.
+	 * Public-site roles. Editors and administrators are excluded by capability.
 	 *
-	 * @var string[]
+	 * @return string[]
 	 */
-	private const HIDDEN_ROLES = array(
-		'subscriber',
-		Learner::ROLE,
-		'duty_officer',
-		'duty_officer_admin',
-	);
+	public static function hidden_roles(): array {
+		$roles = apply_filters(
+			'burbankcert_toolbar_hidden_roles',
+			array(
+				'subscriber',
+				Learner::ROLE,
+				'duty_officer',
+				'duty_officer_admin',
+			)
+		);
+		return array_values( array_unique( array_map( 'strval', is_array( $roles ) ? $roles : array() ) ) );
+	}
 
 	/**
 	 * Hide the toolbar when every role this account has is a volunteer role.
@@ -52,7 +58,7 @@ class Admin_Bar {
 			return false;
 		}
 		foreach ( $roles as $role ) {
-			if ( ! in_array( $role, self::HIDDEN_ROLES, true ) ) {
+			if ( ! in_array( $role, self::hidden_roles(), true ) ) {
 				return false;
 			}
 		}

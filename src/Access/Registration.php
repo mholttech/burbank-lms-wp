@@ -55,8 +55,8 @@ class Registration {
 		if ( '' === $password ) {
 			return new \WP_Error( 'burbank_register_password_required', __( 'A password is required.', 'burbank-lms' ) );
 		}
-		if ( strlen( $password ) < 8 ) {
-			return new \WP_Error( 'burbank_register_password_short', __( 'Use at least 8 characters.', 'burbank-lms' ) );
+		if ( ! $this->password_is_acceptable( $password, $email ) ) {
+			return new \WP_Error( 'burbank_register_password_weak', __( 'Use a stronger password with at least 8 characters and a mix of letters, numbers, and symbols.', 'burbank-lms' ) );
 		}
 		if ( email_exists( $email ) ) {
 			return new \WP_Error( 'burbank_register_email_exists', __( 'Registration could not be completed.', 'burbank-lms' ) );
@@ -138,6 +138,27 @@ class Registration {
 			++$i;
 		}
 		return $login;
+	}
+
+	/**
+	 * Require length plus character variety so the API matches the form.
+	 *
+	 * The browser meter is the live hint. This is the rule that cannot be skipped.
+	 *
+	 * @param string $password Password.
+	 * @param string $email    Account email, rejected as the password itself.
+	 */
+	private function password_is_acceptable( string $password, string $email ): bool {
+		if ( strlen( $password ) < 8 || ( '' !== $email && 0 === strcasecmp( $password, $email ) ) ) {
+			return false;
+		}
+		$classes = 0;
+		foreach ( array( '/[a-z]/', '/[A-Z]/', '/\d/', '/[^A-Za-z0-9]/' ) as $pattern ) {
+			if ( preg_match( $pattern, $password ) ) {
+				++$classes;
+			}
+		}
+		return $classes >= 3;
 	}
 
 	/** Lazy invite service. */

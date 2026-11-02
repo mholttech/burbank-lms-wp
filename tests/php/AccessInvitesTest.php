@@ -333,7 +333,8 @@ echo ( new \\Burbank_LMS\\Access\\Invites() )->redeem( %4$d ) ? "1" : "0";
 			)
 		);
 		$this->assertIsArray( $created );
-		$this->assertStringContainsString( '/register/', $created['url'] );
+		$this->assertStringContainsString( '/register/#invite=', $created['url'] );
+		$this->assertStringNotContainsString( '?invite=', $created['url'] );
 		$this->assertStringContainsString( rawurlencode( $created['plaintext'] ), $created['url'] );
 	}
 }

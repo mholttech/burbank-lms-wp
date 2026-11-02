@@ -17,7 +17,7 @@ $courses_url = home_url( '/my-courses/' );
 $courses     = get_page_by_path( 'my-courses' );
 if ( $courses instanceof WP_Post ) {
 	$permalink = get_permalink( $courses );
-	if ( is_string( $permalink ) && '' !== $permalink ) {
+	if ( '' !== $permalink ) {
 		$courses_url = $permalink;
 	}
 }

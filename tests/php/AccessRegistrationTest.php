@@ -173,7 +173,23 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertWPError( $result );
-		$this->assertSame( 'burbank_register_password_short', $result->get_error_code() );
+		$this->assertSame( 'burbank_register_password_weak', $result->get_error_code() );
+	}
+
+	/** Eight characters of one class are still too weak. */
+	public function test_register_rejects_single_class_password(): void {
+		$invite = $this->site_invite();
+		$result = $this->registration()->register(
+			array(
+				'invite'       => $invite['plaintext'],
+				'email'        => 'one-class@example.com',
+				'password'     => 'aaaaaaaa',
+				'legal_name'   => 'Alex Volunteer',
+				'display_name' => 'Alex',
+			)
+		);
+		$this->assertWPError( $result );
+		$this->assertSame( 'burbank_register_password_weak', $result->get_error_code() );
 	}
 
 	/** Bound-email invites reject mismatched registration email. */

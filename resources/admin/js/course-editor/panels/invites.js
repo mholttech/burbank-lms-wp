@@ -209,7 +209,7 @@ export default function InvitesPanel() {
 							),
 							created?.plaintext || '',
 							created.url
-					  )
+						)
 					: sprintf(
 							/* translators: %s: plaintext invite code shown once. */
 							__(
@@ -217,7 +217,7 @@ export default function InvitesPanel() {
 								'burbank-lms'
 							),
 							created?.plaintext || ''
-					  ),
+						),
 			};
 			setNotices( [ successNotice ] );
 			try {

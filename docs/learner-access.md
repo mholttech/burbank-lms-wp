@@ -97,7 +97,7 @@ One table `{prefix}bfc_invite_codes`, two scopes. Site and course codes are neve
 
 **Active code** = not revoked, not expired, and (`once` with `use_count = 0`) or (`multi` under `max_uses` if set). Plaintext is shown once at create; storage is hashed (HMAC). Optional `bound_email` on a **site** invite requires the registration email to match; on a **course** invite, `Enrollment\Service` compares it to the learner’s `user_email` before redeem.
 
-Admin UI: **Training → Site invites** for site codes; course codes are managed in the Course sidebar **Invites** panel. Creating an invite returns the plaintext once and a shareable `url`: site invites open `/register/?invite=…`, course invites open that course with the same query argument. The registration form and course invite fields prefill from `invite`. Capability: `enroll_bfc_courses` (administrator by default).
+Admin UI: **Training → Site invites** for site codes; course codes are managed in the Course sidebar **Invites** panel. Creating an invite returns the plaintext once and a shareable `url`. The code rides in the URL fragment (`#invite=`), not the query string, so it is not sent to the server or the next page's Referer. The front end copies it into the form and then removes it from the address bar. Older `?invite=` links still prefill, then are removed the same way. Capability: `enroll_bfc_courses` (administrator by default).
 
 ## Registration
 
@@ -105,13 +105,13 @@ Learner registration goes through `Registration::register()` (Register block or 
 
 - site invite code
 - email
-- password (WordPress-native strength; the invite is never the password)
+- password (at least 8 characters and three of: lowercase, uppercase, number, symbol; the strength meter is guidance)
 - first name + last name (composed into the certificate / legal name `burbank_lms_legal_name`; both required when either is present)
 - display name
 
 The Register block collects first/last name (hint: certificates print as first + last). API clients may still send a single `legal_name` when first/last keys are omitted.
 
-Flow: validate active **site** invite → create user on the `burbank_lms_learner` role (with WP `first_name` / `last_name`) → store legal name → grant `burbank_lms_access` → increment invite use. Granting access adds that role and enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). Administrators and editors keep their own roles and the capability. There is no separate email-verification step. Subscribers, learners, and duty officers do not see the front-end admin bar. Editors and administrators do.
+Flow: validate active **site** invite → create user on the `burbank_lms_learner` role (with WP `first_name` / `last_name`) → store legal name → grant `burbank_lms_access` → increment invite use. Granting access adds that role and enables `can_learn` immediately (and fires the welcome email via `Mail\Mailer`). Administrators and editors keep their own roles and the capability. Registration sends a verification email; mapped quizzes stay closed until that link is used. Subscribers, learners, and duty officers do not see the front-end admin bar. The role list is the `burbankcert_toolbar_hidden_roles` filter, defaulting to `subscriber`, `burbank_lms_learner`, `duty_officer`, and `duty_officer_admin`. Editors and administrators keep the bar.
 
 **Compensating transaction (not a single DB transaction):** `wp_insert_user` cannot share a MySQL transaction with invite redeem across WordPress’s user tables reliably. On failure after user create, `Registration::register` compensates by revoking training access (when granted) and deleting the user before returning a `WP_Error`. Course restricted enroll uses a real shared transaction for enrollment insert + invite redeem.
 

@@ -8,6 +8,40 @@
 
 import { __ } from '@wordpress/i18n';
 
+/**
+ * Read an invite from the URL fragment first, then the query string, fill the
+ * form, and remove it from the address so the code is not sent as a Referer.
+ */
+function consumeInviteLink() {
+	const current = new URL( window.location.href );
+	let code = '';
+	const hash = window.location.hash.replace( /^#/, '' );
+	if ( hash.startsWith( 'invite=' ) ) {
+		code = decodeURIComponent( hash.slice( 'invite='.length ) );
+	}
+	if ( ! code ) {
+		code = current.searchParams.get( 'invite' ) || '';
+	}
+	if ( ! code ) {
+		return;
+	}
+	document
+		.querySelectorAll( 'input[name="invite"], input[name="course_invite"]' )
+		.forEach( ( input ) => {
+			if ( ! input.value ) {
+				input.value = code;
+			}
+		} );
+	current.searchParams.delete( 'invite' );
+	const query = current.searchParams.toString();
+	window.history.replaceState(
+		null,
+		'',
+		current.pathname + ( query ? `?${ query }` : '' )
+	);
+}
+consumeInviteLink();
+
 document.addEventListener( 'click', async ( event ) => {
 	const button = event.target.closest( '[data-bfc-resend-verify]' );
 	if ( button ) {

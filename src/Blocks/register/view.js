@@ -131,11 +131,31 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
 		setStatus( status, '' );
-		const score = updateMeter();
-		if ( score < 3 ) {
+		updateMeter();
+		const passwordValue = password ? password.value : '';
+		const emailValue = email ? email.value : '';
+		let classes = 0;
+		if ( /[a-z]/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if ( /[A-Z]/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if ( /\d/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if ( /[^A-Za-z0-9]/.test( passwordValue ) ) {
+			classes += 1;
+		}
+		if (
+			passwordValue.length < 8 ||
+			classes < 3 ||
+			( emailValue &&
+				passwordValue.toLowerCase() === emailValue.toLowerCase() )
+		) {
 			setStatus(
 				status,
-				'Use a stronger password. Aim for a mix of words, numbers, and symbols.',
+				'Use a stronger password with at least 8 characters and a mix of letters, numbers, and symbols.',
 				true
 			);
 			password?.focus();

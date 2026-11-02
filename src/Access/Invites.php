@@ -103,12 +103,13 @@ class Invites {
 	 * @param int    $course_id  Course post ID when scope is course.
 	 */
 	public static function share_url( string $scope, string $plaintext, int $course_id = 0 ): string {
+		$fragment = '#invite=' . rawurlencode( $plaintext );
 		if ( 'course' === $scope && $course_id > 0 ) {
 			$permalink = get_permalink( $course_id );
-			$base      = is_string( $permalink ) && '' !== $permalink ? $permalink : home_url( '/courses/' );
-			return add_query_arg( 'invite', $plaintext, $base );
+			$base      = '' !== $permalink ? $permalink : home_url( '/courses/' );
+			return explode( '#', $base )[0] . $fragment;
 		}
-		return add_query_arg( 'invite', $plaintext, home_url( '/register/' ) );
+		return home_url( '/register/' ) . $fragment;
 	}
 
 	/**
