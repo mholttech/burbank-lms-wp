@@ -50,14 +50,36 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '', $html );
 	}
 
-	/** An officer who can train gets My Courses from the linked portal state. */
-	public function test_linked_learner_companion_links_my_courses(): void {
-		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+	/** An officer who can train gets the same pill nav used on training pages. */
+	public function test_linked_learner_companion_uses_shared_switcher(): void {
+		add_shortcode( 'duty_officer_member', '__return_empty_string' );
+		add_role( 'duty_officer', 'Duty Officer', array( 'read' => true ) );
+		$user_id = self::factory()->user->create( array( 'role' => 'duty_officer' ) );
 		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
 		$html = ( new Duty_Officer_Portal() )->companion( '', 'linked' );
-		$this->assertStringContainsString( 'My courses', $html );
-		$this->assertStringNotContainsString( 'Course catalog', $html );
+		$this->assertStringContainsString( 'bfc-portal--switcher', $html );
+		$this->assertStringContainsString( 'Training and Duty Officer', $html );
+		$this->assertStringContainsString( 'Catalog', $html );
+		$this->assertStringContainsString( 'My Courses', $html );
+		$this->assertStringContainsString( 'Profile', $html );
+		$this->assertStringContainsString( 'aria-current="page"', $html );
+		$this->assertStringContainsString( 'Duty Officer', $html );
+		$this->assertStringNotContainsString( 'bfc-duty-companion', $html );
+	}
+
+	/** A linked administrator keeps the administrator role and is still offered the Duty Officer pill. */
+	public function test_linked_administrator_meta_adds_duty_officer_pill(): void {
+		add_shortcode( 'duty_officer_member', '__return_empty_string' );
+		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		update_user_meta( $user_id, 'duty_officer_access', 'member' );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$ids = wp_list_pluck( ( new Shell() )->nav_items( 'duty-officer' ), 'id' );
+		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'duty-officer' ), $ids );
+		$html = ( new Shell() )->render_switcher( 'duty-officer' );
+		$this->assertStringContainsString( 'is-current', $html );
+		$this->assertStringContainsString( 'aria-current="page"', $html );
 	}
 
 	/** Unknown companion contexts are ignored. */
@@ -93,6 +115,7 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertStringContainsString( 'Duty Officer', $html );
+		$this->assertStringContainsString( 'Training and Duty Officer', $html );
 		$this->assertStringContainsString( home_url( '/member-portal/' ), $html );
 	}
 }

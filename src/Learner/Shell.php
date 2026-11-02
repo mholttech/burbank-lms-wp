@@ -196,7 +196,7 @@ class Shell {
 			esc_html( $display ),
 			esc_html( $lede )
 		);
-		$aria      = esc_attr__( 'Training', 'burbank-lms' );
+		$aria      = esc_attr( $this->navigation_label( $items ) );
 		$nav       = sprintf(
 			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav>',
 			$aria,
@@ -209,6 +209,39 @@ class Shell {
 			$header,
 			$nav
 		);
+	}
+
+	/**
+	 * Pill navigation shared by training pages and the Duty Officer portal.
+	 *
+	 * Does not print the training title. The member portal already has its own heading.
+	 *
+	 * @param string $current Context id. Use `duty-officer` on the member portal.
+	 */
+	public function render_switcher( string $current ): string {
+		if ( ! $this->should_show( get_current_user_id() ) ) {
+			return '';
+		}
+		$items = $this->nav_items( $current );
+		return sprintf(
+			'<section class="bfc-portal bfc-portal--switcher"><nav class="bfc-shell" aria-label="%1$s">%2$s</nav></section>',
+			esc_attr( $this->navigation_label( $items ) ),
+			$this->render_nav_list( $items, 'bfc-shell__list' )
+		);
+	}
+
+	/**
+	 * Accessible name for the pill nav.
+	 *
+	 * @param array<int, array{id:string,label:string,url:string,current:bool}> $items Nav items.
+	 */
+	private function navigation_label( array $items ): string {
+		foreach ( $items as $item ) {
+			if ( 'duty-officer' === $item['id'] ) {
+				return __( 'Training and Duty Officer', 'burbank-lms' );
+			}
+		}
+		return __( 'Training', 'burbank-lms' );
 	}
 
 	/**

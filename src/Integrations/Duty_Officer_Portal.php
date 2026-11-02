@@ -61,7 +61,7 @@ class Duty_Officer_Portal {
 			if ( $user_id < 1 || ! ( new Learner() )->can_learn( $user_id ) ) {
 				return '';
 			}
-			$links[] = $this->anchor( $this->page_url( 'my-courses' ), __( 'My courses', 'burbank-lms' ) );
+			return ( new \Burbank_LMS\Learner\Shell() )->render_switcher( 'duty-officer' );
 		} else {
 			$links[] = $this->anchor( $this->catalog_url(), __( 'Course catalog', 'burbank-lms' ) );
 			if ( 'unlinked' === $context && $user_id > 0 && ( new Learner() )->can_learn( $user_id ) ) {
@@ -80,7 +80,12 @@ class Duty_Officer_Portal {
 			return false;
 		}
 		$roles = (array) $user->roles;
-		return in_array( 'duty_officer', $roles, true ) || in_array( 'duty_officer_admin', $roles, true );
+		if ( in_array( 'duty_officer', $roles, true ) || in_array( 'duty_officer_admin', $roles, true ) ) {
+			return true;
+		}
+		// WordPress administrators keep their role when linked. Duty Officer stores the access level in meta.
+		$access = (string) get_user_meta( $user->ID, 'duty_officer_access', true );
+		return in_array( $access, array( 'member', 'scheduler' ), true );
 	}
 
 	/**
