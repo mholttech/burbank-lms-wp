@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.8.0...burbank-lms-v1.9.0) (2026-11-02)
+
+
+### Features
+
+* keep Profile beside Training on the duty portal ([#53](https://github.com/mholttech/burbank-lms-wp/issues/53)) ([20105a7](https://github.com/mholttech/burbank-lms-wp/commit/20105a79eb520db123b5ec34258e816ebf10441e))
+
 ## [1.8.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.7.2...burbank-lms-v1.8.0) (2026-11-02)
 
 
