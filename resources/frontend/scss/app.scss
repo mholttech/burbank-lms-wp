@@ -115,6 +115,10 @@
 		list-style: none;
 	}
 
+	&__item--logout {
+		margin-left: auto;
+	}
+
 	&__actions {
 		gap: 0.5rem;
 	}

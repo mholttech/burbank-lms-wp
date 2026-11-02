@@ -105,6 +105,15 @@ register_uninstall_hook( __FILE__, 'burbank_lms_uninstall' );
 add_action( 'activated_plugin', array( Activator::class, 'network_activation' ), 10, 2 );
 
 /**
+ * Portal menu shared by training pages and plugins that extend it.
+ *
+ * @param string $current Training context used to mark the current item.
+ */
+function burbank_lms_portal_menu( string $current = '' ): string {
+	return ( new Burbank_LMS\Learner\Menu( $current ) )->render();
+}
+
+/**
  * Begins execution of the plugin.
  *
  * Since everything within the plugin is registered via hooks,

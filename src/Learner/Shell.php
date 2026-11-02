@@ -9,7 +9,6 @@ namespace Burbank_LMS\Learner;
 
 use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
-use Burbank_LMS\Integrations\Duty_Officer_Portal;
 
 /** Builds hybrid training subnav and contextual course actions for can_learn users. */
 class Shell {
@@ -60,32 +59,17 @@ class Shell {
 	 * @return array<int, array{id:string,label:string,url:string,current:bool}>
 	 */
 	public function nav_items( string $current = '' ): array {
-		$highlight = 'course' === $current ? 'catalog' : $current;
-		$items     = array(
-			array(
-				'id'      => 'catalog',
-				'label'   => __( 'Catalog', 'burbank-lms' ),
-				'url'     => $this->catalog_url(),
-				'current' => 'catalog' === $highlight,
-			),
-			array(
-				'id'      => 'my-courses',
-				'label'   => __( 'My Courses', 'burbank-lms' ),
-				'url'     => $this->page_url( 'my-courses' ),
-				'current' => 'my-courses' === $highlight,
-			),
-			array(
-				'id'      => 'profile',
-				'label'   => __( 'Profile', 'burbank-lms' ),
-				'url'     => $this->page_url( 'profile' ),
-				'current' => 'profile' === $highlight,
-			),
-		);
-		$duty      = ( new Duty_Officer_Portal() )->nav_item( $highlight );
-		if ( null !== $duty ) {
-			$items[] = $duty;
+		$items = ( new Menu( $current ) )->items();
+		$nav   = array();
+		foreach ( $items as $item ) {
+			$nav[] = array(
+				'id'      => $item['id'],
+				'label'   => $item['label'],
+				'url'     => $item['url'],
+				'current' => $item['current'],
+			);
 		}
-		return $items;
+		return $nav;
 	}
 
 	/**
@@ -198,11 +182,10 @@ class Shell {
 		);
 		$aria      = esc_attr( $this->navigation_label( $items ) );
 		$nav       = sprintf(
-			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s%4$s</nav>',
+			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav>',
 			$aria,
 			$nav_list,
-			$actions_html,
-			$this->logout_link()
+			$actions_html
 		);
 
 		return sprintf(
@@ -225,24 +208,9 @@ class Shell {
 		}
 		$items = $this->nav_items( $current );
 		return sprintf(
-			'<section class="bfc-portal bfc-portal--switcher"><nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav></section>',
+			'<section class="bfc-portal bfc-portal--switcher"><nav class="bfc-shell" aria-label="%1$s">%2$s</nav></section>',
 			esc_attr( $this->navigation_label( $items ) ),
-			$this->render_nav_list( $items, 'bfc-shell__list' ),
-			$this->logout_link()
-		);
-	}
-
-	/**
-	 * Sign-out control for the shared pill row.
-	 *
-	 * The member portal hides the WordPress admin bar for volunteers, so this
-	 * link is the way back to the public site.
-	 */
-	private function logout_link(): string {
-		return sprintf(
-			'<a class="bfc-shell__logout" href="%1$s">%2$s</a>',
-			esc_url( wp_logout_url( home_url( '/' ) ) ),
-			esc_html__( 'Log out', 'burbank-lms' )
+			$this->render_nav_list( $items, 'bfc-shell__list' )
 		);
 	}
 
@@ -253,7 +221,7 @@ class Shell {
 	 */
 	private function navigation_label( array $items ): string {
 		foreach ( $items as $item ) {
-			if ( 'duty-officer' === $item['id'] ) {
+			if ( str_starts_with( $item['id'], 'duty-' ) ) {
 				return __( 'Training and Duty Officer', 'burbank-lms' );
 			}
 		}
@@ -277,17 +245,6 @@ class Shell {
 			default:
 				return __( 'Browse the catalog, enroll, and continue your courses.', 'burbank-lms' );
 		}
-	}
-
-	/**
-	 * Catalog archive URL with home fallback.
-	 */
-	private function catalog_url(): string {
-		$link = get_post_type_archive_link( 'bfc_course' );
-		if ( is_string( $link ) && '' !== $link ) {
-			return $link;
-		}
-		return home_url( '/courses/' );
 	}
 
 	/**
@@ -316,8 +273,9 @@ class Shell {
 		$lis = '';
 		foreach ( $items as $item ) {
 			$lis .= sprintf(
-				'<li class="bfc-shell__item%1$s"><a class="bfc-shell__link" href="%2$s"%3$s>%4$s</a></li>',
+				'<li class="bfc-shell__item%1$s%2$s"><a class="bfc-shell__link" href="%3$s"%4$s>%5$s</a></li>',
 				$item['current'] ? ' is-current' : '',
+				'logout' === $item['id'] ? ' bfc-shell__item--logout' : '',
 				esc_url( $item['url'] ),
 				$item['current'] ? ' aria-current="page"' : '',
 				esc_html( $item['label'] )

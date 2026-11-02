@@ -7,6 +7,7 @@
 
 use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Integrations\Duty_Officer_Portal;
+use Burbank_LMS\Learner\Menu;
 use Burbank_LMS\Learner\Shell;
 
 /** Training links on the member portal, and a Duty Officer pill for linked roles. */
@@ -50,36 +51,30 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->assertSame( '', $html );
 	}
 
-	/** An officer who can train gets the same pill nav used on training pages. */
-	public function test_linked_learner_companion_uses_shared_switcher(): void {
-		add_shortcode( 'duty_officer_member', '__return_empty_string' );
+	/** An officer who can train gets the shared menu, not a second companion bar. */
+	public function test_linked_learner_uses_the_portal_menu(): void {
 		add_role( 'duty_officer', 'Duty Officer', array( 'read' => true ) );
 		$user_id = self::factory()->user->create( array( 'role' => 'duty_officer' ) );
 		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
-		$html = ( new Duty_Officer_Portal() )->companion( '', 'linked' );
-		$this->assertStringContainsString( 'bfc-portal--switcher', $html );
-		$this->assertStringContainsString( 'Training and Duty Officer', $html );
-		$this->assertStringContainsString( 'Catalog', $html );
-		$this->assertStringContainsString( 'My Courses', $html );
-		$this->assertStringContainsString( 'Profile', $html );
-		$this->assertStringContainsString( 'aria-current="page"', $html );
-		$this->assertStringContainsString( 'Duty Officer', $html );
-		$this->assertStringNotContainsString( 'bfc-duty-companion', $html );
+		$this->assertSame( '', ( new Duty_Officer_Portal() )->companion( '', 'linked' ) );
+		$labels = wp_list_pluck( ( new Menu() )->items(), 'label' );
+		$this->assertContains( 'Catalog', $labels );
+		$this->assertContains( 'My Courses', $labels );
+		$this->assertContains( 'Profile', $labels );
+		$this->assertContains( 'Log out', $labels );
+		$this->assertNotContains( 'Duty Officer', $labels );
 	}
 
-	/** A linked administrator keeps the administrator role and is still offered the Duty Officer pill. */
-	public function test_linked_administrator_meta_adds_duty_officer_pill(): void {
-		add_shortcode( 'duty_officer_member', '__return_empty_string' );
+	/** Roster meta alone does not add a Duty Officer pill. The Duty Officer plugin appends that item. */
+	public function test_administrator_meta_does_not_add_a_duty_pill_by_itself(): void {
 		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		update_user_meta( $user_id, 'duty_officer_access', 'member' );
 		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
-		$ids = wp_list_pluck( ( new Shell() )->nav_items( 'duty-officer' ), 'id' );
-		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'duty-officer' ), $ids );
-		$html = ( new Shell() )->render_switcher( 'duty-officer' );
-		$this->assertStringContainsString( 'is-current', $html );
-		$this->assertStringContainsString( 'aria-current="page"', $html );
+		$ids = wp_list_pluck( ( new Shell() )->nav_items( 'catalog' ), 'id' );
+		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'logout' ), $ids );
+		$this->assertNotContains( 'duty-officer', $ids );
 	}
 
 	/** A learner who is not on the roster is sent to My Courses instead of the officer workspace. */
@@ -105,36 +100,52 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->assertSame( 'keep', $html );
 	}
 
-	/** The training shell stays catalog / my-courses / profile when Duty Officer is absent. */
-	public function test_shell_omits_duty_officer_without_shortcode(): void {
-		$ids = wp_list_pluck( ( new Shell() )->nav_items( 'catalog' ), 'id' );
-		$this->assertSame( array( 'catalog', 'my-courses', 'profile' ), $ids );
-	}
-
-	/** A duty officer role plus the member shortcode adds one shell link. */
-	public function test_shell_adds_duty_officer_for_officer_role(): void {
-		add_shortcode( 'duty_officer_member', '__return_empty_string' );
-		add_role( 'duty_officer', 'Duty Officer', array( 'read' => true ) );
-		$user_id = self::factory()->user->create( array( 'role' => 'duty_officer' ) );
+	/** The training shell stays catalog / my-courses / profile when nothing extends the menu. */
+	public function test_shell_omits_duty_officer_without_an_extension(): void {
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		( new Learner() )->grant_access( $user_id );
 		wp_set_current_user( $user_id );
+		$ids = wp_list_pluck( ( new Shell() )->nav_items( 'catalog' ), 'id' );
+		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'logout' ), $ids );
+	}
+
+	/** A plugin can append Duty Officer through the portal menu filter. */
+	public function test_portal_menu_filter_adds_duty_officer(): void {
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$callback = static function ( array $items ): array {
+			$items[] = array(
+				'id'       => 'duty-officer',
+				'label'    => 'Duty Officer',
+				'url'      => home_url( '/member-portal/' ),
+				'current'  => false,
+				'priority' => 40,
+			);
+			return $items;
+		};
+		add_filter( 'burbank_lms_portal_menu', $callback );
 		Shell::reset_chrome_printed();
 		$items = ( new Shell() )->nav_items( 'catalog' );
-		$ids   = wp_list_pluck( $items, 'id' );
-		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'duty-officer' ), $ids );
+		remove_filter( 'burbank_lms_portal_menu', $callback );
+		$ids = wp_list_pluck( $items, 'id' );
+		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'duty-officer', 'logout' ), $ids );
 		$duty = $items[3];
 		$this->assertSame( home_url( '/member-portal/' ), $duty['url'] );
 		$this->assertFalse( $duty['current'] );
+		add_filter( 'burbank_lms_portal_menu', $callback );
 		$html = ( new Shell() )->render_chrome(
 			array(
 				'current' => 'catalog',
 				'force'   => true,
 			)
 		);
+		remove_filter( 'burbank_lms_portal_menu', $callback );
 		$this->assertStringContainsString( 'Duty Officer', $html );
 		$this->assertStringContainsString( 'Log out', $html );
 		$this->assertStringContainsString( 'action=logout', $html );
 		$this->assertStringContainsString( 'Training and Duty Officer', $html );
 		$this->assertStringContainsString( home_url( '/member-portal/' ), $html );
+		$this->assertStringContainsString( 'bfc-shell__item--logout', $html );
 	}
 }
