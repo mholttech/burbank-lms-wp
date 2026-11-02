@@ -115,6 +115,14 @@
 		list-style: none;
 	}
 
+	&__item--logout {
+		margin-left: auto;
+	}
+
+	&__item--seam {
+		margin-left: 0.85rem;
+	}
+
 	&__actions {
 		gap: 0.5rem;
 	}

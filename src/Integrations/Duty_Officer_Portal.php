@@ -17,6 +17,8 @@ class Duty_Officer_Portal {
 	/**
 	 * Append a training link for the Duty Officer portal companion filter.
 	 *
+	 * Linked officers use the LMS portal menu, so this state stays empty.
+	 *
 	 * @param string $html    Existing companion HTML.
 	 * @param string $context `logged_out`, `unlinked`, or `linked`.
 	 */
@@ -95,10 +97,8 @@ class Duty_Officer_Portal {
 		$user_id = get_current_user_id();
 		$links   = array();
 		if ( 'linked' === $context ) {
-			if ( $user_id < 1 || ! ( new Learner() )->can_learn( $user_id ) ) {
-				return '';
-			}
-			return ( new \Burbank_LMS\Learner\Shell() )->render_switcher( 'duty-officer' );
+			// Training links join the Duty Officer tab row instead of a second bar.
+			return '';
 		} else {
 			$links[] = $this->anchor( $this->catalog_url(), __( 'Course catalog', 'burbank-lms' ) );
 			if ( 'unlinked' === $context && $user_id > 0 && ( new Learner() )->can_learn( $user_id ) ) {

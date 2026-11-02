@@ -30,6 +30,7 @@
 use Burbank_LMS\Activator;
 use Burbank_LMS\Deactivator;
 use Burbank_LMS\Burbank_LMS;
+use Burbank_LMS\Learner\Menu;
 use Burbank_LMS\Uninstallor;
 
 if ( ! defined( 'WPINC' ) ) {
@@ -103,6 +104,15 @@ register_activation_hook( __FILE__, 'burbank_lms_activate' );
 register_deactivation_hook( __FILE__, 'burbank_lms_deactivate' );
 register_uninstall_hook( __FILE__, 'burbank_lms_uninstall' );
 add_action( 'activated_plugin', array( Activator::class, 'network_activation' ), 10, 2 );
+
+/**
+ * Portal menu shared by training pages and plugins that extend it.
+ *
+ * @param string $current Training context used to mark the current item.
+ */
+function burbank_lms_portal_menu( string $current = '' ): string {
+	return ( new Menu( $current ) )->render();
+}
 
 /**
  * Begins execution of the plugin.

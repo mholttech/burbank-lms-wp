@@ -108,7 +108,7 @@ class LearnerShellTest extends WP_UnitTestCase {
 		$shell = new Shell();
 		$items = $shell->nav_items( 'catalog' );
 		$ids   = wp_list_pluck( $items, 'id' );
-		$this->assertSame( array( 'catalog', 'my-courses', 'profile' ), $ids );
+		$this->assertSame( array( 'catalog', 'my-courses', 'profile', 'logout' ), $ids );
 		foreach ( $items as $item ) {
 			if ( 'catalog' === $item['id'] ) {
 				$this->assertTrue( $item['current'] );
