@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.7.2...burbank-lms-v1.8.0) (2026-11-02)
+
+
+### Features
+
+* collapse training to one link on the duty portal ([#51](https://github.com/mholttech/burbank-lms-wp/issues/51)) ([a1a9d7c](https://github.com/mholttech/burbank-lms-wp/commit/a1a9d7c312e914d2bbf03b014c6f73020ec630cd))
+
 ## [1.7.2](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.7.1...burbank-lms-v1.7.2) (2026-11-02)
 
 
