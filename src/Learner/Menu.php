@@ -23,7 +23,7 @@ class Menu {
 	/**
 	 * Menu items after the burbank_lms_portal_menu filter.
 	 *
-	 * @return array<int, array{id:string,label:string,url:string,current:bool,priority:int}>
+	 * @return array<int, array{id:string,label:string,url:string,current:bool,priority:int,group:string}>
 	 */
 	public function items(): array {
 		$items    = $this->training_items();
@@ -40,6 +40,7 @@ class Menu {
 				'url'      => (string) $item['url'],
 				'current'  => ! empty( $item['current'] ),
 				'priority' => isset( $item['priority'] ) ? (int) $item['priority'] : 50,
+				'group'    => self::group_for( (string) $item['id'] ),
 			);
 		}
 		if ( is_user_logged_in() && array() !== $clean && ! in_array( 'logout', wp_list_pluck( $clean, 'id' ), true ) ) {
@@ -49,6 +50,7 @@ class Menu {
 				'url'      => wp_logout_url( home_url( '/' ) ),
 				'current'  => false,
 				'priority' => 90,
+				'group'    => 'account',
 			);
 		}
 		usort(
@@ -68,12 +70,12 @@ class Menu {
 		if ( array() === $items ) {
 			return '';
 		}
-		$lis = '';
+		$lis      = '';
+		$previous = '';
 		foreach ( $items as $item ) {
 			$lis .= sprintf(
-				'<li class="bfc-shell__item%1$s%2$s" data-menu-id="%3$s"><a class="bfc-shell__link" href="%4$s"%5$s>%6$s</a></li>',
-				$item['current'] ? ' is-current' : '',
-				'logout' === $item['id'] ? ' bfc-shell__item--logout' : '',
+				'<li class="bfc-shell__item%1$s" data-menu-id="%2$s"><a class="bfc-shell__link" href="%3$s"%4$s>%5$s</a></li>',
+				self::list_item_class( $item, $previous ),
 				esc_attr( $item['id'] ),
 				esc_url( $item['url'] ),
 				$item['current'] ? ' aria-current="page"' : '',
@@ -96,13 +98,61 @@ class Menu {
 	}
 
 	/**
+	 * Class names for one pill, including the gap before a new group.
+	 *
+	 * Logout stays at the end of the row. The first Duty Officer item after
+	 * training items gets a seam so Profile does not sit against Today.
+	 *
+	 * @param array{id:string,current:bool} $item     Menu item.
+	 * @param string                        $previous Previous group. Updated for the next item.
+	 */
+	public static function list_item_class( array $item, string &$previous ): string {
+		$classes = $item['current'] ? ' is-current' : '';
+		if ( 'logout' === $item['id'] ) {
+			return $classes . ' bfc-shell__item--logout';
+		}
+		$group = self::group_for( $item['id'] );
+		if ( '' !== $previous && $previous !== $group ) {
+			$classes .= ' bfc-shell__item--seam';
+		}
+		$previous = $group;
+		return $classes;
+	}
+
+	/**
+	 * Training or duty, based on the item id.
+	 *
+	 * @param string $id Menu item id.
+	 */
+	public static function group_for( string $id ): string {
+		if ( 'logout' === $id ) {
+			return 'account';
+		}
+		return str_starts_with( $id, 'duty-' ) ? 'duty' : 'training';
+	}
+
+	/**
 	 * Training destinations for someone who can learn.
+	 *
+	 * On the member portal these collapse to one Training link. Duty Officer
+	 * then fills the rest of the row with its own sections.
 	 *
 	 * @return array<int, array{id:string,label:string,url:string,current:bool,priority:int}>
 	 */
 	private function training_items(): array {
 		if ( ! ( new Learner() )->can_learn( get_current_user_id() ) ) {
 			return array();
+		}
+		if ( $this->on_member_portal() ) {
+			return array(
+				array(
+					'id'       => 'training',
+					'label'    => __( 'Training', 'burbank-lms' ),
+					'url'      => $this->page_url( 'my-courses' ),
+					'current'  => false,
+					'priority' => 10,
+				),
+			);
 		}
 		$highlight = 'course' === $this->current ? 'catalog' : $this->current;
 		return array(
@@ -128,6 +178,17 @@ class Menu {
 				'priority' => 30,
 			),
 		);
+	}
+
+	/**
+	 * Whether the current request is the Duty Officer member portal.
+	 */
+	private function on_member_portal(): bool {
+		if ( ! is_singular() || ! shortcode_exists( 'duty_officer_member' ) ) {
+			return false;
+		}
+		$post = get_queried_object();
+		return $post instanceof \WP_Post && has_shortcode( (string) $post->post_content, 'duty_officer_member' );
 	}
 
 	/**

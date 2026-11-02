@@ -147,5 +147,31 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Training and Duty Officer', $html );
 		$this->assertStringContainsString( home_url( '/member-portal/' ), $html );
 		$this->assertStringContainsString( 'bfc-shell__item--logout', $html );
+		$this->assertStringContainsString( 'bfc-shell__item--seam', $html );
+	}
+
+	/** The member portal keeps one Training link back to My Courses. */
+	public function test_member_portal_collapses_training_to_my_courses(): void {
+		add_shortcode( 'duty_officer_member', '__return_empty_string' );
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$page_id = self::factory()->post->create(
+			array(
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_content' => '[duty_officer_member]',
+			)
+		);
+		$this->go_to( (string) get_permalink( $page_id ) );
+		$items = ( new Menu() )->items();
+		$ids   = wp_list_pluck( $items, 'id' );
+		$this->assertSame( array( 'training', 'logout' ), $ids );
+		$this->assertSame( 'Training', $items[0]['label'] );
+		$this->assertSame( home_url( '/my-courses/' ), $items[0]['url'] );
+		$this->assertFalse( $items[0]['current'] );
+		$html = ( new Menu() )->render();
+		$this->assertStringNotContainsString( 'Catalog', $html );
+		$this->assertStringNotContainsString( 'bfc-shell__item--seam', $html );
 	}
 }

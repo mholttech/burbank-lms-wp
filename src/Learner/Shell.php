@@ -56,7 +56,7 @@ class Shell {
 	 * Primary training nav items.
 	 *
 	 * @param string $current Context id (catalog|course|my-courses|profile|'').
-	 * @return array<int, array{id:string,label:string,url:string,current:bool}>
+	 * @return array<int, array{id:string,label:string,url:string,current:bool,group:string}>
 	 */
 	public function nav_items( string $current = '' ): array {
 		$items = ( new Menu( $current ) )->items();
@@ -67,6 +67,7 @@ class Shell {
 				'label'   => $item['label'],
 				'url'     => $item['url'],
 				'current' => $item['current'],
+				'group'   => $item['group'],
 			);
 		}
 		return $nav;
@@ -270,12 +271,12 @@ class Shell {
 	 * @param string                                                            $list_class List class name.
 	 */
 	private function render_nav_list( array $items, string $list_class ): string {
-		$lis = '';
+		$lis      = '';
+		$previous = '';
 		foreach ( $items as $item ) {
 			$lis .= sprintf(
-				'<li class="bfc-shell__item%1$s%2$s"><a class="bfc-shell__link" href="%3$s"%4$s>%5$s</a></li>',
-				$item['current'] ? ' is-current' : '',
-				'logout' === $item['id'] ? ' bfc-shell__item--logout' : '',
+				'<li class="bfc-shell__item%1$s"><a class="bfc-shell__link" href="%2$s"%3$s>%4$s</a></li>',
+				Menu::list_item_class( $item, $previous ),
 				esc_url( $item['url'] ),
 				$item['current'] ? ' aria-current="page"' : '',
 				esc_html( $item['label'] )
