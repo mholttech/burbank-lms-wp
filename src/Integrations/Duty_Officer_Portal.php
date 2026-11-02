@@ -29,6 +29,43 @@ class Duty_Officer_Portal {
 	}
 
 	/**
+	 * Send a training-only account from the member portal to My Courses.
+	 *
+	 * Linked duty officers stay on the portal. Guests are already sent to login
+	 * by Duty Officer. Accounts with neither training access nor a roster link
+	 * stay and see the portal's own message.
+	 */
+	public function redirect_training_only(): void {
+		if ( ! is_user_logged_in() || ! is_singular() ) {
+			return;
+		}
+		$post = get_queried_object();
+		if ( ! $post instanceof \WP_Post || ! has_shortcode( (string) $post->post_content, 'duty_officer_member' ) ) {
+			return;
+		}
+		$destination = $this->training_only_destination();
+		if ( '' === $destination ) {
+			return;
+		}
+		wp_safe_redirect( $destination );
+		exit;
+	}
+
+	/**
+	 * My Courses URL for a signed-in learner who is not a duty officer.
+	 */
+	public function training_only_destination(): string {
+		if ( ! is_user_logged_in() || $this->current_user_is_officer() ) {
+			return '';
+		}
+		$user_id = get_current_user_id();
+		if ( $user_id < 1 || ! ( new Learner() )->can_learn( $user_id ) ) {
+			return '';
+		}
+		return $this->page_url( 'my-courses' );
+	}
+
+	/**
 	 * Training-shell item for an account that also has a Duty Officer role.
 	 *
 	 * @param string $current Shell context id.

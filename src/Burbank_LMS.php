@@ -175,6 +175,7 @@ class Burbank_LMS {
 		$this->loader->add_action( 'rest_api_init', new REST\Training_Controller(), 'register_routes' );
 		$duty_portal = new Integrations\Duty_Officer_Portal();
 		$this->loader->add_filter( 'duty_officer_member_portal_companion', $duty_portal, 'companion', 10, 2 );
+		$this->loader->add_action( 'template_redirect', $duty_portal, 'redirect_training_only', 11 );
 	}
 
 	/**

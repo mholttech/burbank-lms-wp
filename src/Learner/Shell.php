@@ -198,10 +198,11 @@ class Shell {
 		);
 		$aria      = esc_attr( $this->navigation_label( $items ) );
 		$nav       = sprintf(
-			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav>',
+			'<nav class="bfc-shell" aria-label="%1$s">%2$s%3$s%4$s</nav>',
 			$aria,
 			$nav_list,
-			$actions_html
+			$actions_html,
+			$this->logout_link()
 		);
 
 		return sprintf(
@@ -224,9 +225,24 @@ class Shell {
 		}
 		$items = $this->nav_items( $current );
 		return sprintf(
-			'<section class="bfc-portal bfc-portal--switcher"><nav class="bfc-shell" aria-label="%1$s">%2$s</nav></section>',
+			'<section class="bfc-portal bfc-portal--switcher"><nav class="bfc-shell" aria-label="%1$s">%2$s%3$s</nav></section>',
 			esc_attr( $this->navigation_label( $items ) ),
-			$this->render_nav_list( $items, 'bfc-shell__list' )
+			$this->render_nav_list( $items, 'bfc-shell__list' ),
+			$this->logout_link()
+		);
+	}
+
+	/**
+	 * Sign-out control for the shared pill row.
+	 *
+	 * The member portal hides the WordPress admin bar for volunteers, so this
+	 * link is the way back to the public site.
+	 */
+	private function logout_link(): string {
+		return sprintf(
+			'<a class="bfc-shell__logout" href="%1$s">%2$s</a>',
+			esc_url( wp_logout_url( home_url( '/' ) ) ),
+			esc_html__( 'Log out', 'burbank-lms' )
 		);
 	}
 

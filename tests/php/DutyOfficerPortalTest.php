@@ -82,6 +82,23 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'aria-current="page"', $html );
 	}
 
+	/** A learner who is not on the roster is sent to My Courses instead of the officer workspace. */
+	public function test_training_only_destination_is_my_courses(): void {
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$this->assertSame( home_url( '/my-courses/' ), ( new Duty_Officer_Portal() )->training_only_destination() );
+	}
+
+	/** A duty officer who can also train stays on the member portal. */
+	public function test_dual_role_destination_stays_on_portal(): void {
+		add_role( 'duty_officer', 'Duty Officer', array( 'read' => true ) );
+		$user_id = self::factory()->user->create( array( 'role' => 'duty_officer' ) );
+		( new Learner() )->grant_access( $user_id );
+		wp_set_current_user( $user_id );
+		$this->assertSame( '', ( new Duty_Officer_Portal() )->training_only_destination() );
+	}
+
 	/** Unknown companion contexts are ignored. */
 	public function test_unknown_context_is_unchanged(): void {
 		$html = ( new Duty_Officer_Portal() )->companion( 'keep', 'roster' );
@@ -115,6 +132,8 @@ class DutyOfficerPortalTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertStringContainsString( 'Duty Officer', $html );
+		$this->assertStringContainsString( 'Log out', $html );
+		$this->assertStringContainsString( 'action=logout', $html );
 		$this->assertStringContainsString( 'Training and Duty Officer', $html );
 		$this->assertStringContainsString( home_url( '/member-portal/' ), $html );
 	}
