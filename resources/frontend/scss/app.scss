@@ -344,11 +344,13 @@
 
 }
 
-.bfc-register__form {
-	padding: 1.1rem 1.15rem;
+.bfc-register__form,
+.bfc-register__panel,
+.bfc-register__done {
+	border: 1px solid var(--bfc-control-border);
 	border-radius: var(--bfc-radius-panel);
 	background: var(--bfc-control-bg);
-	box-shadow: var(--bfc-panel-shadow);
+	box-shadow: none;
 }
 
 /* Profile personal + security panels: bordered cards, no floating shadow
