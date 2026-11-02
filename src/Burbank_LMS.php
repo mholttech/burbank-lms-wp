@@ -30,7 +30,7 @@ class Burbank_LMS {
 
 
 	const PLUGIN_NAME    = 'burbank-lms';
-	const PLUGIN_VERSION = '1.7.2'; // x-release-please-version
+	const PLUGIN_VERSION = '1.8.0'; // x-release-please-version
 
 	/**
 	 * The loader that's responsible for maintaining and registering all hooks that power
