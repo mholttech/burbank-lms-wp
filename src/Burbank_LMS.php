@@ -73,6 +73,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'init', $course_schema, 'maybe_flush_rewrite_rules', 99 );
 		$this->loader->add_action( 'admin_notices', $course_schema, 'notice' );
 		$this->loader->add_action( 'init', new Courses\Capabilities(), 'install', 12 );
+		$this->loader->add_action( 'init', new Access\Learner(), 'install_role', 12 );
+		$this->loader->add_filter( 'show_admin_bar', new Access\Admin_Bar(), 'filter_show', 100 );
 		$course_registry = new Courses\Registry();
 		$this->loader->add_action( 'init', $course_registry, 'install', 12 );
 		$this->loader->add_action( 'admin_notices', $course_registry, 'notice' );

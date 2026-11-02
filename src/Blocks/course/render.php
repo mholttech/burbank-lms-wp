@@ -119,7 +119,7 @@ $wrapper       = get_block_wrapper_attributes(
 		<form id="bfc-course-enroll" class="bfc-course__invite-form" novalidate>
 			<p class="bfc-course__field">
 				<label for="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>"><?php esc_html_e( 'Course invite code', 'burbank-lms' ); ?></label>
-				<input id="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>" name="course_invite" type="text" required autocomplete="off">
+				<input id="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>" name="course_invite" type="text" required autocomplete="off" value="<?php echo esc_attr( \Burbank_LMS\Access\Invites::requested_code() ); ?>">
 			</p>
 			<p class="bfc-course__actions">
 				<button type="submit" class="wp-element-button"><?php esc_html_e( 'Enroll in new version', 'burbank-lms' ); ?></button>
@@ -141,7 +141,7 @@ $wrapper       = get_block_wrapper_attributes(
 		<form id="bfc-course-enroll" class="bfc-course__invite-form" novalidate>
 			<p class="bfc-course__field">
 				<label for="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>"><?php esc_html_e( 'Course invite code', 'burbank-lms' ); ?></label>
-				<input id="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>" name="course_invite" type="text" required autocomplete="off">
+				<input id="bfc-course-invite-<?php echo esc_attr( (string) $course_id ); ?>" name="course_invite" type="text" required autocomplete="off" value="<?php echo esc_attr( \Burbank_LMS\Access\Invites::requested_code() ); ?>">
 			</p>
 			<p class="bfc-course__actions">
 				<button type="submit" class="wp-element-button"><?php esc_html_e( 'Enroll with invite', 'burbank-lms' ); ?></button>

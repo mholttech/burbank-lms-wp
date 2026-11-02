@@ -76,7 +76,7 @@ class Registration {
 				'display_name' => '' !== $display_name ? $display_name : $legal_name,
 				'first_name'   => $first_name,
 				'last_name'    => $last_name,
-				'role'         => 'subscriber',
+				'role'         => Learner::ROLE,
 			)
 		);
 		if ( is_wp_error( $user_id ) ) {

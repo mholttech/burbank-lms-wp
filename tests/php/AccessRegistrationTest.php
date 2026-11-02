@@ -21,6 +21,7 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}bfc_invite_codes" ); // phpcs:ignore WordPress.DB -- Isolated application fixture.
 		delete_option( AccessTables::VERSION_OPTION );
 		$this->assertTrue( ( new AccessTables() )->install() );
+		( new Learner() )->install_role();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 	}
 
@@ -190,6 +191,7 @@ class AccessRegistrationTest extends WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $user_id );
 		$this->assertSame( 'Alex Volunteer', ( new Profile() )->get_legal_name( $user_id ) );
 		$this->assertTrue( user_can( $user_id, 'burbank_lms_access' ) ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
+		$this->assertContains( Learner::ROLE, (array) get_userdata( $user_id )->roles );
 		$this->assertSame( '1', (string) get_user_meta( $user_id, 'burbank_lms_training_access', true ) );
 		$this->assertSame( (string) $invite['id'], (string) get_user_meta( $user_id, 'burbank_lms_site_invite_id', true ) );
 

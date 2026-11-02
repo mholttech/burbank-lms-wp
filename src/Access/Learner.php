@@ -9,6 +9,10 @@ namespace Burbank_LMS\Access;
 
 /** Owns learner training access state and PressPrimer take-quiz capability sync. */
 class Learner {
+	public const ROLE = 'burbank_lms_learner';
+
+	public const ROLE_VERSION_OPTION = 'burbank_lms_learner_role_version';
+
 	public const CAP_ACCESS = 'burbank_lms_access';
 
 	public const CAP_TAKE_QUIZ = 'pressprimer_quiz_take_quiz';
@@ -20,6 +24,50 @@ class Learner {
 	public const META_SUSPENDED = 'burbank_lms_suspended';
 
 	public const META_EMAIL_VERIFIED = 'burbank_lms_email_verified';
+
+	/**
+	 * Register the learner role and move existing training accounts onto it.
+	 *
+	 * Administrators and editors keep their own roles. The capability stays the
+	 * access check so those elevated roles can still train.
+	 */
+	public function install_role(): void {
+		$caps = array(
+			'read'           => true,
+			self::CAP_ACCESS => true,
+		);
+		if ( ! get_role( self::ROLE ) ) {
+			add_role( self::ROLE, __( 'Learner', 'burbank-lms' ), $caps );
+		}
+		$role = get_role( self::ROLE );
+		if ( $role ) {
+			foreach ( array_keys( $caps ) as $cap ) {
+				if ( ! $role->has_cap( $cap ) ) { // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
+					$role->add_cap( $cap );
+				}
+			}
+		}
+		if ( 1 <= (int) get_option( self::ROLE_VERSION_OPTION ) ) {
+			return;
+		}
+		$user_ids = get_users(
+			array(
+				'capability' => self::CAP_ACCESS,
+				'fields'     => 'ID',
+			)
+		);
+		foreach ( (array) $user_ids as $user_id ) {
+			$user = get_userdata( (int) $user_id );
+			if ( ! $user instanceof \WP_User ) {
+				continue;
+			}
+			if ( user_can( $user, 'edit_posts' ) || user_can( $user, 'manage_options' ) ) {
+				continue;
+			}
+			$user->add_role( self::ROLE );
+		}
+		update_option( self::ROLE_VERSION_OPTION, 1, false );
+	}
 
 	/** Existing accounts without a verification flag retain access.
 	 *
@@ -63,6 +111,7 @@ class Learner {
 			return;
 		}
 		$had_access = user_can( $user_id, self::CAP_ACCESS ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- Learner training access.
+		$user->add_role( self::ROLE );
 		$user->add_cap( self::CAP_ACCESS );
 		update_user_meta( $user_id, self::META_TRAINING_ACCESS, '1' );
 		if ( null !== $site_invite_id && $site_invite_id > 0 ) {
@@ -93,8 +142,13 @@ class Learner {
 		if ( ! $user->exists() ) {
 			return;
 		}
+		$user->remove_role( self::ROLE );
 		$user->remove_cap( self::CAP_ACCESS );
 		delete_user_meta( $user_id, self::META_TRAINING_ACCESS );
+		$fresh = get_userdata( $user_id );
+		if ( $fresh instanceof \WP_User && array() === (array) $fresh->roles ) {
+			$fresh->add_role( 'subscriber' );
+		}
 		$this->sync_quiz_cap( $user_id );
 	}
 

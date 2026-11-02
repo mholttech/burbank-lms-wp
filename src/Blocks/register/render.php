@@ -9,6 +9,7 @@
  * @var WP_Block $block      Block instance.
  */
 
+use Burbank_LMS\Access\Invites;
 use Burbank_LMS\Learner\Block_Context;
 use Burbank_LMS\Learner\Block_Title;
 
@@ -32,10 +33,16 @@ $wrapper = get_block_wrapper_attributes(
 	<?php
 	echo ( new Block_Title() )->render( __( 'Create training account', 'burbank-lms' ), 'bfc-register__title' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Block_Title escapes.
 	?>
+	<?php $invite_code = Invites::requested_code(); ?>
+	<?php if ( '' !== $invite_code ) : ?>
+		<p class="bfc-register__hint"><?php esc_html_e( 'This invite link is ready. Add your name, email, and password to create the training account.', 'burbank-lms' ); ?></p>
+	<?php else : ?>
+		<p class="bfc-register__hint"><?php esc_html_e( 'An invite code or invite link is required. Duty officer accounts are created by an administrator.', 'burbank-lms' ); ?></p>
+	<?php endif; ?>
 	<form class="bfc-register__form" novalidate>
 		<p class="bfc-register__field">
 			<label for="bfc-register-invite"><?php esc_html_e( 'Site invite code', 'burbank-lms' ); ?></label>
-			<input id="bfc-register-invite" name="invite" type="text" required autocomplete="off">
+			<input id="bfc-register-invite" name="invite" type="text" required autocomplete="off" value="<?php echo esc_attr( $invite_code ); ?>">
 		</p>
 		<p class="bfc-register__field">
 			<label for="bfc-register-first-name"><?php esc_html_e( 'First name', 'burbank-lms' ); ?></label>

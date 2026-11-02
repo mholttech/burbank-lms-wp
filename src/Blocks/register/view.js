@@ -28,6 +28,24 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 	}
 	const status = root.querySelector( '[data-bfc-status]' );
 	const config = parseConfig( root );
+	const first = form.querySelector( '[name="first_name"]' );
+	const last = form.querySelector( '[name="last_name"]' );
+	const display = form.querySelector( '[name="display_name"]' );
+	let displayEdited = Boolean( display && display.value );
+	const fillDisplayName = () => {
+		if ( displayEdited || ! display ) {
+			return;
+		}
+		const parts = [ first?.value || '', last?.value || '' ]
+			.map( ( part ) => part.trim() )
+			.filter( Boolean );
+		display.value = parts.join( ' ' );
+	};
+	display?.addEventListener( 'input', () => {
+		displayEdited = true;
+	} );
+	first?.addEventListener( 'input', fillDisplayName );
+	last?.addEventListener( 'input', fillDisplayName );
 
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
