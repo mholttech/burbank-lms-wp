@@ -19,6 +19,28 @@ function setStatus( el, message, isError ) {
 	el.hidden = ! message;
 	el.textContent = message || '';
 	el.classList.toggle( 'is-error', Boolean( isError ) );
+	if ( message && isError ) {
+		el.focus();
+	}
+}
+
+function passwordScore( password, email ) {
+	const meter =
+		window.wp &&
+		window.wp.passwordStrength &&
+		typeof window.wp.passwordStrength.meter === 'function';
+	if ( ! meter ) {
+		return password.length >= 8 ? 3 : 1;
+	}
+	const score = window.wp.passwordStrength.meter(
+		password,
+		[],
+		email ? [ email ] : []
+	);
+	if ( score < 0 ) {
+		return password.length >= 8 ? 3 : 1;
+	}
+	return score;
 }
 
 document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
@@ -35,7 +57,18 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 	const display = form.querySelector( '[name="display_name"]' );
 	const certificate = root.querySelector( '[data-bfc-cert-name]' );
 	const password = form.querySelector( '[name="password"]' );
+	const email = form.querySelector( '[name="email"]' );
 	const reveal = form.querySelector( '.bfc-register__reveal' );
+	const meter = form.querySelector( '[data-bfc-meter]' );
+	const meterBar = form.querySelector( '[data-bfc-meter-bar]' );
+	const meterLabel = form.querySelector( '[data-bfc-meter-label]' );
+	const strengthLabels = [
+		'Very weak',
+		'Weak',
+		'Medium',
+		'Strong',
+		'Very strong',
+	];
 	let displayEdited = Boolean( display && display.value );
 
 	const fillNames = () => {
@@ -57,6 +90,34 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 	last?.addEventListener( 'input', fillNames );
 	fillNames();
 
+	const updateMeter = () => {
+		const value = password ? password.value : '';
+		const score = passwordScore( value, email ? email.value : '' );
+		if ( ! value || score < 0 || score > 4 ) {
+			if ( meter ) {
+				meter.hidden = true;
+			}
+			if ( meterLabel ) {
+				meterLabel.hidden = true;
+			}
+			return score;
+		}
+		if ( meterBar ) {
+			meterBar.style.width = `${ ( ( score + 1 ) / 5 ) * 100 }%`;
+		}
+		if ( meter ) {
+			meter.hidden = false;
+			meter.dataset.score = String( score );
+		}
+		if ( meterLabel ) {
+			meterLabel.hidden = false;
+			meterLabel.textContent = strengthLabels[ score ] || '';
+		}
+		return score;
+	};
+	password?.addEventListener( 'input', updateMeter );
+	email?.addEventListener( 'input', updateMeter );
+
 	reveal?.addEventListener( 'click', () => {
 		if ( ! password ) {
 			return;
@@ -70,6 +131,16 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 	form.addEventListener( 'submit', async ( event ) => {
 		event.preventDefault();
 		setStatus( status, '' );
+		const score = updateMeter();
+		if ( score < 3 ) {
+			setStatus(
+				status,
+				'Use a stronger password. Aim for a mix of words, numbers, and symbols.',
+				true
+			);
+			password?.focus();
+			return;
+		}
 		if ( submit ) {
 			submit.disabled = true;
 		}
@@ -99,6 +170,7 @@ document.querySelectorAll( '.bfc-register' ).forEach( ( root ) => {
 			form.hidden = true;
 			if ( done ) {
 				done.hidden = false;
+				done.querySelector( '[data-bfc-done-title]' )?.focus();
 			}
 		} catch {
 			setStatus( status, 'Registration failed. Please try again.', true );

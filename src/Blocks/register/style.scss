@@ -91,6 +91,33 @@
 		&.is-error {
 			color: #b32d2e;
 		}
+
+		&:focus {
+			outline: 2px solid currentColor;
+			outline-offset: 2px;
+		}
+	}
+
+	&__meter {
+		display: block;
+		height: 0.45rem;
+		overflow: hidden;
+		border-radius: 999px;
+		background: var(--bfc-control-border, #d0ddd4);
+	}
+
+	&__meter-bar {
+		display: block;
+		height: 100%;
+		width: 0;
+		border-radius: inherit;
+		background: var(--bfc-pill-active-bg, #1b6540);
+	}
+
+	&__meter-label {
+		color: var(--bfc-control-muted, #556b60);
+		font-size: 0.85rem;
+		font-weight: 600;
 	}
 
 	&__done h2 {

@@ -55,6 +55,9 @@ class Registration {
 		if ( '' === $password ) {
 			return new \WP_Error( 'burbank_register_password_required', __( 'A password is required.', 'burbank-lms' ) );
 		}
+		if ( strlen( $password ) < 8 ) {
+			return new \WP_Error( 'burbank_register_password_short', __( 'Use at least 8 characters.', 'burbank-lms' ) );
+		}
 		if ( email_exists( $email ) ) {
 			return new \WP_Error( 'burbank_register_email_exists', __( 'Registration could not be completed.', 'burbank-lms' ) );
 		}

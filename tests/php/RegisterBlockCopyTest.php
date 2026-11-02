@@ -24,5 +24,10 @@ class RegisterBlockCopyTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Account created', $html );
 		$this->assertStringContainsString( 'Sign in', $html );
 		$this->assertStringContainsString( 'Already have an account?', $html );
+		$this->assertStringContainsString( 'aria-describedby', $html );
+		$this->assertStringContainsString( 'role="alert"', $html );
+		$this->assertStringContainsString( 'data-bfc-meter', $html );
+		$this->assertStringContainsString( 'minlength="8"', $html );
+		$this->assertStringNotContainsString( 'id="bfc-register-invite"', $html );
 	}
 }
