@@ -9,6 +9,7 @@ namespace Burbank_LMS\Learner;
 
 use Burbank_LMS\Access\Learner;
 use Burbank_LMS\Enrollment\Service as Enrollment_Service;
+use Burbank_LMS\Integrations\Duty_Officer_Portal;
 
 /** Builds hybrid training subnav and contextual course actions for can_learn users. */
 class Shell {
@@ -80,6 +81,10 @@ class Shell {
 				'current' => 'profile' === $highlight,
 			),
 		);
+		$duty      = ( new Duty_Officer_Portal() )->nav_item( $highlight );
+		if ( null !== $duty ) {
+			$items[] = $duty;
+		}
 		return $items;
 	}
 

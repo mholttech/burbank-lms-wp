@@ -173,6 +173,8 @@ class Burbank_LMS {
 		$this->loader->add_action( 'admin_menu', $access_admin, 'register_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $access_admin, 'enqueue' );
 		$this->loader->add_action( 'rest_api_init', new REST\Training_Controller(), 'register_routes' );
+		$duty_portal = new Integrations\Duty_Officer_Portal();
+		$this->loader->add_filter( 'duty_officer_member_portal_companion', $duty_portal, 'companion', 10, 2 );
 	}
 
 	/**
