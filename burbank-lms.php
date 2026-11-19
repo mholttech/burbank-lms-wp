@@ -15,7 +15,7 @@
  * Plugin Name:       Burbank LMS
  * Description:       Burbank LMS WordPress plugin.
  * x-release-please-start-version
- * Version:           1.8.0
+ * Version:           1.9.0
  * x-release-please-end
  * Requires Plugins:  pods
  * Requires PHP:      8.2
