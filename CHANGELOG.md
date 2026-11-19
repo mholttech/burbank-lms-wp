@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.9.0...burbank-lms-v1.9.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* **deps:** pin simple-git 3.x for wp-env and tighten Renovate caps ([6f7c888](https://github.com/mholttech/burbank-lms-wp/commit/6f7c888eff6c25d33b3eed13f3b1dcb554f05ea0))
+
 ## [1.9.0](https://github.com/mholttech/burbank-lms-wp/compare/burbank-lms-v1.8.0...burbank-lms-v1.9.0) (2026-11-19)
 
 
