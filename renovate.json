@@ -10,7 +10,9 @@
     "github-actions",
     "custom.regex"
   ],
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "automerge": false,
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
