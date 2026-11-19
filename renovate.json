@@ -109,6 +109,13 @@
       ],
       "allowedVersions": "<4.0.0",
       "description": "@wordpress/env requires simple-git 3.x CommonJS default export"
+    },
+    {
+      "matchPackageNames": [
+        "phpunit/phpunit"
+      ],
+      "allowedVersions": "<13.0.0",
+      "description": "yoast/phpunit-polyfills ^4.0 does not support PHPUnit 13; dev tests stay on PHP 8.2 platform"
     }
   ],
   "ignorePaths": [
