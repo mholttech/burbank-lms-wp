@@ -108,14 +108,21 @@
         "simple-git"
       ],
       "allowedVersions": "<4.0.0",
-      "description": "@wordpress/env requires simple-git 3.x CommonJS default export"
+      "description": "@wordpress/env requires simple-git 3.x CommonJS default export (including security advisories targeting 4.x)"
+    },
+    {
+      "matchPackageNames": [
+        "@simple-git/argv-parser"
+      ],
+      "allowedVersions": "<3.0.0",
+      "description": "argv-parser 3.x ships with simple-git 4; wp-env stays on simple-git 3.x via package.json overrides"
     },
     {
       "matchPackageNames": [
         "phpunit/phpunit"
       ],
-      "allowedVersions": "<13.0.0",
-      "description": "yoast/phpunit-polyfills ^4.0 does not support PHPUnit 13; dev tests stay on PHP 8.2 platform"
+      "allowedVersions": "<12.0.0",
+      "description": "Stay on PHPUnit 9.x until yoast/phpunit-polyfills and CI are ready for PHPUnit 12+; blocks 13.x as well"
     }
   ],
   "ignorePaths": [
